@@ -1,6 +1,6 @@
 allprojects {
   group = 'com.github.mengxianun'
-  version = '1.1.0-SNAPSHOT'
+  version = '1.0.0'
 }
 
 subprojects {
@@ -13,7 +13,7 @@ subprojects {
   targetCompatibility = '1.8'
   compileJava.options.encoding = 'UTF-8'
   
-  archivesBaseName = 'air-data-' + project.name
+  archivesBaseName = 'tangram-' + project.name
  
   dependencies {
     implementation 'com.google.guava:guava:24.1-jre'
@@ -76,16 +76,16 @@ subprojects {
 	      }
 	
 	      pom.project {
-	        name 'Air data'
+	        name 'Tangram'
 	        packaging 'jar'
 	        // optionally artifactId can be defined here 
 	        description 'Json drive data'
-	        url 'https://github.com/mengxianun/air-data'
+	        url 'https://github.com/aigodata/tangram'
 	
 	        scm {
-	          connection 'scm:git:git://github.com/mengxianun/air-data.git'
-	          developerConnection 'scm:git:ssh://github.com/mengxianun/air-data.git'
-	          url 'https://github.com/mengxianun/air-data'
+	          connection 'scm:git:git://github.com/aigodata/tangram.git'
+	          developerConnection 'scm:git:ssh://github.com/aigodata/tangram.git'
+	          url 'https://github.com/aigodata/tangram'
 	        }
 	
 	        licenses {
