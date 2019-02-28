@@ -1,0 +1,7 @@
+{
+  "update":"update_table",
+  "values":{
+    "name":"DEF"
+  },
+  "where":"id=1"
+}

@@ -1,0 +1,5 @@
+{
+  "select":"join_table_1",
+  "join":["join_table_2", "join_table_3"],
+  "limit":[0, 2]
+}

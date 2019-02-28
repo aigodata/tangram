@@ -1,0 +1,4 @@
+{
+  "select":"select_table",
+  "fields":["id", "name"]
+}

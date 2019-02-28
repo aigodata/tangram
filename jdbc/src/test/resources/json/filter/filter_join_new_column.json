@@ -1,0 +1,4 @@
+{
+  "select":"filter_table_1",
+  "join":["filter_table_2"]
+}

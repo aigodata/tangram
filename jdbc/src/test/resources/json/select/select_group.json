@@ -1,0 +1,5 @@
+{
+  "select":"select_table",
+  "fields":["age", "count(*) as count"],
+  "group":["age"]
+}

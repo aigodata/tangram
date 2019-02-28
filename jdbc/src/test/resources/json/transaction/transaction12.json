@@ -1,0 +1,18 @@
+{
+  "transaction":[
+    {
+      "update":"transaction_table_1",
+      "values":{
+        "name":"new_name"
+      },
+      "where":"id=1"
+    },
+    {
+      "update":"transaction_table_2",
+      "values":{
+        "name":"new_name"
+      },
+      "where":"id=1"
+    }
+  ]
+}

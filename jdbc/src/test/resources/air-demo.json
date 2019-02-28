@@ -1,0 +1,12 @@
+{
+    // 数据源
+    "datasources": {
+        "ds1": {
+            "type":"jdbc",
+            "driverClassName":"org.h2.Driver",
+            "url": "jdbc:h2:~/air-jdbc",
+            "username": "test",
+            "password": "123456"
+        }
+    }
+}

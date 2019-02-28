@@ -1,0 +1,5 @@
+dependencies {
+  implementation project(':core')
+  implementation 'com.itextpdf:itextpdf:5.5.0'
+  implementation 'com.itextpdf:itext-asian:5.2.0'
+}

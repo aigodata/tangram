@@ -1,0 +1,4 @@
+dependencies {
+  implementation project(':core')
+  implementation 'org.apache.poi:poi:3.11'
+}

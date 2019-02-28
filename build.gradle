@@ -1,0 +1,121 @@
+allprojects {
+  group = 'com.github.mengxianun'
+  version = '1.1.0-SNAPSHOT'
+}
+
+subprojects {
+  apply plugin: 'java-library'
+  apply plugin: 'maven'
+  apply plugin: 'maven-publish'
+  apply plugin: 'signing'
+  
+  sourceCompatibility = '1.8'
+  targetCompatibility = '1.8'
+  compileJava.options.encoding = 'UTF-8'
+  
+  archivesBaseName = 'air-data-' + project.name
+ 
+  dependencies {
+    implementation 'com.google.guava:guava:24.1-jre'
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'com.google.inject:guice:4.2.0'
+    implementation 'com.google.auto.service:auto-service:1.0-rc4'
+    // implementation 'org.apache.metamodel:MetaModel-core:5.1.0'
+    implementation 'org.slf4j:slf4j-api:1.7.25'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.2.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.2.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.2.0'
+  }
+
+	task javadocJar(type: Jar) {
+	  classifier = 'javadoc'
+	  from javadoc
+	}
+
+	task sourcesJar(type: Jar) {
+	  classifier = 'sources'
+	  from sourceSets.main.allSource
+	}
+	
+	artifacts {
+	  archives javadocJar, sourcesJar
+	}
+	
+	signing {
+	  sign configurations.archives
+	}
+	
+	tasks.withType(Javadoc) {
+	  options.addStringOption('Xdoclint:none', '-quiet')
+	  options.addStringOption('encoding', 'UTF-8')
+	  options.addStringOption('charSet', 'UTF-8')
+	}
+	
+	publishing {
+	  publications {
+	    mavenJava(MavenPublication) {
+	      artifactId = archivesBaseName
+	      from components.java
+	      artifact sourcesJar
+	      artifact javadocJar
+	    }
+	  }
+	}
+	
+	uploadArchives {
+	  repositories {
+	    mavenDeployer {
+	      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+	
+	      repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+	        authentication(userName: ossrhUsername, password: ossrhPassword)
+	      }
+	
+	      snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+	        authentication(userName: ossrhUsername, password: ossrhPassword)
+	      }
+	
+	      pom.project {
+	        name 'Air data'
+	        packaging 'jar'
+	        // optionally artifactId can be defined here 
+	        description 'Json drive data'
+	        url 'https://github.com/mengxianun/air-data'
+	
+	        scm {
+	          connection 'scm:git:git://github.com/mengxianun/air-data.git'
+	          developerConnection 'scm:git:ssh://github.com/mengxianun/air-data.git'
+	          url 'https://github.com/mengxianun/air-data'
+	        }
+	
+	        licenses {
+	          license {
+	            name 'MIT'
+	            url 'https://opensource.org/licenses/MIT'
+	          }
+	        }
+	
+	        developers {
+	          developer {
+	            id 'mxy'
+	            name 'Xiang Yun Meng'
+	            email '718517636@qq.com'
+	          }
+	        }
+	      }
+	    }
+	  }
+	}
+	
+	test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+  }
+	
+	repositories {
+	  mavenLocal()
+	  mavenCentral()
+	}
+}

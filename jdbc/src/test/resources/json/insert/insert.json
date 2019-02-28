@@ -1,0 +1,6 @@
+{
+  "insert":"insert_table",
+  "values":{
+    "name":"ABC"
+  }
+}

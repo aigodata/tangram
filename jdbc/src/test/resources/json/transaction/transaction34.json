@@ -1,0 +1,18 @@
+{
+  "transaction":[
+    {
+      "update":"transaction_table_3",
+      "values":{
+        "name":"new_name"
+      },
+      "where":"id=1"
+    },
+    {
+      "update":"transaction_table_wrong",
+      "values":{
+        "name":"new_name"
+      },
+      "where":"id=1"
+    }
+  ]
+}

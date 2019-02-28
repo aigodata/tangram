@@ -1,0 +1,27 @@
+{
+  // 数据源
+  "datasources": {
+    "ds1": {
+      "type":"jdbc",
+      "driverClassName":"org.h2.Driver",
+      "url": "jdbc:h2:~/air-jdbc",
+      "username": "test",
+      "password": "123456"
+    }
+  },
+
+  // 预处理
+  "pre_handler": {
+    "auth_control":"on",
+    "abc":"off",
+    "def": "off"
+  },
+  "auth_control": {
+    "model1":["table1","table2","table3","table4"],
+    "model2":["table1","table2","table3","table4"],
+    "model3":["table1","table2","table3","table4"],
+    "model4":["table1","table2","table3","table4"],
+    "model5":["table1","table2","table3","table4"]
+  }
+}
+

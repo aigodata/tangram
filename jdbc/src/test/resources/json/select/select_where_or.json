@@ -1,0 +1,4 @@
+{
+  "select":"select_table",
+  "where":["id=1", { "or":"name=abc" }]
+}

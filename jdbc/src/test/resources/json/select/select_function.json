@@ -1,0 +1,4 @@
+{
+  "select":"select_table",
+  "fields":["id", "length(name)", "length(name) as len"]
+}
