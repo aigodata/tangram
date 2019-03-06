@@ -167,6 +167,9 @@ public abstract class AbstractTranslator implements Translator {
 	 */
 	private void readTablesConfig(String tablesConfigPath) {
 		URL tablesConfigURL = Thread.currentThread().getContextClassLoader().getResource(tablesConfigPath);
+		if (tablesConfigURL == null) {
+			return;
+		}
 		File tablesConfigFile;
 		try {
 			tablesConfigFile = new File(tablesConfigURL.toURI());
