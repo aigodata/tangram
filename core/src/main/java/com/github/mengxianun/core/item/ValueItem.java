@@ -29,4 +29,8 @@ public class ValueItem extends Item {
 		this.value = value;
 	}
 
+	public Object getRealValue() {
+		return getRealValue(column, value);
+	}
+
 }

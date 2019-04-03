@@ -77,4 +77,8 @@ public class FilterItem extends Item {
 		this.subFilterItems = subFilterItems;
 	}
 
+	public Object getRealValue() {
+		return getRealValue(columnItem.getColumn(), value);
+	}
+
 }

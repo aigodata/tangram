@@ -19,7 +19,9 @@ import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.ResultStatus;
 import com.github.mengxianun.core.attributes.ResultAttributes;
 import com.github.mengxianun.core.json.JsonAttributes;
+import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.DefaultColumn;
+import com.github.mengxianun.core.schema.DefaultColumnType;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Schema;
@@ -104,15 +106,17 @@ public class JdbcDataContext extends AbstractDataContext {
 				// String columnSchema = columnsResultSet.getString(2);
 				String columnTable = columnsResultSet.getString(3);
 				String columnName = columnsResultSet.getString(4);
-				// String columnDataType = columnsResultSet.getString(5);
-				// String columnTypeName = columnsResultSet.getString(6);
+				String columnDataType = columnsResultSet.getString(5);
+				String columnTypeName = columnsResultSet.getString(6);
 				Integer columnSize = columnsResultSet.getInt(7);
 				Boolean columnNullable = columnsResultSet.getBoolean(11);
 				String columnRemarks = columnsResultSet.getString(12);
 				// Boolean isAutoincrement = columnsResultSet.getBoolean(23);
 
 				DefaultTable table = (DefaultTable) metadata.getTable(defaultSchemaName, columnTable);
-				table.addColumn(new DefaultColumn(columnName, table, columnNullable, columnRemarks, columnSize));
+				ColumnType columnType = new DefaultColumnType(Integer.parseInt(columnDataType), columnTypeName);
+				table.addColumn(
+						new DefaultColumn(table, columnType, columnName, columnNullable, columnRemarks, columnSize));
 			}
 
 		} catch (SQLException e) {

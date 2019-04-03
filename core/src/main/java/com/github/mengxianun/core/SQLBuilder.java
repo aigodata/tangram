@@ -298,7 +298,7 @@ public class SQLBuilder {
 		ColumnItem columnItem = filterItem.getColumnItem();
 		filterBuilder.append(spliceColumn(columnItem, assignTableAlias));
 		filterBuilder.append(" ");
-		Object value = filterItem.getValue();
+		Object value = filterItem.getRealValue();
 		Operator operator = filterItem.getOperator();
 		switch (operator) {
 		case EQUAL:
@@ -386,11 +386,12 @@ public class SQLBuilder {
 		if (limitItem == null) {
 			return "";
 		}
-		StringBuilder limitBuilder = new StringBuilder(PREFIX_LIMIT);
-		limitBuilder.append("?, ?");
-		params.add(limitItem.getStart());
 		params.add(limitItem.getLimit());
-		return limitString = limitBuilder.toString();
+		params.add(limitItem.getStart());
+		//		StringBuilder limitBuilder = new StringBuilder(PREFIX_LIMIT);
+		//		limitBuilder.append("?, ?");
+		//		return limitString = limitBuilder.toString();
+		return limitString = " LIMIT ? OFFSET ?";
 	}
 
 	public String toInsertTable() {
@@ -414,7 +415,7 @@ public class SQLBuilder {
 				tempValuesBuilder.append(", ");
 			}
 			Column column = valueItem.getColumn();
-			Object value = valueItem.getValue();
+			Object value = valueItem.getRealValue();
 			tempColumnsBuilder.append(quote(column.getName()));
 			tempValuesBuilder.append("?");
 			params.add(value);
@@ -442,7 +443,7 @@ public class SQLBuilder {
 				valuesBuilder.append(", ");
 			}
 			Column column = valueItem.getColumn();
-			Object value = valueItem.getValue();
+			Object value = valueItem.getRealValue();
 			valuesBuilder.append(quote(column.getName())).append(" = ?");
 			params.add(value);
 			comma = true;

@@ -79,7 +79,7 @@ public class ElasticsearchDataContext extends JdbcDataContext {
 			JsonObject typeObject = mappings.getAsJsonObject(type);
 			JsonObject columns = typeObject.getAsJsonObject("properties");
 			for (String columnName : columns.keySet()) {
-				DefaultColumn column = new DefaultColumn(columnName, table);
+				DefaultColumn column = new DefaultColumn(table, columnName);
 				table.addColumn(column);
 			}
 		}

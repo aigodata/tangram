@@ -5,8 +5,9 @@ import com.google.gson.JsonObject;
 public class DefaultColumn implements Column {
 
 	private static final long serialVersionUID = 1L;
-	private String name;
 	private Table table;
+	private ColumnType columnType;
+	private String name;
 	private Boolean nullable;
 	private String remarks;
 	private Integer columnSize;
@@ -21,14 +22,16 @@ public class DefaultColumn implements Column {
 		this.name = name;
 	}
 
-	public DefaultColumn(String name, Table table) {
+	public DefaultColumn(Table table, String name) {
 		this.name = name;
 		this.table = table;
 	}
 
-	public DefaultColumn(String name, Table table, Boolean nullable, String remarks, Integer columnSize) {
-		this.name = name;
+	public DefaultColumn(Table table, ColumnType columnType, String name, Boolean nullable, String remarks,
+			Integer columnSize) {
 		this.table = table;
+		this.columnType = columnType;
+		this.name = name;
 		this.nullable = nullable;
 		this.remarks = remarks;
 		this.columnSize = columnSize;
@@ -42,6 +45,11 @@ public class DefaultColumn implements Column {
 	@Override
 	public Table getTable() {
 		return table;
+	}
+
+	@Override
+	public ColumnType getType() {
+		return columnType;
 	}
 
 	@Override

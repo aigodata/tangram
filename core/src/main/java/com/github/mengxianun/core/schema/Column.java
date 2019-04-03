@@ -8,6 +8,8 @@ public interface Column extends Serializable, Name {
 
 	public Table getTable();
 
+	public ColumnType getType();
+
 	public Boolean isNullable();
 
 	public String getRemarks();
