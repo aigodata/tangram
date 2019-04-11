@@ -254,7 +254,7 @@ public class DataRenderer {
 	public void addColumnValue(JsonObject record, Column column, String columnKey, JsonElement value) {
 		if (value == null || value.isJsonNull()) {
 			record.addProperty(columnKey, (String) null);
-		} else {
+		} else if (value.isJsonPrimitive()) {
 			JsonPrimitive primitive = value.getAsJsonPrimitive();
 			if (primitive.isNumber()) {
 				Number number = value.getAsNumber();
@@ -278,6 +278,9 @@ public class DataRenderer {
 			} else {
 				record.addProperty(columnKey, render(column, primitive.getAsString()));
 			}
+		} else {
+			String strVal = value.getAsJsonObject().get("value").getAsString();
+			record.add(columnKey, new com.google.gson.JsonParser().parse(strVal));
 		}
 	}
 
