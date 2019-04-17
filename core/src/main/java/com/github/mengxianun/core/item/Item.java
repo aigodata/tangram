@@ -37,13 +37,8 @@ public abstract class Item implements Serializable {
 				} else if (columnType.isTimestamp()) {
 					return Timestamp.valueOf(value.toString());
 				}
-				//				try {
-				//					return DateFormat.getDateInstance().parse(value.toString());
-				//				} catch (ParseException e) {
-				//					// TODO Auto-generated catch block
-				//					e.printStackTrace();
-				//				}
-				//				return LocalDateTime.parse(value.toString());
+			} else if (columnType.isBoolean()) {
+				return Boolean.parseBoolean(value.toString());
 			}
 		}
 		return value;

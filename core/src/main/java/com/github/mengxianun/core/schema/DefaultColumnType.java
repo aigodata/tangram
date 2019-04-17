@@ -24,8 +24,7 @@ public class DefaultColumnType implements ColumnType {
 
 	@Override
 	public boolean isBoolean() {
-		// TODO Auto-generated method stub
-		return false;
+		return type == Types.BIT || type == Types.BOOLEAN;
 	}
 
 	@Override
