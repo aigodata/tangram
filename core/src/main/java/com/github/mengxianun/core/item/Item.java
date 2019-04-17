@@ -19,6 +19,9 @@ public abstract class Item implements Serializable {
 		if (value == null) {
 			return null;
 		}
+		if (value.getClass().isArray()) {
+			return getRealValueInArray(column, value);
+		}
 		if (column != null) {
 			ColumnType columnType = column.getType();
 			if (columnType.isLiteral()) {
@@ -40,6 +43,23 @@ public abstract class Item implements Serializable {
 			} else if (columnType.isBoolean()) {
 				return Boolean.parseBoolean(value.toString());
 			}
+		}
+		return value;
+	}
+
+	public Object getRealValueInArray(Column column, Object value) {
+		if (value == null) {
+			return null;
+		}
+		if (column != null) {
+			// 原始值
+			Object[] ogValueArray = (Object[]) value;
+			// 实际值
+			Object[] realValueArray = new Object[ogValueArray.length];
+			for (int i = 0; i < ogValueArray.length; i++) {
+				realValueArray[i] = getRealValue(column, ogValueArray[i]);
+			}
+			return realValueArray;
 		}
 		return value;
 	}
