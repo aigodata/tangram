@@ -2,6 +2,7 @@ package com.github.mengxianun.jdbc;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import com.github.mengxianun.core.AbstractDataContext;
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.ResultStatus;
@@ -67,29 +69,42 @@ public class JdbcDataContext extends AbstractDataContext {
 		List<Schema> schemas = new ArrayList<>();
 		metadata.setSchemas(schemas);
 		// source.add(metadata.SCHEMAS, schemas);
+		String defaultCatalogName = null;
+		String defaultSchemaName = null;
+		// 获取 Catalog 和 Schema
+		DruidDataSource druidDataSource = (DruidDataSource) dataSource;
+		String url = druidDataSource.getUrl();
+		String username = druidDataSource.getUsername();
+		String password = druidDataSource.getPassword();
+		try (Connection connection = DriverManager.getConnection(url, username, password)) {
+			defaultCatalogName = connection.getCatalog();
+			defaultSchemaName = connection.getSchema();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+		}
+
 		try (final Connection connection = getConnection()) {
 			DatabaseMetaData databasemetadata = connection.getMetaData();
 			// String databaseProductName = databasemetadata.getDatabaseProductName();
 			// String databaseProductVersion = databasemetadata.getDatabaseProductVersion();
 			// String url = databasemetadata.getURL();
 			String identifierQuoteString = databasemetadata.getIdentifierQuoteString();
-			String defaultSchemaName = connection.getCatalog();
 			metadata.setIdentifierQuoteString(identifierQuoteString);
-			metadata.setDefaultSchemaName(defaultSchemaName);
+			metadata.setDefaultSchemaName(defaultCatalogName);
 
 			// schema metadata
 			ResultSet catalogsResultSet = databasemetadata.getCatalogs();
 			while (catalogsResultSet.next()) {
-				String schemaName = catalogsResultSet.getString(1);
-				if ("information_schema".equals(schemaName)) {
+				String catalogName = catalogsResultSet.getString(1);
+				if ("information_schema".equals(catalogName)) {
 					continue;
 				}
-				schemas.add(new DefaultSchema(schemaName));
+				schemas.add(new DefaultSchema(catalogName));
 			}
 
 			// table metadata
-			DefaultSchema defaultSchema = (DefaultSchema) metadata.getSchema(defaultSchemaName);
-			ResultSet tablesResultSet = databasemetadata.getTables(defaultSchemaName, null, "%", null);
+			DefaultSchema defaultSchema = (DefaultSchema) metadata.getSchema(defaultCatalogName);
+			ResultSet tablesResultSet = databasemetadata.getTables(defaultCatalogName, defaultSchemaName, "%", null);
 			while (tablesResultSet.next()) {
 				// String tableCatalog = tablesResultSet.getString(1);
 				// String tableSchema = tablesResultSet.getString(2);
@@ -100,7 +115,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			}
 
 			// column metadata
-			ResultSet columnsResultSet = databasemetadata.getColumns(defaultSchemaName, null, "%", null);
+			ResultSet columnsResultSet = databasemetadata.getColumns(defaultCatalogName, defaultSchemaName, "%", null);
 			while (columnsResultSet.next()) {
 				// String columnCatalog = columnsResultSet.getString(1);
 				// String columnSchema = columnsResultSet.getString(2);
@@ -113,7 +128,7 @@ public class JdbcDataContext extends AbstractDataContext {
 				String columnRemarks = columnsResultSet.getString(12);
 				// Boolean isAutoincrement = columnsResultSet.getBoolean(23);
 
-				DefaultTable table = (DefaultTable) metadata.getTable(defaultSchemaName, columnTable);
+				DefaultTable table = (DefaultTable) metadata.getTable(defaultCatalogName, columnTable);
 				ColumnType columnType = new DefaultColumnType(Integer.parseInt(columnDataType), columnTypeName);
 				table.addColumn(
 						new DefaultColumn(table, columnType, columnName, columnNullable, columnRemarks, columnSize));
