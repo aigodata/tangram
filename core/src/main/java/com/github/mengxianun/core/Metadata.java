@@ -43,6 +43,8 @@ public class Metadata {
 
 	private List<Schema> schemas;
 
+	private String defaultCatalogName;
+
 	private String defaultSchemaName;
 
 	private String identifierQuoteString = "";
@@ -147,6 +149,14 @@ public class Metadata {
 			return null;
 		}
 		return table.getColumnByName(columnName);
+	}
+
+	public String getDefaultCatalogName() {
+		return defaultCatalogName;
+	}
+
+	public void setDefaultCatalogName(String defaultCatalogName) {
+		this.defaultCatalogName = defaultCatalogName;
 	}
 
 	public String getDefaultSchemaName() {
