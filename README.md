@@ -39,6 +39,7 @@ Translator translator = new DefaultTranslator(configJsonPath);
 DataResultSet dataResultSet = translator.translate(requestJson);
 if (dataResultSet.succeed()) {
 	Object data = dataResultSet.getData();
+	// 操作...
 }
 ```
 
@@ -69,7 +70,7 @@ response
 			"blue"
 		],
 		"dead": false,
-		"hobby_id": null
+		"hobby_id": 1
 	}
 ]
 ```
