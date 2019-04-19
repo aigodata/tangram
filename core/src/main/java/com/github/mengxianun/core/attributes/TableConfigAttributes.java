@@ -13,5 +13,7 @@ public interface TableConfigAttributes {
 	String ASSOCIATION_TARGET_TABLE = "target_table";
 	String ASSOCIATION_TARGET_COLUMN = "target_column";
 	String ASSOCIATION_TYPE = "type";
+	// 列忽略, 返回数据不包含该列
+	String COLUMN_IGNORE = "ignore";
 
 }

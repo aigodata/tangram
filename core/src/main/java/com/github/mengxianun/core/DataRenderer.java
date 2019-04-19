@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.github.mengxianun.core.attributes.AssociationType;
+import com.github.mengxianun.core.attributes.TableConfigAttributes;
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.JoinColumnItem;
 import com.github.mengxianun.core.item.JoinItem;
@@ -252,6 +253,13 @@ public class DataRenderer {
 	}
 
 	public void addColumnValue(JsonObject record, Column column, String columnKey, JsonElement value) {
+		if (column != null) {
+			JsonObject config = column.getConfig();
+			if (config.has(TableConfigAttributes.COLUMN_IGNORE)
+					&& config.get(TableConfigAttributes.COLUMN_IGNORE).getAsBoolean()) { // 列忽略
+				return;
+			}
+		}
 		if (value == null || value.isJsonNull()) {
 			record.addProperty(columnKey, (String) null);
 		} else if (value.isJsonPrimitive()) {
