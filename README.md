@@ -533,10 +533,10 @@ sys_user.json
 		},
 		"user_id": {
 			"association": {
-                "target_table": "user",
-                "target_column": "id",
-                "type": "1_n"
-            }
+				"target_table": "user",
+				"target_column": "id",
+				"type": "1_n"
+			}
 		}
 	}
 }
