@@ -55,6 +55,7 @@ public class SQLBuilder {
 	private Dialect dialect;
 	protected String sql;
 	protected List<Object> params = new ArrayList<>();
+	protected List<Object> whereParams = new ArrayList<>();
 	// 关联分页查询的情况, SQL 语句构建做特殊处理
 	protected boolean joinLimit;
 	protected List<FilterItem> joinLimitFilterItems = new ArrayList<>();
@@ -312,17 +313,22 @@ public class SQLBuilder {
 		case NOT_LIKE:
 			filterBuilder.append(operator.sql()).append(" ?");
 			params.add(value);
+			whereParams.add(value);
 			break;
 		case IN:
 		case NOT_IN:
 			Object[] inValue = (Object[]) value;
 			filterBuilder.append(operator.sql()).append(" (?").append(Strings.repeat(",?", inValue.length - 1))
 					.append(")");
-			params.addAll(Arrays.asList(inValue));
+			List<Object> inValueList = Arrays.asList(inValue);
+			params.addAll(inValueList);
+			whereParams.addAll(inValueList);
 			break;
 		case BETWEEN:
 			filterBuilder.append("between ? and ?");
-			params.addAll(Arrays.asList((Object[]) value));
+			List<Object> betweenValueList = Arrays.asList((Object[]) value);
+			params.addAll(betweenValueList);
+			whereParams.addAll(betweenValueList);
 			break;
 
 		default:
@@ -580,10 +586,22 @@ public class SQLBuilder {
 		Table mainTable = mainTableItem.getTable();
 		String tablePrefix = Strings.isNullOrEmpty(mainTableItem.getAlias()) ? mainTable.getName()
 				: mainTableItem.getAlias();
-		if (dialect.tableAliasEnabled()) {
-			columnsBuilder.append(tablePrefix).append(".");
+		boolean comma = false;
+		for (Column column : mainTable.getColumns()) {
+			if (column.getType().isJson()) { // 跳过 JSON 类型, 无法与 Distinct 一起使用
+				continue;
+			}
+			if (comma) {
+				columnsBuilder.append(", ");
+			}
+			if (dialect.tableAliasEnabled()) {
+				columnsBuilder.append(tablePrefix).append(".");
+			}
+			columnsBuilder.append(column.getName());
+			comma = true;
 		}
-		String mainColumnString = columnsBuilder.append(COLUMN_ALL).toString();
+
+		String mainColumnString = columnsBuilder.toString();
 		StringBuilder originalBuilder = new StringBuilder();
 		// 原始SQL
 		// 1. 只查询主表的列
@@ -603,8 +621,7 @@ public class SQLBuilder {
 	}
 
 	public List<Object> countParams() {
-		// 去掉最后的分页参数
-		return new ArrayList<>(params).subList(0, params.size() - 2);
+		return whereParams;
 	}
 
 	public String getSql() {

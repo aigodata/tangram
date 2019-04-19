@@ -29,4 +29,6 @@ public interface ColumnType {
 
 	public boolean isLargeObject();
 
+	public boolean isJson();
+
 }

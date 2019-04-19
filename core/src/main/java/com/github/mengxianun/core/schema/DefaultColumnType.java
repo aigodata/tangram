@@ -82,4 +82,9 @@ public class DefaultColumnType implements ColumnType {
 		return false;
 	}
 
+	@Override
+	public boolean isJson() {
+		return type == Types.OTHER || "json".equals(name);
+	}
+
 }
