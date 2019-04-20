@@ -454,7 +454,12 @@ public class SQLBuilder {
 			}
 			Column column = valueItem.getColumn();
 			Object value = valueItem.getRealValue();
-			valuesBuilder.append(quote(column.getName())).append(" = ?");
+			valuesBuilder.append(quote(column.getName())).append(" = ");
+			if (column.getType().isJson()) {
+				valuesBuilder.append(dialect.getJsonPlaceholder());
+			} else {
+				valuesBuilder.append("?");
+			}
 			params.add(value);
 			comma = true;
 		}
