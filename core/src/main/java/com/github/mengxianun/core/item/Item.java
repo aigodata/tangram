@@ -30,7 +30,7 @@ public abstract class Item implements Serializable {
 				try {
 					return NumberFormat.getInstance().parse(value.toString());
 				} catch (ParseException e) {
-					// TODO Auto-generated catch block
+					// ignore
 				}
 			} else if (columnType.isTimeBased()) {
 				if (columnType.isDate()) {
