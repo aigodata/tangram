@@ -267,7 +267,7 @@ public class JsonParser {
 		}
 		if (table == null) {
 			if (dataContext.getDialect().validTableExists()) {
-				throw new DataException(ResultStatus.DATASOURCE_TABLE_NOT_EXIST.fill(tableName));
+				throw new DataException(ResultStatus.DATASOURCE_TABLE_NOT_EXIST, tableName);
 			}
 			tableItem = new TableItem(tableName, alias, customAlias);
 		} else {
@@ -313,7 +313,7 @@ public class JsonParser {
 	public JoinElement parseJoin(String joinTableName, JoinType joinType) {
 		Table joinTable = dataContext.getTable(joinTableName);
 		if (joinTable == null) {
-			throw new DataException(ResultStatus.DATASOURCE_TABLE_NOT_EXIST.fill(joinTableName));
+			throw new DataException(ResultStatus.DATASOURCE_TABLE_NOT_EXIST, joinTableName);
 		}
 		TableItem joinTableItem = new TableItem(joinTable, getTableAlias(joinTable), false);
 		return new JoinElement(joinTableItem, joinType);
@@ -779,7 +779,7 @@ public class JsonParser {
 				Table table = tableItem.getTable();
 				List<Relationship> relationships = table.getCrossRelationships(column.getTable());
 				if (relationships.isEmpty()) {
-					throw new JsonDataException(ResultStatus.DATASOURCE_RELATIONSHIP_NOT_FOUND.fill(table.getName()));
+					throw new JsonDataException(ResultStatus.DATASOURCE_RELATIONSHIP_NOT_FOUND, table.getName());
 				}
 				for (int i = 0; i < relationships.size(); i++) {
 					Relationship relationship = relationships.get(i);
@@ -1053,7 +1053,14 @@ public class JsonParser {
 				Column column = findColumn(columnName);
 				if (column != null) {
 					JsonElement valueElement = values.get(columnName);
-					String value = valueElement.isJsonNull() ? null : valueElement.getAsString();
+					String value = null;
+					if (valueElement.isJsonNull()) {
+						//
+					} else if (valueElement.isJsonPrimitive()) {
+						value = valueElement.getAsString();
+					} else {
+						value = valueElement.toString();
+					}
 					action.addValueItem(new ValueItem(column, value));
 				}
 			}
