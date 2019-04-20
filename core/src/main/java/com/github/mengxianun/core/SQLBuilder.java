@@ -423,7 +423,11 @@ public class SQLBuilder {
 			Column column = valueItem.getColumn();
 			Object value = valueItem.getRealValue();
 			tempColumnsBuilder.append(quote(column.getName()));
-			tempValuesBuilder.append("?");
+			if (column.getType().isJson()) {
+				tempValuesBuilder.append(dialect.getJsonPlaceholder());
+			} else {
+				tempValuesBuilder.append("?");
+			}
 			params.add(value);
 			comma = true;
 		}
