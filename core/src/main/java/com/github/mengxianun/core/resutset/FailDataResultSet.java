@@ -17,4 +17,8 @@ public class FailDataResultSet extends AbstractDataResultSet {
 		super(resultStatus);
 	}
 
+	public FailDataResultSet(ResultStatus resultStatus, Object... args) {
+		super(resultStatus.code(), resultStatus.fill(args));
+	}
+
 }

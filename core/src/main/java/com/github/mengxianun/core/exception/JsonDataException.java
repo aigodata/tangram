@@ -20,6 +20,10 @@ public class JsonDataException extends DataException {
 		super(resultStatus);
 	}
 
+	public JsonDataException(ResultStatus resultStatus, Object... args) {
+		super(resultStatus, args);
+	}
+
 	public JsonDataException(String message, ResultStatus resultStatus) {
 		super(message, resultStatus);
 	}

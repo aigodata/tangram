@@ -79,9 +79,8 @@ public enum ResultStatus {
 		return this.message;
 	}
 
-	public ResultStatus fill(Object... args) {
-		this.message = String.format(this.message, args);
-		return this;
+	public String fill(Object... args) {
+		return String.format(this.message, args);
 	}
 
 }

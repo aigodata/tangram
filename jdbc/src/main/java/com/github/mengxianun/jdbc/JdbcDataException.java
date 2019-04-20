@@ -31,6 +31,10 @@ public class JdbcDataException extends DataException {
 		super(resultStatus);
 	}
 
+	public JdbcDataException(ResultStatus resultStatus, Object... args) {
+		super(resultStatus, args);
+	}
+
 	public JdbcDataException(String message, ResultStatus resultStatus) {
 		super(message, resultStatus);
 	}

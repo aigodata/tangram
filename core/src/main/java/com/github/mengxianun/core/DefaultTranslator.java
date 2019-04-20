@@ -76,8 +76,7 @@ public class DefaultTranslator extends AbstractTranslator {
 			return new FailDataResultSet(ResultStatus.JSON_FORMAT_ERROR);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			return new FailDataResultSet(ResultStatus.SYSTEM_ERROR.code(),
-					ResultStatus.SYSTEM_ERROR.fill(e.getMessage()).message());
+			return new FailDataResultSet(ResultStatus.SYSTEM_ERROR, e.getMessage());
 		}
 	}
 

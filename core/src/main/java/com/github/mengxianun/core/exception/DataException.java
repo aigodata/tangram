@@ -33,6 +33,11 @@ public class DataException extends RuntimeException {
 		this.code = resultStatus.code();
 	}
 
+	public DataException(ResultStatus resultStatus, Object... args) {
+		super(resultStatus.fill(args));
+		this.code = resultStatus.code();
+	}
+
 	public DataException(String message, ResultStatus resultStatus) {
 		super(message);
 		this.code = resultStatus.code();

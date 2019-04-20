@@ -136,7 +136,7 @@ public class JdbcDataContext extends AbstractDataContext {
 
 		} catch (SQLException e) {
 			logger.error("Initialize metadata failed.", e);
-			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION.fill(e.getMessage()));
+			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 		}
 	}
 
@@ -154,7 +154,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			}
 		} catch (SQLException e) {
 			logger.error("Start new transaction failed.", e);
-			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION.fill(e.getMessage()));
+			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 		}
 	}
 
@@ -165,7 +165,7 @@ public class JdbcDataContext extends AbstractDataContext {
 				return dataSource.getConnection();
 			} catch (SQLException e) {
 				logger.error("Could not establish connection", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION.fill(e.getMessage()));
+				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 			}
 		} else {
 			return conn;
@@ -182,7 +182,7 @@ public class JdbcDataContext extends AbstractDataContext {
 				}
 			} catch (SQLException e) {
 				logger.error("Transaction commit failed.", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION.fill(e.getMessage()));
+				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 			}
 		}
 	}
@@ -197,7 +197,7 @@ public class JdbcDataContext extends AbstractDataContext {
 				}
 			} catch (SQLException e) {
 				logger.error("Transaction rollback failed.", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION.fill(e.getMessage()));
+				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 			}
 		}
 	}
@@ -212,7 +212,7 @@ public class JdbcDataContext extends AbstractDataContext {
 				}
 			} catch (SQLException e) {
 				logger.error("Transaction close failed.", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION.fill(e.getMessage()));
+				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 			} finally {
 				threadLocalConnection.remove();
 				closeConnection.set(true);
@@ -273,7 +273,7 @@ public class JdbcDataContext extends AbstractDataContext {
 				realReasion = nextException.getCause();
 			}
 			logger.error(ResultStatus.DATASOURCE_SQL_FAILED.message(), realReasion);
-			throw new JdbcDataException(ResultStatus.DATASOURCE_SQL_FAILED.fill(realReasion.getMessage()));
+			throw new JdbcDataException(ResultStatus.DATASOURCE_SQL_FAILED, realReasion.getMessage());
 		}
 		if (logger.isDebugEnabled()) {
 			logger.debug("SQL: {}", sql);
