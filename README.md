@@ -47,7 +47,7 @@ request
 
 ```
 {
-	"detail":"sys_user", // key:操作类型, value:数据库表
+	"select":"sys_user", // key:操作类型, value:数据库表
 	"fields":["*"], // 操作字段
 	"where":"id=1"  // 操作条件
 }
