@@ -22,6 +22,7 @@ import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.mengxianun.core.attributes.AssociationType;
 import com.github.mengxianun.core.attributes.ConfigAttributes;
 import com.github.mengxianun.core.attributes.DataSourceAttributes;
 import com.github.mengxianun.core.attributes.TableConfigAttributes;
@@ -228,6 +229,27 @@ public abstract class AbstractTranslator implements Translator {
 					if (column != null) {
 						JsonObject columnConfig = columnsConfig.get(columnName).getAsJsonObject();
 						column.setConfig(columnConfig);
+						// 添加 Relationship
+						if (columnConfig.has(TableConfigAttributes.COLUMN_ASSOCIATION)) {
+							JsonObject associationConfig = columnConfig
+									.getAsJsonObject(TableConfigAttributes.COLUMN_ASSOCIATION);
+							String targetTableName = associationConfig
+									.getAsJsonPrimitive(TableConfigAttributes.ASSOCIATION_TARGET_TABLE).getAsString();
+							String targetColumnName = associationConfig
+									.getAsJsonPrimitive(TableConfigAttributes.ASSOCIATION_TARGET_COLUMN).getAsString();
+							AssociationType associationType = associationConfig
+									.has(TableConfigAttributes.ASSOCIATION_TYPE)
+											? AssociationType.from(associationConfig
+													.getAsJsonPrimitive(TableConfigAttributes.ASSOCIATION_TYPE)
+													.getAsString())
+											: AssociationType.ONE_TO_ONE;
+							Column targetColumn = dataContext.getColumn(targetTableName, targetColumnName);
+							// 添加主表对外表的关联
+							dataContext.addRelationship(column, targetColumn, associationType);
+							// 添加外表对主表的关联
+							dataContext.addRelationship(targetColumn, column,
+									associationType.reverse());
+						}
 					}
 				}
 			}

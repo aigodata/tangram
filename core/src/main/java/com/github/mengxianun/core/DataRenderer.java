@@ -2,6 +2,7 @@ package com.github.mengxianun.core;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import com.github.mengxianun.core.attributes.AssociationType;
@@ -10,8 +11,10 @@ import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.JoinColumnItem;
 import com.github.mengxianun.core.item.JoinItem;
 import com.github.mengxianun.core.schema.Column;
+import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -75,11 +78,25 @@ public class DataRenderer {
 							addColumnValue(joinTableObject, columnItem, record, action);
 							continue;
 						}
-						List<Table> parentTables = joinColumnItem.getParentTables();
+						/*
+						 * 待优化
+						 */
+						//						List<Table> parentTables = joinColumnItem.getParentTables();
+						Table mainTable = action.getTableItems().get(0).getTable();
+						Set<Relationship> relationships = action.getDataContext().getRelationships(mainTable,
+								joinTable);
+						// 构建join表上层表关系
+						List<Table> parentTables = Lists.newArrayList(mainTable);
+						relationships.stream().skip(relationships.size())
+								.forEach(e -> parentTables.add(e.getForeignColumn().getTable()));
 						// -- 构建 join 表上层结构
 						for (int i = 0; i < parentTables.size() - 1; i++) {
 							// 父级表, 第一个元素是主表, 跳过
 							Table parentTable = parentTables.get(i + 1);
+							// 如果该关联表不是请求中指定的关联表, 不构建关系结构
+							if (!action.getJoinTables().contains(parentTable)) {
+								continue;
+							}
 							// 已经构建了该 join 表的结构, 直接获取
 							if (uniqueRecord.has(parentTable.getName())) {
 								JsonElement parentElement = uniqueRecord.get(parentTable.getName());
@@ -91,14 +108,18 @@ public class DataRenderer {
 									currentTableObject = parentElement.getAsJsonObject();
 								}
 							} else {
-								currentTableObject = createJoinStructure(currentTableObject, parentTables.get(i),
-										parentTables.get(i + 1));
+								AssociationType associationType = action.getDataContext()
+										.getAssociationType(parentTables.get(i), parentTables.get(i + 1));
+								currentTableObject = createJoinStructure(currentTableObject, parentTables.get(i + 1),
+										associationType);
 							}
 						}
 						// -- 构建 join 表结构
 						// join 表的父级表
 						Table parentTable = parentTables.get(parentTables.size() - 1);
-						currentTableObject = createJoinStructure(currentTableObject, parentTable, joinTable);
+						AssociationType associationType = action.getDataContext().getAssociationType(parentTable,
+								joinTable);
+						currentTableObject = createJoinStructure(currentTableObject, joinTable, associationType);
 						// 记录出现过的 join 表
 						existJoinTables.add(joinTable.getName(), currentTableObject);
 
@@ -179,16 +200,29 @@ public class DataRenderer {
 						addColumnValue(joinTableObject, columnItem, data, action);
 						continue;
 					}
-					List<Table> parentTables = joinColumnItem.getParentTables();
+					/*
+					 * 待优化
+					 */
+					//					List<Table> parentTables = joinColumnItem.getParentTables();
+					Table mainTable = action.getTableItems().get(0).getTable();
+					Set<Relationship> relationships = action.getDataContext().getRelationships(mainTable, joinTable);
+					// 构建join表上层表关系
+					List<Table> parentTables = Lists.newArrayList(mainTable);
+					relationships.stream().skip(relationships.size())
+							.forEach(e -> parentTables.add(e.getForeignColumn().getTable()));
 					// -- 构建 join 表上层结构
 					for (int i = 0; i < parentTables.size() - 1; i++) {
-						currentTableObject = createJoinStructure(currentTableObject, parentTables.get(i),
-								parentTables.get(i + 1));
+						AssociationType associationType = action.getDataContext()
+								.getAssociationType(parentTables.get(i), parentTables.get(i + 1));
+						currentTableObject = createJoinStructure(currentTableObject, parentTables.get(i + 1),
+								associationType);
 					}
 					// -- 构建 join 表结构
 					// join 表的父级表
 					Table parentTable = parentTables.get(parentTables.size() - 1);
-					currentTableObject = createJoinStructure(currentTableObject, parentTable, joinTable);
+					AssociationType associationType = action.getDataContext().getAssociationType(parentTable,
+							joinTable);
+					currentTableObject = createJoinStructure(currentTableObject, joinTable, associationType);
 					// 记录出现过的 join 表
 					existJoinTables.add(joinTable.getName(), currentTableObject);
 
@@ -323,8 +357,9 @@ public class DataRenderer {
 		return value;
 	}
 
-	public JsonObject createJoinStructure(JsonObject currentTableObject, Table parentTable, Table joinTable) {
-		return createJoinStructure(currentTableObject, joinTable.getName(), parentTable.getAssociationType(joinTable));
+	public JsonObject createJoinStructure(JsonObject currentTableObject, Table joinTable,
+			AssociationType associationType) {
+		return createJoinStructure(currentTableObject, joinTable.getName(), associationType);
 	}
 
 	public JsonObject createJoinStructure(JsonObject currentTableObject, String tableName,
