@@ -2,10 +2,14 @@ package com.github.mengxianun.core;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 
 import com.github.mengxianun.core.attributes.AssociationType;
 import com.github.mengxianun.core.exception.DataException;
@@ -29,7 +33,6 @@ import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -54,6 +57,15 @@ public class JsonParser {
 	private String nativeContent;
 	// 表关联关系, 内部 List Table 从左到右依次关联. 不包含主表
 	private List<List<Table>> tempJoins = new ArrayList<>();
+	// 主表的TableItems
+	private Map<Table, TableItem> tempTableItems = new LinkedHashMap<>();
+	// Join表的TableItems
+	private Map<Table, TableItem> tempJoinTableItems = new LinkedHashMap<>();
+	// 关联表的TableItems(未出现在请求中的关联表)
+	// 查询为 Select A, Join C, 实际关系为A-B-C, 所以这里存储的是B
+	private Map<Table, TableItem> tempRelationTableItems = new LinkedHashMap<>();
+	//
+	private Map<Column, ColumnItem> tempColumnItems = new LinkedHashMap<>();
 
 	public JsonParser(String json) {
 		this.jsonData = new com.google.gson.JsonParser().parse(json).getAsJsonObject();
@@ -180,6 +192,7 @@ public class JsonParser {
 		}
 
 		parseResult();
+		finish();
 
 		action.setOperation(operation);
 		action.setDataContext(dataContext);
@@ -277,6 +290,8 @@ public class JsonParser {
 		if (isInsert() || isUpdate() || isDelete()) {
 			tableItem.setAlias(null);
 		}
+		// 保存临时 Item
+		tempTableItems.put(table, tableItem);
 		return tableItem;
 	}
 
@@ -291,7 +306,8 @@ public class JsonParser {
 		} else {
 			joinElements.add(parseJoinTable(joinsElement));
 		}
-		createJoin(joinElements);
+		//		createJoin(joinElements);
+		buildJoin(joinElements);
 	}
 
 	public JoinElement parseJoinTable(JsonElement joinElement) {
@@ -316,6 +332,8 @@ public class JsonParser {
 			throw new DataException(ResultStatus.DATASOURCE_TABLE_NOT_EXIST, joinTableName);
 		}
 		TableItem joinTableItem = new TableItem(joinTable, getTableAlias(joinTable), false);
+		// 保存临时 Item
+		tempJoinTableItems.put(joinTable, joinTableItem);
 		return new JoinElement(joinTableItem, joinType);
 	}
 
@@ -324,133 +342,45 @@ public class JsonParser {
 	 * 
 	 * @param joinElements
 	 */
-	public void createJoin(List<JoinElement> joinElements) {
+	public void buildJoin(List<JoinElement> joinElements) {
 		TableItem tableItem = action.getTableItems().get(0);
 		Table table = tableItem.getTable();
-		// 关联主表的 join 表
-		List<JoinElement> joinsInMainTable = new ArrayList<>();
+		// 查找关联关系
+		Set<Relationship> relationships = new LinkedHashSet<>();
 		for (JoinElement joinElement : joinElements) {
-			JoinType joinType = joinElement.getJoinType();
-			TableItem joinTableItem = joinElement.getJoinTableItem();
-			Table joinTable = joinTableItem.getTable();
+			Table joinTable = joinElement.getJoinTableItem().getTable();
 			// 1. 主表关联 join 表 (数据表配置文件中的配置)
-			Relationship relationship = table.getRelationship(joinTable);
-			if (relationship != null) {
-				addJoinItem(relationship, tableItem, joinTableItem, joinType);
-				joinsInMainTable.add(joinElement);
-				tempJoins.add(Lists.newArrayList(table, joinTable));
-			} else {
-				// 2. join 表关联主表 (数据表配置文件中的配置)
-				relationship = joinTable.getRelationship(table);
-				if (relationship != null) {
-					// 这里主表和 join 表调换, 因为操作是以主表为主
-					addJoinItemInOpposite(relationship, tableItem, joinTableItem, joinType);
-					joinsInMainTable.add(joinElement);
-					tempJoins.add(Lists.newArrayList(table, joinTable));
+			Set<Relationship> tempRelationships = dataContext.getRelationships(table, joinTable);
+			if (tempRelationships.isEmpty()) {
+				throw new DataException(String.format("Association relation for the join table [%s] was not found",
+						joinTable.getName()));
+			}
+			relationships.addAll(tempRelationships);
+		}
+		for (Relationship relationship : relationships) {
+			Column primaryColumn = relationship.getPrimaryColumn();
+			Column foreignColumn = relationship.getForeignColumn();
+
+			JoinType joinType = null;
+			for (JoinElement joinElement : joinElements) {
+				if (joinElement.getJoinTableItem().getTable() == foreignColumn.getTable()) {
+					joinType = joinElement.getJoinType();
+					break;
 				}
 			}
-		}
-		joinElements.removeAll(joinsInMainTable);
-		if (!joinElements.isEmpty()) {
-			createJoin(joinsInMainTable, joinElements);
-		}
-	}
-
-	/**
-	 * 在已经找到关联关系的 join 表中查找还未找到关联关系的 join 表的关联关系
-	 * <li>A 主表
-	 * <li>B C 已经找到关联关系的 join 表
-	 * <li>D E F 还未找到关联关系的 join 表
-	 * 
-	 * @param knownJoinElements
-	 * @param unknownJoinElements
-	 */
-	public void createJoin(List<JoinElement> knownJoinElements, List<JoinElement> unknownJoinElements) {
-		if (unknownJoinElements.isEmpty()) {
-			return;
-		}
-		List<JoinElement> findJoinElements = new ArrayList<>();
-		for (JoinElement knownJoinElement : knownJoinElements) {
-			TableItem knownTableItem = knownJoinElement.getJoinTableItem();
-			Table knownTable = knownTableItem.getTable();
-			for (JoinElement unknownJoinElement : unknownJoinElements) {
-				JoinType joinType = unknownJoinElement.getJoinType();
-				TableItem unknownTableItem = unknownJoinElement.getJoinTableItem();
-				Table unknownTable = unknownTableItem.getTable();
-				Relationship relationship = knownTable.getRelationship(unknownTable);
-				if (relationship != null) {
-					addJoinItem(relationship, knownTableItem, unknownTableItem, joinType);
-				} else {
-					relationship = unknownTable.getRelationship(knownTable);
-					addJoinItemInOpposite(relationship, knownTableItem, unknownTableItem, joinType);
-				}
-				if (relationship != null) {
-					findJoinElements.add(unknownJoinElement);
-					// 查找关联表的列的关联信息
-					int parentTableIndex = -1;
-					over: for (int i = 0; i < tempJoins.size(); i++) {
-						List<Table> tables = tempJoins.get(i);
-						for (int j = tables.size() - 1; j >= 0; j--) {
-							if (knownTable.getName().equals(tables.get(j).getName())) {
-								parentTableIndex = i;
-								break over;
-							}
-						}
-					}
-					if (parentTableIndex != -1) {
-						tempJoins.get(parentTableIndex).add(unknownTable);
-					}
-				}
+			if (joinType == null) {
+				joinType = JoinType.LEFT;
 			}
-		}
-		if (findJoinElements.isEmpty()) {
-			throw new DataException(String.format("Association relation for the join table [%s] was not found",
-					unknownJoinElements.get(0).getJoinTableItem().getTable().getName()));
-		}
-		unknownJoinElements.removeAll(findJoinElements);
-		if (!unknownJoinElements.isEmpty()) {
-			createJoin(findJoinElements, unknownJoinElements);
-		}
-	}
+			List<ColumnItem> leftColumns = new ArrayList<>();
+			List<ColumnItem> rightColumns = new ArrayList<>();
 
-	public void addJoinItem(Relationship relationship, TableItem primaryTableItem, TableItem foreignTableItem,
-			JoinType joinType) {
-		if (relationship == null) {
-			return;
-		}
-		List<Column> primaryColumns = relationship.getPrimaryColumns();
-		List<Column> foreignColumns = relationship.getForeignColumns();
-		List<ColumnItem> leftColumns = new ArrayList<>();
-		List<ColumnItem> rightColumns = new ArrayList<>();
-		for (int i = 0; i < primaryColumns.size(); i++) {
-			Column primaryColumn = primaryColumns.get(i);
-			Column foreignColumn = foreignColumns.get(i);
-			ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, primaryTableItem);
-			ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, foreignTableItem);
+			ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, getTableItem(primaryColumn.getTable()));
+			ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, getTableItem(foreignColumn.getTable()));
 			leftColumns.add(primaryColumnItem);
 			rightColumns.add(foreignColumnItem);
-		}
-		action.addJoinItem(new JoinItem(leftColumns, rightColumns, joinType));
-	}
 
-	public void addJoinItemInOpposite(Relationship relationship, TableItem primaryTableItem, TableItem foreignTableItem,
-			JoinType joinType) {
-		if (relationship == null) {
-			return;
+			action.addJoinItem(new JoinItem(leftColumns, rightColumns, joinType));
 		}
-		List<Column> primaryColumns = relationship.getPrimaryColumns();
-		List<Column> foreignColumns = relationship.getForeignColumns();
-		List<ColumnItem> leftColumns = new ArrayList<>();
-		List<ColumnItem> rightColumns = new ArrayList<>();
-		for (int i = 0; i < primaryColumns.size(); i++) {
-			Column primaryColumn = primaryColumns.get(i);
-			Column foreignColumn = foreignColumns.get(i);
-			ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, foreignTableItem);
-			ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, primaryTableItem);
-			leftColumns.add(primaryColumnItem);
-			rightColumns.add(foreignColumnItem);
-		}
-		action.addJoinItem(new JoinItem(rightColumns, leftColumns, joinType));
 	}
 
 	public class JoinElement {
@@ -599,21 +529,14 @@ public class JsonParser {
 	 * 添加主表的所有列
 	 */
 	private void createMainColumns() {
-		List<TableItem> tableItems = action.getTableItems();
-		for (TableItem tableItem : tableItems) {
-			createMainTableItemColumns(tableItem);
-		}
+		tempTableItems.values().stream().forEach(this::createMainTableItemColumns);
 	}
 
 	/**
 	 * 添加 join 表的所有列
 	 */
 	private void createJoinColumns() {
-		List<JoinItem> joinItems = action.getJoinItems();
-		for (JoinItem joinItem : joinItems) {
-			TableItem joinTableItem = joinItem.getRightColumns().get(0).getTableItem();
-			createJoinTableItemColumns(joinTableItem);
-		}
+		tempJoinTableItems.values().stream().forEach(this::createJoinTableItemColumns);
 	}
 
 	/**
@@ -766,43 +689,43 @@ public class JsonParser {
 	}
 	
 	public void addFilter(String filterString) {
-		Cond cond = parseCond(filterString);
-		Operator operator = cond.getOperator();
-		String columnString = cond.getColumn();
-		Object value = cond.getValue();
-
-		ColumnItem columnItem = findColumnItem(columnString);
-		if (columnItem == null) { // 不属于主表, 也不属于 join 表
-			Column column = findColumn(columnString);
-			List<TableItem> tableItems = action.getTableItems();
-			for (TableItem tableItem : tableItems) {
-				Table table = tableItem.getTable();
-				List<Relationship> relationships = table.getCrossRelationships(column.getTable());
-				if (relationships.isEmpty()) {
-					throw new JsonDataException(ResultStatus.DATASOURCE_RELATIONSHIP_NOT_FOUND, table.getName());
-				}
-				for (int i = 0; i < relationships.size(); i++) {
-					Relationship relationship = relationships.get(i);
-					Table primaryTable = relationship.getPrimaryTable();
-					Table foreignTable = relationship.getForeignTable();
-
-					TableItem primaryTableItem = getTableItem(primaryTable);
-					TableItem foreignTableItem = getTableItem(foreignTable);
-					if (foreignTableItem == null) {
-						foreignTableItem = new TableItem(foreignTable, getTableAlias(foreignTable), false);
-					} else {
-						continue;
-					}
-					addJoinItem(relationship, primaryTableItem, foreignTableItem, JoinType.LEFT);
-				}
-
-			}
-			columnItem = findColumnItem(columnString);
-			// 新的 join 表的条件列取消别名
-			columnItem.setAlias(null);
-		}
-		FilterItem filterItem = new FilterItem(columnItem, value, Connector.AND, operator);
-		action.addFilterItem(filterItem);
+		//		Cond cond = parseCond(filterString);
+		//		Operator operator = cond.getOperator();
+		//		String columnString = cond.getColumn();
+		//		Object value = cond.getValue();
+		//
+		//		ColumnItem columnItem = findColumnItem(columnString);
+		//		if (columnItem == null) { // 不属于主表, 也不属于 join 表
+		//			Column column = findColumn(columnString);
+		//			List<TableItem> tableItems = action.getTableItems();
+		//			for (TableItem tableItem : tableItems) {
+		//				Table table = tableItem.getTable();
+		//				List<Relationship> relationships = table.getCrossRelationships(column.getTable());
+		//				if (relationships.isEmpty()) {
+		//					throw new JsonDataException(ResultStatus.DATASOURCE_RELATIONSHIP_NOT_FOUND, table.getName());
+		//				}
+		//				for (int i = 0; i < relationships.size(); i++) {
+		//					Relationship relationship = relationships.get(i);
+		//					Table primaryTable = relationship.getPrimaryTable();
+		//					Table foreignTable = relationship.getForeignTable();
+		//
+		//					TableItem primaryTableItem = getTableItem(primaryTable);
+		//					TableItem foreignTableItem = getTableItem(foreignTable);
+		//					if (foreignTableItem == null) {
+		//						foreignTableItem = new TableItem(foreignTable, getTableAlias(foreignTable), false);
+		//					} else {
+		//						continue;
+		//					}
+		//					addJoinItem(relationship, primaryTableItem, foreignTableItem, JoinType.LEFT);
+		//				}
+		//
+		//			}
+		//			columnItem = findColumnItem(columnString);
+		//			// 新的 join 表的条件列取消别名
+		//			columnItem.setAlias(null);
+		//		}
+		//		FilterItem filterItem = new FilterItem(columnItem, value, Connector.AND, operator);
+		//		action.addFilterItem(filterItem);
 	}
 
 	/**
@@ -1193,10 +1116,21 @@ public class JsonParser {
 		return null;
 	}
 
+	/**
+	 * 表存在于请求中指定的查询表和关联表, 不存在的表只有一种可能, 就是在 查询关联的时候, 找到了请求中没有指定关联的表, 这个表一定是关联表.
+	 * 
+	 * @param table
+	 * @return
+	 */
 	private TableItem getTableItem(Table table) {
-		TableItem tableItem = getMainTableItem(table);
-		if (tableItem == null) {
-			tableItem = getJoinTableItem(table);
+		TableItem tableItem = null;
+		if (tempTableItems.containsKey(table)) {
+			tableItem = tempTableItems.get(table);
+		} else if (tempJoinTableItems.containsKey(table)) {
+			tableItem = tempJoinTableItems.get(table);
+		} else {
+			tableItem = new TableItem(table);
+			tempRelationTableItems.put(table, tableItem);
 		}
 		return tableItem;
 	}
@@ -1271,6 +1205,11 @@ public class JsonParser {
 		String resultString = jsonData.get(JsonAttributes.RESULT).getAsString();
 		ResultType resultType = ResultType.from(resultString);
 		action.setResultType(resultType);
+	}
+
+	private void finish() {
+		action.setTables(new ArrayList<>(tempTableItems.keySet()));
+		action.setJoinTables(new ArrayList<>(tempJoinTableItems.keySet()));
 	}
 
 	private boolean validAttribute(String attribute) {

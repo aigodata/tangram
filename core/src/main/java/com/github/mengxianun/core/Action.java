@@ -14,6 +14,7 @@ import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
 import com.github.mengxianun.core.json.Operation;
+import com.github.mengxianun.core.schema.Table;
 
 public class Action {
 
@@ -32,6 +33,9 @@ public class Action {
 	private ResultType resultType;
 	private boolean queryAllColumns;
 	private SQLBuilder sqlBuilder;
+
+	private List<Table> tables;
+	private List<Table> joinTables;
 
 	public Action() {
 		this.tableItems = new ArrayList<>();
@@ -330,6 +334,22 @@ public class Action {
 
 	public void setSqlBuilder(SQLBuilder sqlBuilder) {
 		this.sqlBuilder = sqlBuilder;
+	}
+
+	public List<Table> getTables() {
+		return tables;
+	}
+
+	public void setTables(List<Table> tables) {
+		this.tables = tables;
+	}
+
+	public List<Table> getJoinTables() {
+		return joinTables;
+	}
+
+	public void setJoinTables(List<Table> joinTables) {
+		this.joinTables = joinTables;
 	}
 
 }

@@ -1,8 +1,11 @@
 package com.github.mengxianun.core;
 
 import java.util.List;
+import java.util.Set;
 
+import com.github.mengxianun.core.attributes.AssociationType;
 import com.github.mengxianun.core.schema.Column;
+import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.google.gson.JsonElement;
@@ -36,5 +39,21 @@ public interface DataContext {
 	public Dialect getDialect();
 
 	public void destroy() throws Throwable;
+
+	public void addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType);
+
+	/**
+	 * 获取主外表的关联关系.
+	 * <li>如 A join B, 获取 A 对 B 的关联关系, 将会得到 [ A-B ]
+	 * <li>如 A join B join C, 获取 A 对 C 的关联关系, 将会得到 [ A-B, B-C ]
+	 * <li>如果没有找到关联关系, 返回一个空集合
+	 * 
+	 * @param primaryTable
+	 * @param foreignTable
+	 * @return
+	 */
+	public Set<Relationship> getRelationships(Table primaryTable, Table foreignTable);
+
+	public AssociationType getAssociationType(Table primaryTable, Table foreignTable);
 
 }
