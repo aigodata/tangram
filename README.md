@@ -213,7 +213,7 @@ Translator.translate方法为tangram引擎的唯一入口，接收json格式的�
 
 #### 说明
 
-​	多表关联Join操作，需要在配置文件中预先配置表的关联关系。
+​	多表关联Join操作，需要在配置文件中预先配置表的关联关系[This link](#block-elements)。
 
 ​	数据库表支持别名，数据库表名 + 空格 + 数据库表别名
 
