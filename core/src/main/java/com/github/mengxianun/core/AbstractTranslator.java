@@ -1,15 +1,17 @@
 package com.github.mengxianun.core;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -171,13 +173,32 @@ public abstract class AbstractTranslator implements Translator {
 		if (tablesConfigURL == null) {
 			return;
 		}
-		File tablesConfigFile;
+		URI uri;
 		try {
-			tablesConfigFile = new File(tablesConfigURL.toURI());
+			uri = tablesConfigURL.toURI();
 		} catch (URISyntaxException e) {
 			throw new DataException(e);
 		}
-		Path tableConfigPath = Paths.get(tablesConfigFile.getPath());
+		if (uri.getScheme().equals("jar")) {
+			try (FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
+				Path tableConfigPath = fileSystem.getPath("/WEB-INF/classes/" + tablesConfigPath);
+				traverseTablesConfig(tableConfigPath);
+			} catch (IOException e) {
+				throw new DataException(e);
+			}
+		} else {
+			Path tableConfigPath = Paths.get(new File(uri).getPath());
+			traverseTablesConfig(tableConfigPath);
+		}
+
+	}
+
+	/**
+	 * 遍历数据库表存储路径
+	 * 
+	 * @param tableConfigPath
+	 */
+	private void traverseTablesConfig(Path tableConfigPath) {
 		try (Stream<Path> stream = Files.walk(tableConfigPath, 2)) { // 这里循环2层, 由结构决定
 			stream.filter(Files::isRegularFile).forEach(path -> {
 				Path parentPath = path.getParent();
@@ -218,7 +239,8 @@ public abstract class AbstractTranslator implements Translator {
 		String fileName = path.getFileName().toString();
 		String tableName = fileName.substring(0, fileName.lastIndexOf("."));
 		try {
-			JsonElement jsonElement = new JsonParser().parse(new FileReader(path.toFile()));
+			String content = Resources.toString(path.toUri().toURL(), Charsets.UTF_8);
+			JsonElement jsonElement = new JsonParser().parse(content);
 			JsonObject tableConfig = jsonElement.getAsJsonObject();
 			Table table = dataContext.getTable(tableName);
 			table.setConfig(tableConfig);
@@ -253,7 +275,7 @@ public abstract class AbstractTranslator implements Translator {
 					}
 				}
 			}
-		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+		} catch (JsonIOException | JsonSyntaxException | IOException e) {
 			throw new DataException(String.format("Parsing table config file [%s] failed", path), e);
 		}
 	}
