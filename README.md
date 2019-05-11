@@ -183,7 +183,7 @@ Translator.translate方法为tangram引擎的唯一入口，接收json格式的�
 
 #### **说明**
 
-​	插入或更新的数据，对应insert，update
+​	插入或更新的数据，对应insert，update。**错误的字段将被忽略**
 
 #### 类型格式
 
@@ -215,7 +215,9 @@ Translator.translate方法为tangram引擎的唯一入口，接收json格式的�
 
 ​	多表关联Join操作，需要在配置文件中预先配置表的关联关系 [数据库表配置](#数据库表配置)。
 
-​	数据库表支持别名，数据库表名 + 空格 + 数据库表别名
+​	数据库表支持别名，数据库表名 + 空格 + 数据库表别名。
+
+​    返回结果将以嵌套数据的格式返回。
 
 #### 类型格式
 
@@ -253,7 +255,7 @@ Translator.translate方法为tangram引擎的唯一入口，接收json格式的�
 }
 ```
 
-#### 示例
+#### 示例1
 
 ```
 {
@@ -268,6 +270,8 @@ Translator.translate方法为tangram引擎的唯一入口，接收json格式的�
     ]
 }
 ```
+
+
 
 ### Where
 
