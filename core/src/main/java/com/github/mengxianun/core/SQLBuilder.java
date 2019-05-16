@@ -500,7 +500,7 @@ public class SQLBuilder {
 		StringBuilder tableBuilder = new StringBuilder();
 		if (dialect.assignDatabase()) {
 			Schema schema = table.getSchema();
-			tableBuilder.append(schema.getName()).append(".");
+			tableBuilder.append(quote(schema.getName())).append(".");
 		}
 		tableBuilder.append(quote(table.getName()));
 		return tableBuilder.toString();
