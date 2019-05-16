@@ -149,6 +149,7 @@ public abstract class AbstractDataContext implements DataContext {
 					relationships.addAll(firstRelationships);
 					// 添加后续的关联关系
 					relationships.addAll(subRelationships);
+					break;
 				}
 			}
 		}
