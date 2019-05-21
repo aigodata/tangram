@@ -14,18 +14,22 @@ public class DataException extends RuntimeException {
 
 	public DataException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
 		super(message, cause, enableSuppression, writableStackTrace);
+		this.code = ResultStatus.SYSTEM_ERROR.code();
 	}
 
 	public DataException(String message, Throwable cause) {
 		super(message, cause);
+		this.code = ResultStatus.SYSTEM_ERROR.code();
 	}
 
 	public DataException(String message) {
 		super(message);
+		this.code = ResultStatus.SYSTEM_ERROR.code();
 	}
 
 	public DataException(Throwable cause) {
 		super(cause);
+		this.code = ResultStatus.SYSTEM_ERROR.code();
 	}
 
 	public DataException(ResultStatus resultStatus) {
