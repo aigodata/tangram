@@ -243,6 +243,10 @@ public abstract class AbstractTranslator implements Translator {
 			JsonElement jsonElement = new JsonParser().parse(content);
 			JsonObject tableConfig = jsonElement.getAsJsonObject();
 			Table table = dataContext.getTable(tableName);
+			if (table == null) {
+				logger.warn("Table [{}] from [{}] does not exist", tableName, fileName);
+				return;
+			}
 			table.setConfig(tableConfig);
 			if (tableConfig.has(TableConfigAttributes.COLUMNS)) {
 				JsonObject columnsConfig = tableConfig.get(TableConfigAttributes.COLUMNS).getAsJsonObject();
