@@ -2,6 +2,7 @@ package com.github.mengxianun.core;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import com.github.mengxianun.core.schema.relationship.RelationshipKey;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Iterables;
 import com.google.gson.JsonElement;
 
 public abstract class AbstractDataContext implements DataContext {
@@ -142,7 +144,7 @@ public abstract class AbstractDataContext implements DataContext {
 			// 循环主表的所有关联表, 然后以关联表为新的主表向下寻找关联, 直到找到最开始要找的关联关系
 			for (Table fTable : fRelationships.keySet()) {
 				Set<Relationship> subRelationships = findSubRelationships(fTable, foreignTable, primaryTable,
-						relationships);
+						relationships, new HashSet<>());
 				if (!subRelationships.isEmpty()) { // 找到了关联关系
 					// 添加前两个表的关联关系
 					Set<Relationship> firstRelationships = findRelationships(primaryTable, fTable);
@@ -157,7 +159,7 @@ public abstract class AbstractDataContext implements DataContext {
 	}
 
 	public Set<Relationship> findSubRelationships(Table primaryTable, Table foreignTable, Table originalTable,
-			Set<Relationship> relationships) {
+			Set<Relationship> relationships, Set<Table> pastTables) {
 		// 在未找到关联表之前找到了开始主表, 形成了死循环
 		if (originalTable == primaryTable) {
 			return Collections.emptySet();
@@ -171,8 +173,12 @@ public abstract class AbstractDataContext implements DataContext {
 			return fRelationships.get(foreignTable);
 		} else {
 			for (Table fTable : fRelationships.keySet()) {
+				if (pastTables.contains(fTable)) {
+					continue;
+				}
+				pastTables.add(fTable);
 				Set<Relationship> subRelationships = findSubRelationships(fTable, foreignTable, originalTable,
-						relationships);
+						relationships, pastTables);
 				if (!subRelationships.isEmpty()) { // 找到了关联关系
 					// 添加前两个表的关联关系
 					Set<Relationship> firstRelationships = findRelationships(primaryTable, fTable);
@@ -188,25 +194,27 @@ public abstract class AbstractDataContext implements DataContext {
 	@Override
 	public AssociationType getAssociationType(Table primaryTable, Table foreignTable) {
 		Set<Relationship> relationships = getRelationships(primaryTable, foreignTable);
-		AssociationType currentAssociationType = relationships.iterator().next().getAssociationType();
-		for (Relationship relationship : relationships) {
-			AssociationType associationType = relationship.getAssociationType();
-			if (currentAssociationType == AssociationType.ONE_TO_ONE
-					|| currentAssociationType == AssociationType.ONE_TO_MANY) {
-				if (associationType == AssociationType.ONE_TO_MANY || associationType == AssociationType.MANY_TO_MANY) {
-					currentAssociationType = AssociationType.ONE_TO_MANY;
-					break;
+		Relationship first = Iterables.getFirst(relationships, null);
+		AssociationType associationType = first.getAssociationType();
+		Relationship last = Iterables.getLast(relationships, null);
+		if (last != null) {
+			AssociationType lastAssociationType = last.getAssociationType();
+			if (associationType == AssociationType.ONE_TO_ONE || associationType == AssociationType.ONE_TO_MANY) {
+				if (lastAssociationType == AssociationType.ONE_TO_MANY || lastAssociationType == AssociationType.MANY_TO_MANY) {
+					associationType = AssociationType.ONE_TO_MANY;
+				} else {
+					associationType = AssociationType.ONE_TO_ONE;
 				}
-			} else if (currentAssociationType == AssociationType.MANY_TO_ONE) {
-				if (associationType == AssociationType.ONE_TO_MANY || associationType == AssociationType.MANY_TO_MANY) {
-					currentAssociationType = AssociationType.MANY_TO_MANY;
-					break;
+			} else if (associationType == AssociationType.MANY_TO_ONE
+					|| associationType == AssociationType.MANY_TO_MANY) {
+				if (lastAssociationType == AssociationType.ONE_TO_MANY || lastAssociationType == AssociationType.MANY_TO_MANY) {
+					associationType = AssociationType.MANY_TO_MANY;
+				} else {
+					associationType = AssociationType.MANY_TO_ONE;
 				}
-			} else {
-				break;
 			}
 		}
-		return currentAssociationType;
+		return associationType;
 	}
 
 }
