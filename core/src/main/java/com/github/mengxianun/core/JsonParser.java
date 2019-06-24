@@ -64,8 +64,8 @@ public class JsonParser {
 	// 关联表的TableItems(未出现在请求中的关联表)
 	// 查询为 Select A, Join C, 实际关系为A-B-C, 所以这里存储的是B
 	private Map<Table, TableItem> tempRelationTableItems = new LinkedHashMap<>();
-	//
-	private Map<Column, ColumnItem> tempColumnItems = new LinkedHashMap<>();
+	// 保留
+	//	private Map<Column, ColumnItem> tempColumnItems = new LinkedHashMap<>();
 
 	public JsonParser(String json) {
 		this.jsonData = new com.google.gson.JsonParser().parse(json).getAsJsonObject();
