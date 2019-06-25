@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.github.mengxianun.core.attributes.AssociationType;
 import com.github.mengxianun.core.attributes.TableConfigAttributes;
@@ -68,8 +69,9 @@ public class DataRenderer {
 				JsonObject existJoinTables = new JsonObject();
 				List<ColumnItem> columnItems = action.getColumnItems();
 				// 当前循环列的表数据对象
-				JsonObject currentTableObject = uniqueRecord;
+				JsonObject currentTableObject;
 				for (ColumnItem columnItem : columnItems) {
+					currentTableObject = uniqueRecord;
 					if (columnItem instanceof JoinColumnItem) {
 						JoinColumnItem joinColumnItem = (JoinColumnItem) columnItem;
 						Table joinTable = joinColumnItem.getTableItem().getTable();
@@ -81,14 +83,12 @@ public class DataRenderer {
 						/*
 						 * 待优化
 						 */
-						//						List<Table> parentTables = joinColumnItem.getParentTables();
 						Table mainTable = action.getTableItems().get(0).getTable();
 						Set<Relationship> relationships = action.getDataContext().getRelationships(mainTable,
 								joinTable);
 						// 构建join表上层表关系
-						List<Table> parentTables = Lists.newArrayList(mainTable);
-						relationships.stream().skip(relationships.size())
-								.forEach(e -> parentTables.add(e.getForeignColumn().getTable()));
+						List<Table> parentTables = relationships.stream().map(e -> e.getPrimaryColumn().getTable())
+								.collect(Collectors.toList());
 						// -- 构建 join 表上层结构
 						for (int i = 0; i < parentTables.size() - 1; i++) {
 							// 父级表, 第一个元素是主表, 跳过
