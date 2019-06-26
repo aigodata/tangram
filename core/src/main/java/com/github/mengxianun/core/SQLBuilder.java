@@ -582,8 +582,9 @@ public class SQLBuilder {
 	 * @return
 	 */
 	public String quote(String element) {
-		if (dialect.quoteTable()) {
-			return dataContext.getIdentifierQuoteString() + element + dataContext.getIdentifierQuoteString();
+		if (dialect.quoteTable() || SqlReservedWords.containsWord(element)) {
+			String identifierQuoteString = dataContext.getIdentifierQuoteString();
+			return identifierQuoteString + element + identifierQuoteString;
 		}
 		return element;
 	}
