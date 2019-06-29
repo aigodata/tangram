@@ -59,6 +59,7 @@ public class SQLBuilder {
 	// 关联分页查询的情况, SQL 语句构建做特殊处理
 	protected boolean joinLimit;
 	protected List<FilterItem> joinLimitFilterItems = new ArrayList<>();
+	protected List<OrderItem> joinLimitOrderItems = new ArrayList<>();
 	// 拼接后的字符串
 	protected String columnString = "";
 	protected String tableString = "";
@@ -157,20 +158,43 @@ public class SQLBuilder {
 				// join 和 limit 同时存在时, 并且存在一对多或多对多的情况下, 分页会出问题.
 				// 这里将主表作为基础表(子查询), 特殊处理.
 				if (!action.getJoinItems().isEmpty() && action.getLimitItem() != null) {
+					// 基础表查询语句
+					StringBuilder subBuilder = new StringBuilder(PREFIX_SELECT);
+					subBuilder.append("*").append(PREFIX_FROM).append(table.getName());
+
+					/*
+					 * Where
+					 */
 					List<FilterItem> filterItems = action.getFilterItems();
-					// 主表的条件
+					// 主表的 Where 条件
 					List<FilterItem> mainTableFilterItems = filterItems.stream()
 							.filter(e -> e.getColumnItem().getTableItem().getTable() == table)
 							.collect(Collectors.toList());
 					// 基础表查询属于子查询, 内部条件 SQL 不指定表别名
 					String mainTableWhereString = toWhere(mainTableFilterItems, false);
-					tablesBuilder.append("(").append(PREFIX_SELECT).append("*").append(PREFIX_FROM)
-							.append(table.getName()).append(mainTableWhereString).append(toLimit())
-							.append(")");
-					// 关联分页查询
-					joinLimit = true;
+					subBuilder.append(mainTableWhereString);
+
 					joinLimitFilterItems = new ArrayList<>(action.getFilterItems());
 					joinLimitFilterItems.removeAll(mainTableFilterItems);
+
+					/*
+					 * Order
+					 */
+					List<OrderItem> orderItems = action.getOrderItems();
+					// 主表的 Order
+					List<OrderItem> mainTableOrderItems = orderItems.stream()
+							.filter(e -> e.getColumnItem().getTableItem().getTable() == table)
+							.collect(Collectors.toList());
+					String mainTableOrderString = toOrders(mainTableOrderItems, false);
+					subBuilder.append(mainTableOrderString);
+
+					joinLimitOrderItems = new ArrayList<>(action.getOrderItems());
+					joinLimitOrderItems.removeAll(mainTableOrderItems);
+
+					subBuilder.append(toLimit());
+					// 拼接基础表查询语句
+					tablesBuilder.append("(").append(subBuilder).append(")");
+					joinLimit = true;
 				} else {
 					tablesBuilder.append(spliceTable(table));
 				}
@@ -357,7 +381,14 @@ public class SQLBuilder {
 	}
 
 	public String toOrders() {
-		List<OrderItem> orderItems = action.getOrderItems();
+		return orderString = joinLimit ? toOrders(joinLimitOrderItems) : toOrders(action.getOrderItems());
+	}
+
+	public String toOrders(List<OrderItem> orderItems) {
+		return toOrders(orderItems, null);
+	}
+
+	public String toOrders(List<OrderItem> orderItems, Boolean assignTableAlias) {
 		if (orderItems.isEmpty()) {
 			return "";
 		}
@@ -368,7 +399,7 @@ public class SQLBuilder {
 				ordersBuilder.append(", ");
 			}
 			ColumnItem columnItem = orderItem.getColumnItem();
-			ordersBuilder.append(spliceColumn(columnItem));
+			ordersBuilder.append(spliceColumn(columnItem, assignTableAlias));
 
 			switch (orderItem.getOrder()) {
 			case DESC:
