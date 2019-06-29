@@ -15,8 +15,6 @@ import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -47,10 +45,11 @@ public class DataRenderer {
 		}
 	}
 
-	public JsonElement render(JsonArray data, Action action) {
+	private JsonElement render(JsonArray data, Action action) {
 		// 主表唯一记录对象, key 为主表所有列的的值拼接的字符串, value 为主表唯一记录的对象
 		JsonObject uniqueRecords = new JsonObject();
 		for (JsonElement jsonElement : data) {
+			// 结果数据对象
 			JsonObject record = jsonElement.getAsJsonObject();
 			// 主表的唯一记录对象
 			JsonObject uniqueRecord;
@@ -62,82 +61,8 @@ public class DataRenderer {
 				uniqueRecord = new JsonObject();
 				uniqueRecords.add(uniqueRecordKey, uniqueRecord);
 			}
-			List<JoinItem> joinItems = action.getJoinItems();
-			// 构建关联信息
-			if (!joinItems.isEmpty() && action.getGroupItems().isEmpty()) {
-				// 出现过的 join 表的对象, 用于 join 表的列再次获取已经创建的 join 表对象
-				JsonObject existJoinTables = new JsonObject();
-				List<ColumnItem> columnItems = action.getColumnItems();
-				// 当前循环列的表数据对象
-				JsonObject currentTableObject;
-				for (ColumnItem columnItem : columnItems) {
-					currentTableObject = uniqueRecord;
-					if (columnItem instanceof JoinColumnItem) {
-						JoinColumnItem joinColumnItem = (JoinColumnItem) columnItem;
-						Table joinTable = joinColumnItem.getTableItem().getTable();
-						if (existJoinTables.has(joinTable.getName())) {
-							JsonObject joinTableObject = existJoinTables.getAsJsonObject(joinTable.getName());
-							addColumnValue(joinTableObject, columnItem, record, action);
-							continue;
-						}
-						/*
-						 * 待优化
-						 */
-						Table mainTable = action.getTableItems().get(0).getTable();
-						Set<Relationship> relationships = action.getDataContext().getRelationships(mainTable,
-								joinTable);
-						// 构建join表上层表关系
-						List<Table> parentTables = relationships.stream().map(e -> e.getPrimaryColumn().getTable())
-								.collect(Collectors.toList());
-						// -- 构建 join 表上层结构
-						for (int i = 0; i < parentTables.size() - 1; i++) {
-							// 父级表, 第一个元素是主表, 跳过
-							Table parentTable = parentTables.get(i + 1);
-							// 如果该关联表不是请求中指定的关联表, 不构建关系结构
-							if (!action.getJoinTables().contains(parentTable)) {
-								continue;
-							}
-							// 已经构建了该 join 表的结构, 直接获取
-							if (uniqueRecord.has(parentTable.getName())) {
-								JsonElement parentElement = uniqueRecord.get(parentTable.getName());
-								if (parentElement.isJsonArray()) {
-									JsonArray parentArray = parentElement.getAsJsonArray();
-									// 获取数组关联表的最新的元素, 即当前正在循环的元素
-									currentTableObject = parentArray.get(parentArray.size() - 1).getAsJsonObject();
-								} else {
-									currentTableObject = parentElement.getAsJsonObject();
-								}
-							} else {
-								AssociationType associationType = action.getDataContext()
-										.getAssociationType(parentTables.get(i), parentTables.get(i + 1));
-								currentTableObject = createJoinStructure(currentTableObject, parentTables.get(i + 1),
-										associationType);
-							}
-						}
-						// -- 构建 join 表结构
-						// join 表的父级表
-						Table parentTable = parentTables.get(parentTables.size() - 1);
-						AssociationType associationType = action.getDataContext().getAssociationType(parentTable,
-								joinTable);
-						currentTableObject = createJoinStructure(currentTableObject, joinTable, associationType);
-						// 记录出现过的 join 表
-						existJoinTables.add(joinTable.getName(), currentTableObject);
-
-						addColumnValue(currentTableObject, columnItem, record, action);
-					} else {
-						addColumnValue(currentTableObject, columnItem, record, action);
-					}
-				}
-			} else {
-				if (action.isQueryAllColumns()) {
-					addAllColumnValue(uniqueRecord, record);
-				} else {
-					List<ColumnItem> columnItems = action.getColumnItems();
-					for (ColumnItem columnItem : columnItems) {
-						addColumnValue(uniqueRecord, columnItem, record, action);
-					}
-				}
-			}
+			// 处理单条记录
+			render(uniqueRecord, record, action);
 		}
 		JsonArray renderData = new JsonArray();
 		for (String uniqueKey : uniqueRecords.keySet()) {
@@ -147,6 +72,89 @@ public class DataRenderer {
 
 	}
 
+	private JsonObject render(JsonObject record, Action action) {
+		JsonObject result = new JsonObject();
+		result = render(result, record, action);
+		return result;
+	}
+
+	private JsonObject render(JsonObject uniqueRecord, JsonObject record, Action action) {
+		List<JoinItem> joinItems = action.getJoinItems();
+		// 构建关联信息
+		if (!joinItems.isEmpty() && action.getGroupItems().isEmpty()) {
+			// 出现过的 join 表的对象, 用于 join 表的列再次获取已经创建的 join 表对象
+			JsonObject existJoinTables = new JsonObject();
+			List<ColumnItem> columnItems = action.getColumnItems();
+			// 当前循环列的表数据对象
+			JsonObject currentTableObject;
+			for (ColumnItem columnItem : columnItems) {
+				currentTableObject = uniqueRecord;
+				if (columnItem instanceof JoinColumnItem) {
+					JoinColumnItem joinColumnItem = (JoinColumnItem) columnItem;
+					Table joinTable = joinColumnItem.getTableItem().getTable();
+					if (existJoinTables.has(joinTable.getName())) {
+						JsonObject joinTableObject = existJoinTables.getAsJsonObject(joinTable.getName());
+						addColumnValue(joinTableObject, columnItem, record, action);
+						continue;
+					}
+					/*
+					 * 待优化
+					 */
+					Table mainTable = action.getTableItems().get(0).getTable();
+					Set<Relationship> relationships = action.getDataContext().getRelationships(mainTable, joinTable);
+					// 构建join表上层表关系
+					List<Table> parentTables = relationships.stream().map(e -> e.getPrimaryColumn().getTable())
+							.collect(Collectors.toList());
+					// -- 构建 join 表上层结构
+					for (int i = 0; i < parentTables.size() - 1; i++) {
+						// 父级表, 第一个元素是主表, 跳过
+						Table parentTable = parentTables.get(i + 1);
+						// 如果该关联表不是请求中指定的关联表, 不构建关系结构
+						if (!action.getJoinTables().contains(parentTable)) {
+							continue;
+						}
+						// 已经构建了该 join 表的结构, 直接获取
+						if (uniqueRecord.has(parentTable.getName())) {
+							JsonElement parentElement = uniqueRecord.get(parentTable.getName());
+							if (parentElement.isJsonArray()) {
+								JsonArray parentArray = parentElement.getAsJsonArray();
+								// 获取数组关联表的最新的元素, 即当前正在循环的元素
+								currentTableObject = parentArray.get(parentArray.size() - 1).getAsJsonObject();
+							} else {
+								currentTableObject = parentElement.getAsJsonObject();
+							}
+						} else {
+							AssociationType associationType = action.getDataContext()
+									.getAssociationType(parentTables.get(i), parentTables.get(i + 1));
+							currentTableObject = createJoinStructure(currentTableObject, parentTables.get(i + 1),
+									associationType);
+						}
+					}
+					// -- 构建 join 表结构
+					// join 表的父级表
+					Table parentTable = parentTables.get(parentTables.size() - 1);
+					AssociationType associationType = action.getDataContext().getAssociationType(parentTable,
+							joinTable);
+					currentTableObject = createJoinStructure(currentTableObject, joinTable, associationType);
+					// 记录出现过的 join 表
+					existJoinTables.add(joinTable.getName(), currentTableObject);
+
+					addColumnValue(currentTableObject, columnItem, record, action);
+				} else {
+					addColumnValue(currentTableObject, columnItem, record, action);
+				}
+			}
+		} else {
+			List<ColumnItem> columnItems = action.getColumnItems();
+			if (columnItems.isEmpty()) {
+				return record;
+			} else {
+				columnItems.forEach(e -> addColumnValue(uniqueRecord, e, record, action));
+			}
+		}
+		return uniqueRecord;
+	}
+
 	/**
 	 * 生成主表每条记录的唯一标识
 	 * 
@@ -154,7 +162,7 @@ public class DataRenderer {
 	 * @param action
 	 * @return
 	 */
-	public String createMainTableUniqueRecordKey(JsonObject record, Action action) {
+	private String createMainTableUniqueRecordKey(JsonObject record, Action action) {
 		// 单表查询的情况, 每条记录为一条唯一的记录, 所以这里生成了一个唯一ID用于标识每条记录, 以保证唯一
 		if (!action.isJoin()) {
 			return UUID.randomUUID().toString();
@@ -181,67 +189,6 @@ public class DataRenderer {
 		return uniqueKey.toString();
 	}
 
-	public JsonElement render(JsonObject data, Action action) {
-		JsonObject jsonData = new JsonObject();
-		List<JoinItem> joinItems = action.getJoinItems();
-		// 构建关联信息
-		if (!joinItems.isEmpty() && action.getGroupItems().isEmpty()) {
-			// 出现过的 join 表的对象, 用于 join 表的列再次获取已经创建的 join 表对象
-			JsonObject existJoinTables = new JsonObject();
-			List<ColumnItem> columnItems = action.getColumnItems();
-			// 当前循环列的表数据对象
-			JsonObject currentTableObject = jsonData;
-			for (ColumnItem columnItem : columnItems) {
-				if (columnItem instanceof JoinColumnItem) {
-					JoinColumnItem joinColumnItem = (JoinColumnItem) columnItem;
-					Table joinTable = joinColumnItem.getTableItem().getTable();
-					if (existJoinTables.has(joinTable.getName())) {
-						JsonObject joinTableObject = existJoinTables.getAsJsonObject(joinTable.getName());
-						addColumnValue(joinTableObject, columnItem, data, action);
-						continue;
-					}
-					/*
-					 * 待优化
-					 */
-					//					List<Table> parentTables = joinColumnItem.getParentTables();
-					Table mainTable = action.getTableItems().get(0).getTable();
-					Set<Relationship> relationships = action.getDataContext().getRelationships(mainTable, joinTable);
-					// 构建join表上层表关系
-					List<Table> parentTables = Lists.newArrayList(mainTable);
-					relationships.stream().skip(relationships.size())
-							.forEach(e -> parentTables.add(e.getForeignColumn().getTable()));
-					// -- 构建 join 表上层结构
-					for (int i = 0; i < parentTables.size() - 1; i++) {
-						AssociationType associationType = action.getDataContext()
-								.getAssociationType(parentTables.get(i), parentTables.get(i + 1));
-						currentTableObject = createJoinStructure(currentTableObject, parentTables.get(i + 1),
-								associationType);
-					}
-					// -- 构建 join 表结构
-					// join 表的父级表
-					Table parentTable = parentTables.get(parentTables.size() - 1);
-					AssociationType associationType = action.getDataContext().getAssociationType(parentTable,
-							joinTable);
-					currentTableObject = createJoinStructure(currentTableObject, joinTable, associationType);
-					// 记录出现过的 join 表
-					existJoinTables.add(joinTable.getName(), currentTableObject);
-
-					addColumnValue(currentTableObject, columnItem, data, action);
-				} else {
-					addColumnValue(jsonData, columnItem, data, action);
-				}
-			}
-			return jsonData;
-		}
-		List<ColumnItem> columnItems = action.getColumnItems();
-		if (columnItems.isEmpty()) {
-			return new Gson().toJsonTree(data);
-		} else {
-			columnItems.forEach(e -> addColumnValue(jsonData, e, data, action));
-		}
-		return jsonData;
-	}
-
 	/**
 	 * 数据渲染后的 value
 	 * 
@@ -249,7 +196,7 @@ public class DataRenderer {
 	 * @param columnLabel
 	 * @return
 	 */
-	public JsonElement getValue(JsonObject record, String columnLabel, String columnName) {
+	private JsonElement getValue(JsonObject record, String columnLabel, String columnName) {
 		JsonElement value = null;
 		if (record.has(columnLabel)) {
 			value = record.get(columnLabel);
@@ -263,7 +210,7 @@ public class DataRenderer {
 		return value;
 	}
 
-	public void addColumnValue(JsonObject record, ColumnItem columnItem, JsonObject originalData, Action action) {
+	private void addColumnValue(JsonObject record, ColumnItem columnItem, JsonObject originalData, Action action) {
 		Column column = columnItem.getColumn();
 		// 列名, 在列存在的情况下, 以列名表示, 否则按请求中列的原始内容表示
 		String columnName = column == null ? columnItem.getExpression() : column.getName();
@@ -279,14 +226,7 @@ public class DataRenderer {
 		addColumnValue(record, column, columnKey, value);
 	}
 
-	public void addAllColumnValue(JsonObject record, JsonObject originalData) {
-		for (String key : originalData.keySet()) {
-			JsonElement value = originalData.get(key);
-			addColumnValue(record, null, key, value);
-		}
-	}
-
-	public void addColumnValue(JsonObject record, Column column, String columnKey, JsonElement value) {
+	private void addColumnValue(JsonObject record, Column column, String columnKey, JsonElement value) {
 		if (column != null) {
 			JsonObject config = column.getConfig();
 			if (config.has(TableConfigAttributes.COLUMN_IGNORE)
@@ -332,37 +272,37 @@ public class DataRenderer {
 	 * @param columnName
 	 * @return
 	 */
-	public String treatColumn(String columnName) {
+	private String treatColumn(String columnName) {
 		return columnName.toLowerCase();
 	}
 
-	public Number render(Column column, Number value) {
+	private Number render(Column column, Number value) {
 		if (column == null) {
 			return value;
 		}
 		return value;
 	}
 
-	public Boolean render(Column column, Boolean value) {
+	private Boolean render(Column column, Boolean value) {
 		if (column == null) {
 			return value;
 		}
 		return value;
 	}
 
-	public String render(Column column, String value) {
+	private String render(Column column, String value) {
 		if (column == null) {
 			return value;
 		}
 		return value;
 	}
 
-	public JsonObject createJoinStructure(JsonObject currentTableObject, Table joinTable,
+	private JsonObject createJoinStructure(JsonObject currentTableObject, Table joinTable,
 			AssociationType associationType) {
 		return createJoinStructure(currentTableObject, joinTable.getName(), associationType);
 	}
 
-	public JsonObject createJoinStructure(JsonObject currentTableObject, String tableName,
+	private JsonObject createJoinStructure(JsonObject currentTableObject, String tableName,
 			AssociationType associationType) {
 		switch (associationType) {
 		case ONE_TO_ONE:
@@ -380,7 +320,7 @@ public class DataRenderer {
 		return currentTableObject;
 	}
 
-	public JsonObject createJoinObject(JsonObject currentTableObject, String tableName) {
+	private JsonObject createJoinObject(JsonObject currentTableObject, String tableName) {
 		if (currentTableObject.has(tableName)) {
 			currentTableObject = currentTableObject.getAsJsonObject(tableName);
 		} else {
@@ -391,7 +331,7 @@ public class DataRenderer {
 		return currentTableObject;
 	}
 
-	public JsonObject createJoinArray(JsonObject currentTableObject, String tableName) {
+	private JsonObject createJoinArray(JsonObject currentTableObject, String tableName) {
 		if (currentTableObject.has(tableName)) {
 			JsonArray tempJsonArray = currentTableObject.getAsJsonArray(tableName);
 			JsonObject tempJsonObject = new JsonObject();
