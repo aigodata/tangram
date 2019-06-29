@@ -578,7 +578,6 @@ public class JsonParser {
 
 		} else if (!Strings.isNullOrEmpty(expression)) {
 			action.addColumnItem(new ColumnItem(SQLBuilder.COLUMN_ALL));
-			action.setQueryAllColumns(true);
 		}
 	}
 
