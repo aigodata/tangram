@@ -31,7 +31,6 @@ public class Action {
 	private LimitItem limitItem;
 	private List<ValueItem> valueItems;
 	private ResultType resultType;
-	private boolean queryAllColumns;
 	private SQLBuilder sqlBuilder;
 
 	private List<Table> tables;
@@ -318,14 +317,6 @@ public class Action {
 
 	public void setResultType(ResultType resultType) {
 		this.resultType = resultType;
-	}
-
-	public boolean isQueryAllColumns() {
-		return queryAllColumns;
-	}
-
-	public void setQueryAllColumns(boolean queryAllColumns) {
-		this.queryAllColumns = queryAllColumns;
 	}
 
 	public SQLBuilder getSqlBuilder() {
