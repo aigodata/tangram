@@ -1,6 +1,6 @@
 allprojects {
   group = 'com.github.mengxianun'
-  version = '1.4.6'
+  version = '1.4.7'
 }
 
 subprojects {
@@ -17,8 +17,10 @@ subprojects {
  
   dependencies {
     implementation 'com.google.guava:guava:24.1-jre'
-    implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.google.inject:guice:4.2.0'
+    // Json
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'org.skyscreamer:jsonassert:1.5.0'
     // Log
     implementation 'org.slf4j:slf4j-api:1.7.25'
     // AutoService
