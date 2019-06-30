@@ -59,7 +59,6 @@ public class SQLBuilder {
 	// 关联分页查询的情况, SQL 语句构建做特殊处理
 	protected boolean joinLimit;
 	protected List<FilterItem> joinLimitFilterItems = new ArrayList<>();
-	protected List<OrderItem> joinLimitOrderItems = new ArrayList<>();
 	// 拼接后的字符串
 	protected String columnString = "";
 	protected String tableString = "";
@@ -188,12 +187,10 @@ public class SQLBuilder {
 					String mainTableOrderString = toOrders(mainTableOrderItems, false);
 					subBuilder.append(mainTableOrderString);
 
-					joinLimitOrderItems = new ArrayList<>(action.getOrderItems());
-					joinLimitOrderItems.removeAll(mainTableOrderItems);
-
 					subBuilder.append(toLimit());
 					// 拼接基础表查询语句
 					tablesBuilder.append("(").append(subBuilder).append(")");
+
 					joinLimit = true;
 				} else {
 					tablesBuilder.append(spliceTable(table));
@@ -281,10 +278,10 @@ public class SQLBuilder {
 	}
 
 	public String toWhere(List<FilterItem> filterItems) {
-		return toWhere(filterItems, null);
+		return toWhere(filterItems, true);
 	}
 
-	public String toWhere(List<FilterItem> filterItems, Boolean assignTableAlias) {
+	public String toWhere(List<FilterItem> filterItems, boolean assignTableAlias) {
 		if (filterItems.isEmpty()) {
 			return "";
 		}
@@ -303,10 +300,10 @@ public class SQLBuilder {
 	}
 
 	public String toFilter(FilterItem filterItem) {
-		return toFilter(filterItem, null);
+		return toFilter(filterItem, true);
 	}
 
-	public String toFilter(FilterItem filterItem, Boolean assignTableAlias) {
+	public String toFilter(FilterItem filterItem, boolean assignTableAlias) {
 		StringBuilder filterBuilder = new StringBuilder();
 		filterBuilder.append(" ").append(filterItem.getConnector()).append(" ");
 		// 嵌套子条件
@@ -381,14 +378,14 @@ public class SQLBuilder {
 	}
 
 	public String toOrders() {
-		return orderString = joinLimit ? toOrders(joinLimitOrderItems) : toOrders(action.getOrderItems());
+		return orderString = toOrders(action.getOrderItems());
 	}
 
 	public String toOrders(List<OrderItem> orderItems) {
-		return toOrders(orderItems, null);
+		return toOrders(orderItems, true);
 	}
 
-	public String toOrders(List<OrderItem> orderItems, Boolean assignTableAlias) {
+	public String toOrders(List<OrderItem> orderItems, boolean assignTableAlias) {
 		if (orderItems.isEmpty()) {
 			return "";
 		}
@@ -538,22 +535,23 @@ public class SQLBuilder {
 	}
 
 	public String spliceColumn(ColumnItem columnItem) {
-		return spliceColumn(columnItem, null);
+		return spliceColumn(columnItem, true);
 	}
 
 	/**
 	 * 拼接列 在启动了表别名的情况下, 如果所属表指定了别名, 以表别名作为前缀, 否则以表名作为前缀. 如果没有启动表别名, 不添加前缀
 	 * 
 	 * @param columnItem
+	 * @param assignTableAlias
 	 * @return
 	 */
-	public String spliceColumn(ColumnItem columnItem, Boolean assignTableAlias) {
+	public String spliceColumn(ColumnItem columnItem, boolean assignTableAlias) {
 		StringBuilder columnBuilder = new StringBuilder();
 		Column column = columnItem.getColumn();
 		if (column == null) {
 			columnBuilder.append(columnItem.getExpression());
 		} else {
-			if (dialect.tableAliasEnabled() && (assignTableAlias == null || assignTableAlias)) {
+			if (dialect.tableAliasEnabled() && assignTableAlias) {
 				TableItem tableItem = columnItem.getTableItem();
 				String tableAlias = tableItem.getAlias();
 				if (!Strings.isNullOrEmpty(tableAlias)) {
