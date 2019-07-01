@@ -33,7 +33,7 @@ public class DataRenderer {
 	 * 
 	 * @param data
 	 * @param action
-	 * @return
+	 * @return 渲染结果数据
 	 */
 	public JsonElement render(JsonElement data, Action action) {
 		if (data.isJsonArray()) {

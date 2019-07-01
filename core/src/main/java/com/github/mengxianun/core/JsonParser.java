@@ -896,7 +896,7 @@ public class JsonParser {
 	 * 解析 Group 元素
 	 * 
 	 * @param groupString
-	 * @return
+	 * @return GroupItem
 	 */
 	public GroupItem parseGroup(String groupString) {
 		ColumnItem columnItem = findColumnItem(groupString);
@@ -925,7 +925,7 @@ public class JsonParser {
 	 * 解析 Order 元素, 分为2种格式：1. "column desc", 2. "+column". 默认升序
 	 * 
 	 * @param orderString
-	 * @return
+	 * @return OrderItem
 	 */
 	public OrderItem parseOrder(String orderString) {
 		String columnString = null;

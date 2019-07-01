@@ -15,7 +15,7 @@ public interface Translator {
 	 * 
 	 * @param json
 	 *            JSON 请求字符串
-	 * @return JSON格式的结果对象
+	 * @return Result
 	 */
 	public DataResultSet translate(String json);
 
@@ -24,7 +24,7 @@ public interface Translator {
 	 * 
 	 * @param json
 	 * @param filterExpressions
-	 * @return
+	 * @return Result
 	 */
 	public DataResultSet translate(String json, String... filterExpressions);
 
@@ -39,7 +39,7 @@ public interface Translator {
 	/**
 	 * 获取所有配置的数据源名称
 	 * 
-	 * @return
+	 * @return 所有配置的数据源名称
 	 */
 	public List<String> getDataSourceNames();
 
@@ -48,7 +48,7 @@ public interface Translator {
 	 * 
 	 * @param type
 	 *            数据源类型. 例: mysql, elasticsearch
-	 * @return
+	 * @return 指定类型的数据源名称
 	 */
 	public String getDataSourceName(String type);
 

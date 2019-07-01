@@ -50,16 +50,16 @@ public interface DataContext {
 	 * 
 	 * @param primaryTable
 	 * @param foreignTable
-	 * @return
+	 * @return 主表到外表的多级关系
 	 */
 	public Set<Relationship> getRelationships(Table primaryTable, Table foreignTable);
 
 	/**
-	 * 获取2个表的关联关系. 多层关联的情况下, 以收尾的关系为最终关系. 如 A 一对多 B, B 多对一 C, 则 A 一对一 C
+	 * 获取2个表的关联关系类型. 多层关联的情况下, 以收尾的关系为最终关系. 如 A 一对多 B, B 多对一 C, 则 A 一对一 C
 	 * 
 	 * @param primaryTable
 	 * @param foreignTable
-	 * @return
+	 * @return AssociationType
 	 */
 	public AssociationType getAssociationType(Table primaryTable, Table foreignTable);
 

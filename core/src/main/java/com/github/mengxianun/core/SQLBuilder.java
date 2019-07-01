@@ -543,7 +543,7 @@ public class SQLBuilder {
 	 * 
 	 * @param columnItem
 	 * @param assignTableAlias
-	 * @return
+	 * @return 拼接列后的字符串
 	 */
 	public String spliceColumn(ColumnItem columnItem, boolean assignTableAlias) {
 		StringBuilder columnBuilder = new StringBuilder();
@@ -574,7 +574,7 @@ public class SQLBuilder {
 	 * 在启动了表别名的而情况下, 如果所属表指定了别名, 以表别名作为前缀, 否则以表名作为前缀. 如果没有启动表别名, 不添加前缀
 	 * 
 	 * @param columnItem
-	 * @return
+	 * @return 拼接条件列后的字符串
 	 */
 	public String spliceCondColumn(ColumnItem columnItem) {
 		StringBuilder columnBuilder = new StringBuilder();
@@ -608,7 +608,7 @@ public class SQLBuilder {
 	 * 用引用符号包裹数据元素
 	 * 
 	 * @param element
-	 * @return
+	 * @return 引号包装后的元素
 	 */
 	public String quote(String element) {
 		if (dialect.quoteTable() || SqlReservedWords.containsWord(element)) {
