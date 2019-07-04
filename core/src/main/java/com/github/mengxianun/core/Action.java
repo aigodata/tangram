@@ -32,9 +32,12 @@ public class Action {
 	private List<ValueItem> valueItems;
 	private ResultType resultType;
 	private SQLBuilder sqlBuilder;
+	private boolean distinct;
 
 	private List<Table> tables;
 	private List<Table> joinTables;
+	// 是否处理 Join Limit 的情况
+	private boolean handleJoinLimit;
 
 	public Action() {
 		this.tableItems = new ArrayList<>();
@@ -44,6 +47,7 @@ public class Action {
 		this.groupItems = new ArrayList<>();
 		this.orderItems = new ArrayList<>();
 		this.valueItems = new ArrayList<>();
+		handleJoinLimit = true;
 	}
 
 	public Action(Operation operation) {
@@ -327,6 +331,14 @@ public class Action {
 		this.sqlBuilder = sqlBuilder;
 	}
 
+	public boolean isDistinct() {
+		return distinct;
+	}
+
+	public void setDistinct(boolean distinct) {
+		this.distinct = distinct;
+	}
+
 	public List<Table> getTables() {
 		return tables;
 	}
@@ -341,6 +353,14 @@ public class Action {
 
 	public void setJoinTables(List<Table> joinTables) {
 		this.joinTables = joinTables;
+	}
+
+	public boolean isHandleJoinLimit() {
+		return handleJoinLimit;
+	}
+
+	public void setHandleJoinLimit(boolean handleJoinLimit) {
+		this.handleJoinLimit = handleJoinLimit;
 	}
 
 }
