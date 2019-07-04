@@ -2,6 +2,7 @@ package com.github.mengxianun.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,7 @@ public class SQLBuilder {
 	public static final String DELIM_OR = " OR ";
 	public static final String COUNT = " COUNT(*) ";
 	public static final String COLUMN_ALL = "*";
+	public static final String DISTINCT = " DISTINCT ";
 	// 字段别名关联字符串
 	public static final String ALIAS_KEY = " AS ";
 
@@ -124,6 +126,9 @@ public class SQLBuilder {
 
 	public String toColumns() {
 		StringBuilder columnsBuilder = new StringBuilder(PREFIX_SELECT);
+		if (action.isDistinct()) {
+			columnsBuilder.append(DISTINCT);
+		}
 		List<ColumnItem> columnItems = action.getColumnItems();
 		if (columnItems.isEmpty()) {
 			columnsBuilder.append(COLUMN_ALL).append(" ");
@@ -154,47 +159,7 @@ public class SQLBuilder {
 			}
 			Table table = tableItem.getTable();
 			if (table != null) {
-				// join 和 limit 同时存在时, 并且存在一对多或多对多的情况下, 分页会出问题.
-				// 这里将主表作为基础表(子查询), 特殊处理.
-				if (!action.getJoinItems().isEmpty() && action.getLimitItem() != null) {
-					// 基础表查询语句
-					StringBuilder subBuilder = new StringBuilder(PREFIX_SELECT);
-					subBuilder.append("*").append(PREFIX_FROM).append(table.getName());
-
-					/*
-					 * Where
-					 */
-					List<FilterItem> filterItems = action.getFilterItems();
-					// 主表的 Where 条件
-					List<FilterItem> mainTableFilterItems = filterItems.stream()
-							.filter(e -> e.getColumnItem().getTableItem().getTable() == table)
-							.collect(Collectors.toList());
-					// 基础表查询属于子查询, 内部条件 SQL 不指定表别名
-					String mainTableWhereString = toWhere(mainTableFilterItems, false);
-					subBuilder.append(mainTableWhereString);
-
-					joinLimitFilterItems = new ArrayList<>(action.getFilterItems());
-					joinLimitFilterItems.removeAll(mainTableFilterItems);
-
-					/*
-					 * Order
-					 */
-					List<OrderItem> orderItems = action.getOrderItems();
-					// 主表的 Order
-					List<OrderItem> mainTableOrderItems = orderItems.stream()
-							.filter(e -> e.getColumnItem().getTableItem().getTable() == table)
-							.collect(Collectors.toList());
-					String mainTableOrderString = toOrders(mainTableOrderItems, false);
-					subBuilder.append(mainTableOrderString);
-
-					subBuilder.append(toLimit());
-					// 拼接基础表查询语句
-					tablesBuilder.append("(").append(subBuilder).append(")");
-
-					joinLimit = true;
-				} else {
-					tablesBuilder.append(spliceTable(table));
-				}
+				tablesBuilder.append(spliceTable(table));
 			} else {
 				tablesBuilder.append(tableItem.getExpression());
 			}
@@ -202,9 +167,67 @@ public class SQLBuilder {
 			if (!Strings.isNullOrEmpty(alias) && dialect.tableAliasEnabled()) {
 				tablesBuilder.append(ALIAS_KEY).append(alias);
 			}
+
+			////////////////////////////////////////////
+			// To optimize
+			////////////////////////////////////////////
+			// join 和 limit 同时存在时, 并且存在一对多或多对多的情况下, 分页会出问题.
+			// 这里将主表作为基础表(子查询), 特殊处理.
+			if (!action.getJoinItems().isEmpty() && action.getLimitItem() != null && action.isHandleJoinLimit()) {
+				tablesBuilder.append(toJoinLimit(tableItem));
+			}
 			comma = true;
 		}
 		return tableString = tablesBuilder.toString();
+	}
+
+	public String toJoinLimit(TableItem tableItem) {
+		List<ColumnItem> originalColumnItems = action.getColumnItems();
+		boolean distinct = action.isDistinct();
+		boolean handleJoinLimit = action.isHandleJoinLimit();
+		Table table = tableItem.getTable();
+		String originalTableAlias = tableItem.getAlias();
+
+		// 临时状态
+		String tempAliasPrefix = "inner_";
+		tableItem.setAlias(tempAliasPrefix + tableItem.getAlias());
+		for (JoinItem joinItem : action.getJoinItems()) {
+			TableItem joinTableItem = joinItem.getRightColumns().get(0).getTableItem();
+			joinTableItem.setAlias(tempAliasPrefix + joinTableItem.getAlias());
+		}
+		List<ColumnItem> innerColumnItems = ActionUtil.createColumnItems(tableItem, false);
+		// 过滤 Json 字段类型, Json 类型无法与 distinct 一起使用
+		innerColumnItems = innerColumnItems.stream().filter(e -> !e.getColumn().getType().isJson())
+				.collect(Collectors.toList());
+		action.setColumnItems(innerColumnItems);
+		action.setDistinct(true);
+		action.setHandleJoinLimit(false);
+		// 构建子查询 SQL
+		action.build();
+		String sql = action.getSql();
+
+		// 返回原始状态
+		tableItem.setAlias(tableItem.getAlias().replaceFirst(tempAliasPrefix, ""));
+		for (JoinItem joinItem : action.getJoinItems()) {
+			TableItem joinTableItem = joinItem.getRightColumns().get(0).getTableItem();
+			joinTableItem.setAlias(joinTableItem.getAlias().replaceFirst(tempAliasPrefix, ""));
+		}
+		action.setColumnItems(originalColumnItems);
+		action.setDistinct(distinct);
+		action.setHandleJoinLimit(handleJoinLimit);
+
+		joinLimitFilterItems = Collections.emptyList();
+		joinLimit = true;
+
+		StringBuilder builder = new StringBuilder(INNER_JOIN);
+		builder.append("(").append(sql).append(")");
+		String innerAlias = ActionUtil.createTableAlias(tableItem.getTable());
+		builder.append(ALIAS_KEY).append(innerAlias);
+		builder.append(JOIN_ON);
+		builder.append(originalTableAlias).append(".").append(quote(table.getColumns().get(0).getName()));
+		builder.append(" = ");
+		builder.append(innerAlias).append(".").append(quote(table.getColumns().get(0).getName()));
+		return builder.toString();
 	}
 
 	public String toJoins() {
