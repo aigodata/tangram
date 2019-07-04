@@ -1,6 +1,6 @@
 allprojects {
   group = 'com.github.mengxianun'
-  version = '1.4.7'
+  version = '1.4.8'
 }
 
 subprojects {
@@ -16,7 +16,7 @@ subprojects {
   archivesBaseName = 'tangram-' + project.name
  
   dependencies {
-    implementation 'com.google.guava:guava:24.1-jre'
+    implementation 'com.google.guava:guava:28.0-jre'
     implementation 'com.google.inject:guice:4.2.0'
     // Json
     implementation 'com.google.code.gson:gson:2.8.5'
