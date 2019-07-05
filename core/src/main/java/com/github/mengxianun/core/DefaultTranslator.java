@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import com.github.mengxianun.core.attributes.ConfigAttributes;
 import com.github.mengxianun.core.attributes.ResultAttributes;
 import com.github.mengxianun.core.exception.DataException;
-import com.github.mengxianun.core.exception.PreHandlerException;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.json.JsonAttributes;
@@ -53,9 +52,6 @@ public class DefaultTranslator extends AbstractTranslator {
 			// TODO step1. json解析处理
 			JsonParser jsonParser = jsonParser(json);
 
-			// TODO step2. 预处理（所有实现preHandler接口的预处理都会执行）
-			super.preHandler(jsonParser);
-
 			// TODO step3. 取数据
 			JsonElement result = resultSet(jsonParser, filterExpressions);
 
@@ -66,9 +62,6 @@ public class DefaultTranslator extends AbstractTranslator {
 			return new DefaultDataResultSet(end - start, result);
 
 		} catch (DataException e) {
-			logger.error(e.getMessage(), e.getCause());
-			return new FailDataResultSet(e.getCode(), e.getMessage());
-		} catch (PreHandlerException e) {
 			logger.error(e.getMessage(), e.getCause());
 			return new FailDataResultSet(e.getCode(), e.getMessage());
 		} catch (JsonSyntaxException e) {

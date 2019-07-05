@@ -29,7 +29,6 @@ import com.github.mengxianun.core.attributes.ConfigAttributes;
 import com.github.mengxianun.core.attributes.DataSourceAttributes;
 import com.github.mengxianun.core.attributes.TableConfigAttributes;
 import com.github.mengxianun.core.exception.DataException;
-import com.github.mengxianun.core.interceptor.TranslatorInterceptor;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Charsets;
@@ -339,20 +338,6 @@ public abstract class AbstractTranslator implements Translator {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * 预处理，在取得数据之前的处理，比如：检验表的操作权限
-	 *
-	 * @param parser
-	 */
-	protected void preHandler(com.github.mengxianun.core.JsonParser parser) {
-		ServiceLoader<TranslatorInterceptor> translatorInterceptors = ServiceLoader.load(TranslatorInterceptor.class);
-		if (translatorInterceptors != null) {
-			for (TranslatorInterceptor interceptor : translatorInterceptors) {
-				interceptor.preHandler(parser, configuration);
-			}
-		}
 	}
 
 	/**
