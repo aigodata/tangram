@@ -91,7 +91,7 @@ public abstract class AbstractDataContext implements DataContext {
 	}
 
 	@Override
-	public void destroy() throws Throwable {
+	public void destroy() {
 		// TODO
 	}
 

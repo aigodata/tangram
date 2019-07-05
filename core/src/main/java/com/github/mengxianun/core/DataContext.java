@@ -38,7 +38,7 @@ public interface DataContext {
 
 	public Dialect getDialect();
 
-	public void destroy() throws Throwable;
+	public void destroy();
 
 	public void addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType);
 

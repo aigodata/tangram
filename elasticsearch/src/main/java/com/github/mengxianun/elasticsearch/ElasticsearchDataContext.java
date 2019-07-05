@@ -101,8 +101,12 @@ public class ElasticsearchDataContext extends JdbcDataContext {
 	}
 
 	@Override
-	public void destroy() throws IOException {
-		client.close();
+	public void destroy() {
+		try {
+			client.close();
+		} catch (IOException e) {
+			logger.error(ResultStatus.RESOURCE_DESTROY_FAILED.fill("Elasticsearch client"), e);
+		}
 	}
 
 }
