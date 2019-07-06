@@ -344,8 +344,8 @@ public abstract class AbstractTranslator implements Translator {
 	 * 释放资源
 	 */
 	@PreDestroy
-	public void cleanup() {
-		logger.info("Close all DataContext...");
+	public void destroy() {
+		logger.info("Destroy all DataContext...");
 		for (Map.Entry<String, DataContext> entry : dataContexts.entrySet()) {
 			String dataContextName = entry.getKey();
 			DataContext dataContext = dataContexts.get(dataContextName);
@@ -353,7 +353,7 @@ public abstract class AbstractTranslator implements Translator {
 			logger.info("DataContext [{}] destroyed", dataContextName);
 
 		}
-		logger.info("All DataContext is already closed");
+		logger.info("All DataContext is already destroyed");
 	}
 
 }
