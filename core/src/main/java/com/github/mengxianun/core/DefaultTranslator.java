@@ -28,7 +28,7 @@ public class DefaultTranslator extends AbstractTranslator {
 	private static final Logger logger = LoggerFactory.getLogger(DefaultTranslator.class);
 
 	public DefaultTranslator() {
-		this(configuration.getAsJsonPrimitive(ConfigAttributes.CONFIG_FILE).getAsString());
+		this(App.Config.getString(ConfigAttributes.CONFIG_FILE));
 	}
 
 	public DefaultTranslator(String configFile) {

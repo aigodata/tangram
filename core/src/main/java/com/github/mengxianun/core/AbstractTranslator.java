@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -12,7 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,7 +37,6 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
@@ -45,31 +44,7 @@ import com.google.gson.JsonSyntaxException;
 public abstract class AbstractTranslator implements Translator {
 
 	private static final Logger logger = LoggerFactory.getLogger(AbstractTranslator.class);
-
-	// 默认配置文件名
-	protected static final String DEFAULT_CONFIG_FILE = "air.json";
-	// 默认数据表配置路径
-	protected static final String DEFAULT_TABLE_CONFIG_PATH = "tables";
-	// 全局配置
-	protected static final JsonObject configuration = new JsonObject();
-	protected final Map<String, DataContext> dataContexts = new HashMap<>();
 	private final List<DataContextFactory> factories = new ArrayList<>();
-
-	static {
-		// 初始化默认属性
-		configuration.addProperty(ConfigAttributes.CONFIG_FILE, DEFAULT_CONFIG_FILE);
-		configuration.add(ConfigAttributes.DATASOURCES, JsonNull.INSTANCE);
-		configuration.addProperty(ConfigAttributes.UPSERT, false);
-		configuration.addProperty(ConfigAttributes.NATIVE, false);
-		configuration.addProperty(ConfigAttributes.LOG, false);
-		configuration.addProperty(ConfigAttributes.DEFAULT_DATASOURCE, "");
-		configuration.addProperty(ConfigAttributes.TABLE_CONFIG_PATH, DEFAULT_TABLE_CONFIG_PATH);
-		configuration.add(ConfigAttributes.TABLE_CONFIG, JsonNull.INSTANCE);
-		// 预处理开关
-		configuration.add(ConfigAttributes.PRE_HANDLER, JsonNull.INSTANCE);
-		// 权限控制
-		configuration.add(ConfigAttributes.AUTH_CONTROL, JsonNull.INSTANCE);
-	}
 
 	protected void init(String configFile) {
 		init(convertToURL(configFile));
@@ -79,42 +54,42 @@ public abstract class AbstractTranslator implements Translator {
 		if (configFileURL != null) {
 			readConfig(configFileURL);
 		}
-		readTablesConfig(configuration.getAsJsonPrimitive(ConfigAttributes.TABLE_CONFIG_PATH).getAsString());
+		readTablesConfig(App.Config.getString(ConfigAttributes.TABLE_CONFIG_PATH));
 	}
 
 	private URL convertToURL(String configFile) {
 		try {
 			URL configFileURL = Resources.getResource(configFile);
-			configuration.addProperty(ConfigAttributes.CONFIG_FILE, configFile);
+			App.Config.set(ConfigAttributes.CONFIG_FILE, configFile);
 			return configFileURL;
 		} catch (Exception e) {
-			logger.error(String.format("config file [%s] parse error", configFile), e);
+			logger.error(String.format("Config file [%s] parse error", configFile), e);
 		}
 		return null;
 	}
 
 	private void readConfig(URL configFileURL) {
 		try {
-			String configurationFileContent = Resources.toString(configFileURL, Charsets.UTF_8);
+			String configurationFileContent = Resources.toString(configFileURL, StandardCharsets.UTF_8);
 			JsonObject configurationJsonObject = new JsonParser().parse(configurationFileContent).getAsJsonObject();
 			// 覆盖默认配置
 			for (Entry<String, JsonElement> entry : configurationJsonObject.entrySet()) {
-				configuration.add(entry.getKey(), entry.getValue());
+				App.Config.set(entry.getKey(), entry.getValue());
 			}
-			createDataContext();
+			createDataContexts();
 		} catch (IOException e) {
-			logger.error(String.format("config file [%s] parse error", configFileURL), e);
+			logger.error(String.format("Config file [%s] parse error", configFileURL), e);
 		}
 	}
 
-	private void createDataContext() {
+	private void createDataContexts() {
 		discoverFromClasspath();
 
-		JsonObject dataSourcesJsonObject = configuration.getAsJsonObject(ConfigAttributes.DATASOURCES);
+		JsonObject dataSourcesJsonObject = App.Config.getJsonObject(ConfigAttributes.DATASOURCES);
 		// 是否配置了默认数据源, 在没有配置默认数据源的情况下, 将第一个数据源设置为默认数据源
 		if (!dataSourcesJsonObject.has(ConfigAttributes.DEFAULT_DATASOURCE)) {
 			String defaultDataSourceName = dataSourcesJsonObject.keySet().iterator().next();
-			configuration.addProperty(ConfigAttributes.DEFAULT_DATASOURCE, defaultDataSourceName);
+			App.Config.set(ConfigAttributes.DEFAULT_DATASOURCE, defaultDataSourceName);
 		}
 
 		for (Entry<String, JsonElement> entry : dataSourcesJsonObject.entrySet()) {
@@ -209,7 +184,7 @@ public abstract class AbstractTranslator implements Translator {
 						return;
 					} else {
 						String parentFileName = parentPath.getFileName().toString();
-						if (!dataContexts.containsKey(parentFileName)) { // 文件名不是数据源
+						if (!App.hasDataContext(parentFileName)) { // 文件名不是数据源
 							return;
 						}
 						DataContext dataContext = getDataContext(parentFileName);
@@ -284,21 +259,21 @@ public abstract class AbstractTranslator implements Translator {
 	}
 
 	public void addDataContext(String name, DataContext dataContext) {
-		if (dataContexts.containsKey(name)) {
+		if (App.hasDataContext(name)) {
 			throw new DataException(String.format("DataContext [%s] already exists", name));
 		}
-		dataContexts.put(name, dataContext);
-		if (!configuration.has(ConfigAttributes.DEFAULT_DATASOURCE)
-				|| Strings.isNullOrEmpty(configuration.get(ConfigAttributes.DEFAULT_DATASOURCE).getAsString())) {
-			String defaultDataSourceName = dataContexts.keySet().iterator().next();
-			configuration.addProperty(ConfigAttributes.DEFAULT_DATASOURCE, defaultDataSourceName);
+		App.addDataContext(name, dataContext);
+		if (!App.Config.has(ConfigAttributes.DEFAULT_DATASOURCE)
+				|| Strings.isNullOrEmpty(App.Config.getString(ConfigAttributes.DEFAULT_DATASOURCE))) {
+			String defaultDataSourceName = App.getDatacontexts().keySet().iterator().next();
+			App.Config.set(ConfigAttributes.DEFAULT_DATASOURCE, defaultDataSourceName);
 		}
 	}
 
 	@Override
 	public void registerDataContext(String name, DataContext dataContext) {
 		addDataContext(name, dataContext);
-		init(configuration.getAsJsonPrimitive(ConfigAttributes.CONFIG_FILE).getAsString());
+		init(App.Config.getString(ConfigAttributes.CONFIG_FILE));
 	}
 
 	public void discoverFromClasspath() {
@@ -313,7 +288,7 @@ public abstract class AbstractTranslator implements Translator {
 	}
 
 	public DataContext getDataContext(String dataSourceName) {
-		return dataContexts.get(dataSourceName);
+		return App.getDatacontext(dataSourceName);
 	}
 
 	public DataContext getDefaultDataContext() {
@@ -321,18 +296,20 @@ public abstract class AbstractTranslator implements Translator {
 	}
 
 	public String getDefaultDataSource() {
-		return configuration.getAsJsonPrimitive(ConfigAttributes.DEFAULT_DATASOURCE).getAsString();
+		return App.Config.getString(ConfigAttributes.DEFAULT_DATASOURCE);
 	}
 
 	@Override
 	public List<String> getDataSourceNames() {
-		return Lists.newArrayList(dataContexts.keySet());
+		return Lists.newArrayList(App.getDatacontextNames());
 	}
 
 	@Override
 	public String getDataSourceName(String type) {
-		for (String sourceName : dataContexts.keySet()) {
-			DataContext dataContext = dataContexts.get(sourceName);
+		Map<String, DataContext> datacontexts = App.getDatacontexts();
+		for (Map.Entry<String, DataContext> entry : datacontexts.entrySet()) {
+			String sourceName = entry.getKey();
+			DataContext dataContext = entry.getValue();
 			if (dataContext.getDialect().getType().equals(type)) {
 				return sourceName;
 			}
@@ -346,11 +323,11 @@ public abstract class AbstractTranslator implements Translator {
 	@PreDestroy
 	public void destroy() {
 		logger.info("Destroy all DataContext...");
-		for (Map.Entry<String, DataContext> entry : dataContexts.entrySet()) {
-			String dataContextName = entry.getKey();
-			DataContext dataContext = dataContexts.get(dataContextName);
+		for (Map.Entry<String, DataContext> entry : App.getDatacontexts().entrySet()) {
+			String name = entry.getKey();
+			DataContext dataContext = entry.getValue();
 			dataContext.destroy();
-			logger.info("DataContext [{}] destroyed", dataContextName);
+			logger.info("DataContext [{}] destroyed", name);
 
 		}
 		logger.info("All DataContext is already destroyed");
