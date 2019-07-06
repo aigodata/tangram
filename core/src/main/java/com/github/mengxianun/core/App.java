@@ -1,9 +1,12 @@
 package com.github.mengxianun.core;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import com.github.mengxianun.core.attributes.ConfigAttributes;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
@@ -17,10 +20,14 @@ public final class App {
 
 	private App() {}
 
-	private static final Map<String, DataContext> dataContexts = new HashMap<>();
+	private static final Map<String, DataContext> dataContexts = new LinkedHashMap<>();
 
 	public static Map<String, DataContext> getDatacontexts() {
 		return dataContexts;
+	}
+
+	public static Set<String> getDatacontextNames() {
+		return dataContexts.keySet();
 	}
 
 	public static DataContext getDatacontext(String name) {
@@ -33,6 +40,10 @@ public final class App {
 
 	public static DataContext addDataContext(String name, DataContext dataContext) {
 		return dataContexts.put(name, dataContext);
+	}
+
+	public static DataContext getDefaultDataContext() {
+		return dataContexts.get(ConfigAttributes.DEFAULT_DATASOURCE);
 	}
 
 	static class Config {
@@ -60,6 +71,40 @@ public final class App {
 			configuration.add(ConfigAttributes.PRE_HANDLER, JsonNull.INSTANCE);
 			// 权限控制
 			configuration.add(ConfigAttributes.AUTH_CONTROL, JsonNull.INSTANCE);
+		}
+
+		public static JsonElement get(String key) {
+			return configuration.get(key);
+		}
+
+		public static JsonObject getJsonObject(String key) {
+			return configuration.getAsJsonObject(key);
+		}
+
+		public static JsonArray getJsonArray(String key) {
+			return configuration.getAsJsonArray(key);
+		}
+
+		public static String getString(String key) {
+			return configuration.getAsJsonPrimitive(key).getAsString();
+		}
+
+		public static void set(String key, Object value) {
+			if (value instanceof Boolean) {
+				configuration.addProperty(key, (Boolean) value);
+			} else if (value instanceof Character) {
+				configuration.addProperty(key, (Character) value);
+			} else if (value instanceof Number) {
+				configuration.addProperty(key, ((Number) value));
+			} else if (value instanceof String) {
+				configuration.addProperty(key, value.toString());
+			} else {
+				configuration.add(key, (JsonElement) value);
+			}
+		}
+
+		public static boolean has(String key) {
+			return configuration.has(key);
 		}
 	}
 
