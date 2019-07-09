@@ -1,0 +1,16 @@
+{
+    // 数据源
+    "datasources": {
+        "ds": {
+            "url": "jdbc:h2:~/test",
+            "username": "test",
+            "password": "123456"
+        },
+        // 不存在数据源测试
+        "non": {
+            "url": "jdbc:h2:~/non",
+            "username": "test",
+            "password": "123456"
+        }
+    }
+}
