@@ -119,9 +119,8 @@ public abstract class AbstractTranslator implements Translator {
 	/**
 	 * 解析数据源类型, 如果指定了 type 属性, 以 指定的 type 为准. 如果没有指定 type 属性, 则从url属性中解析数据源类型
 	 * 
-	 * @param dataSourceName
 	 * @param dataSourceJsonObject
-	 * @return
+	 * @return DataContext Type
 	 */
 	protected String parseDataContextType(JsonObject dataSourceJsonObject) {
 		String type = null;
