@@ -14,18 +14,7 @@ config (air.json)
             "url": "jdbc:mysql://localhost:3306/tangram",
             "username": "tangram",
             "password": "123456",
-            "initialSize": 1,
-            "minIdle": 1,
-            "maxActive": 20,
-            "maxWait": 60000,
-            "timeBetweenEvictionRunsMillis": 60000,
-            "minEvictableIdleTimeMillis": 300000,
-            "validationQuery": "SELECT 'x'",
-            "testWhileIdle": true,
-            "testOnBorrow": false,
-            "testOnReturn": false,
-            "poolPreparedStatements": false,
-            "filters": "stat"
+            ...
         }
     }
 }
