@@ -1,4 +1,2 @@
 include 'all', 'core', 'jdbc', 'elasticsearch'
-include 'result:result-csv', 'result:result-excel', 'result:result-json', 'result:result-pdf', 'result:result-word'
-include 'encrypt'
 
