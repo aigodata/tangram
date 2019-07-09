@@ -1,5 +1,7 @@
 package com.github.mengxianun.core.interceptor;
 
+import java.time.Duration;
+
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
@@ -7,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.JsonParser;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 
 public class EntranceInterceptor implements MethodInterceptor {
@@ -25,8 +28,15 @@ public class EntranceInterceptor implements MethodInterceptor {
 			sourceName = App.getDefaultDataSource();
 		}
 		App.setCurrentDataContext(sourceName);
-
+		// Stopwatch
+		Stopwatch stopwatch = Stopwatch.createStarted();
+		// Run
 		Object result = invocation.proceed();
+		// Done
+		Duration duration = stopwatch.stop().elapsed();
+		if (logger.isDebugEnabled()) {
+			logger.debug("Operation is completed, taking {} milliseconds", duration.toMillis());
+		}
 		// 清理当前线程的上下文
 		App.cleanup();
 		return result;
