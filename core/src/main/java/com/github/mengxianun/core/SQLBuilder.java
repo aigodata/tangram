@@ -129,21 +129,17 @@ public class SQLBuilder {
 			columnsBuilder.append(DISTINCT);
 		}
 		List<ColumnItem> columnItems = action.getColumnItems();
-		if (columnItems.isEmpty()) {
-			columnsBuilder.append(COLUMN_ALL).append(" ");
-		} else {
-			boolean comma = false;
-			for (ColumnItem columnItem : columnItems) {
-				if (comma) {
-					columnsBuilder.append(", ");
-				}
-				columnsBuilder.append(spliceColumn(columnItem));
-				String alias = columnItem.getAlias();
-				if (!Strings.isNullOrEmpty(alias) && dialect.columnAliasEnabled()) {
-					columnsBuilder.append(ALIAS_KEY).append(alias);
-				}
-				comma = true;
+		boolean comma = false;
+		for (ColumnItem columnItem : columnItems) {
+			if (comma) {
+				columnsBuilder.append(", ");
 			}
+			columnsBuilder.append(spliceColumn(columnItem));
+			String alias = columnItem.getAlias();
+			if (!Strings.isNullOrEmpty(alias) && dialect.columnAliasEnabled()) {
+				columnsBuilder.append(ALIAS_KEY).append(alias);
+			}
+			comma = true;
 		}
 		return columnString = columnsBuilder.toString();
 	}
