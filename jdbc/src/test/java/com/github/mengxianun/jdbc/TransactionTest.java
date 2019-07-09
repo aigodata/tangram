@@ -1,11 +1,13 @@
 package com.github.mengxianun.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.github.mengxianun.core.DataResultSet;
+import com.github.mengxianun.core.exception.DataException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -16,16 +18,9 @@ public class TransactionTest extends TestSupport {
 
 	@Test
 	void testTransaction12() {
-		//		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "transaction12.json");
+		run(JSON_PARENT_PATH + "transaction12.json");
 		validTableName("transaction_table_1", "new_name");
 		validTableName("transaction_table_2", "new_name");
-	}
-
-	@Test
-	void testTransaction34() {
-		run(JSON_PARENT_PATH + "transaction34.json");
-		validTableName("transaction_table_3", "table3_name");
-		validTableName("transaction_table_4", "table4_name");
 	}
 
 	void validTableName(String table, String name) {
@@ -35,6 +30,11 @@ public class TransactionTest extends TestSupport {
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		JsonObject resultJsonObject = (JsonObject) result.get(0);
 		assertEquals(resultJsonObject.get("name").getAsString(), name);
+	}
+
+	@Test
+	void testTransaction34() {
+		assertThrows(DataException.class, () -> run(JSON_PARENT_PATH + "transaction34.json"));
 	}
 
 }

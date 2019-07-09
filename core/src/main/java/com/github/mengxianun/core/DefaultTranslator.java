@@ -14,7 +14,6 @@ public class DefaultTranslator extends AbstractTranslator {
 
 	public DefaultTranslator(String configFile) {
 		super.init(configFile);
-		App.createInjector();
 	}
 
 	public DefaultTranslator(URL configFileURL) {

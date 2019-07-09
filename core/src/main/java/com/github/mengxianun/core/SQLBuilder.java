@@ -74,8 +74,7 @@ public class SQLBuilder {
 	public SQLBuilder(Action action) {
 		this.action = action;
 		this.dataContext = App.currentDataContext();
-		System.out.println(App.currentDataContext());
-		this.dialect = this.dataContext.getDialect();
+		this.dialect = dataContext.getDialect();
 	}
 
 	public void toSql() {

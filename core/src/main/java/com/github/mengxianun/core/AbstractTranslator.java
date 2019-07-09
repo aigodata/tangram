@@ -57,7 +57,6 @@ public abstract class AbstractTranslator implements Translator {
 		} catch (IOException e) {
 			logger.error("Read table config file parse error", e);
 		}
-		//		App.injector(this);
 	}
 
 	protected URL convertToURL(String configFile) {
@@ -142,42 +141,6 @@ public abstract class AbstractTranslator implements Translator {
 		return type;
 	}
 
-	/**
-	 * 读取所有数据库表配置文件, 结构
-	 * <li>tablePath
-	 * <li>- db1
-	 * <li>-- table1.json
-	 * <li>-- table2.json
-	 * <li>- db2
-	 * <li>-- table1.json
-	 * <li>-- table2.json
-	 * 
-	 * @param tablesConfigPath
-	 * @throws IOException
-	 */
-	protected void readTablesConfig(String tablesConfigPath) throws IOException {
-		URL tablesConfigURL = Thread.currentThread().getContextClassLoader().getResource(tablesConfigPath);
-		if (tablesConfigURL == null) {
-			return;
-		}
-		URI uri;
-		try {
-			uri = tablesConfigURL.toURI();
-		} catch (URISyntaxException e) {
-			throw new DataException(e);
-		}
-		if (uri.getScheme().equals("jar")) {
-			try (FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
-				Path tableConfigPath = fileSystem.getPath("/WEB-INF/classes/" + tablesConfigPath);
-				traverseTablesConfig(tableConfigPath);
-			}
-		} else {
-			Path tableConfigPath = Paths.get(new File(uri).getPath());
-			traverseTablesConfig(tableConfigPath);
-		}
-
-	}
-
 	protected void parseAllTableConfig(String tableConfigPath) throws IOException {
 		Map<String, DataContext> dataContexts = App.getDataContexts();
 		for (Map.Entry<String, DataContext> entry : dataContexts.entrySet()) {
@@ -207,37 +170,6 @@ public abstract class AbstractTranslator implements Translator {
 		} else {
 			Path sourceTableConfigDirPath = Paths.get(new File(uri).getPath());
 			parseSourceTableConfig(sourceTableConfigDirPath, dataContext);
-		}
-	}
-
-	/**
-	 * 遍历数据库表存储路径
-	 * 
-	 * @param tableConfigPath
-	 * @throws IOException
-	 */
-	protected void traverseTablesConfig(Path tableConfigPath) throws IOException {
-		try (Stream<Path> stream = Files.walk(tableConfigPath, 2)) { // 这里循环2层, 由结构决定
-			stream.filter(Files::isRegularFile).forEach(path -> {
-				Path parentPath = path.getParent();
-				try {
-					// 根目录下的表配置文件, 默认为默认数据源的表配置
-					if (Files.isSameFile(parentPath, tableConfigPath)) {
-						DataContext dataContext = App.getDefaultDataContext();
-						parseTableConfigFile(path, dataContext);
-						return;
-					} else {
-						String parentFileName = parentPath.getFileName().toString();
-						if (!App.hasDataContext(parentFileName)) { // 文件名不是数据源
-							return;
-						}
-						DataContext dataContext = App.getDataContext(parentFileName);
-						parseTableConfigFile(path, dataContext);
-					}
-				} catch (IOException e) {
-					throw new DataException(e);
-				}
-			});
 		}
 	}
 

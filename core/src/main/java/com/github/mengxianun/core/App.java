@@ -20,6 +20,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Stage;
 
 /**
  * Application center
@@ -29,12 +30,11 @@ import com.google.inject.Injector;
  */
 public final class App {
 
+	private static Injector injector = Guice.createInjector(Stage.PRODUCTION, new AppModule());
 
 	private static final Map<String, DataContext> dataContexts = new LinkedHashMap<>();
 	// 当前线程的 DataContext
-	public static final ThreadLocal<DataContext> currentDataContext = new ThreadLocal<>();
-
-	private static Injector injector;
+	private static final ThreadLocal<DataContext> currentDataContext = new ThreadLocal<>();
 
 	private App() {}
 
@@ -89,10 +89,6 @@ public final class App {
 
 	public static DataContext currentDataContext() {
 		return currentDataContext.get();
-	}
-
-	public static void createInjector() {
-		injector = Guice.createInjector(new AppModule());
 	}
 
 	public static Injector getInjector() {

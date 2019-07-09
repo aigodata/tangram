@@ -32,7 +32,6 @@ public class TestSupport {
 		// Initialize test database
 		String scriptPath = TestSupport.class.getClassLoader().getResource(DATABASE_INIT_SCRIPT).toString();
 		try {
-			//			Class.forName(DB_DRIVER_CLASS_NAME);
 			RunScript.execute(DB_URL, DB_USERNAME, DB_PASSWORD, scriptPath, Charset.defaultCharset(), false);
 		} catch (SQLException e) {
 			e.printStackTrace();
