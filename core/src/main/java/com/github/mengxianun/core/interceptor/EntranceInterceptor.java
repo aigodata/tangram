@@ -18,9 +18,6 @@ public class EntranceInterceptor implements MethodInterceptor {
 
 	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Entry EntranceInterceptor");
-		}
 		// 设置当前线程的上下文
 		String requestJson = invocation.getArguments()[0].toString();
 		String sourceName = new JsonParser(requestJson).parseSource();
@@ -28,6 +25,9 @@ public class EntranceInterceptor implements MethodInterceptor {
 			sourceName = App.getDefaultDataSource();
 		}
 		App.setCurrentDataContext(sourceName);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Request: {}", requestJson);
+		}
 		// Stopwatch
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		// Run
