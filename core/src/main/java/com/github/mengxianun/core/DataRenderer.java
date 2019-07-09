@@ -101,7 +101,7 @@ public class DataRenderer {
 					 * 待优化
 					 */
 					Table mainTable = action.getTableItems().get(0).getTable();
-					Set<Relationship> relationships = action.getDataContext().getRelationships(mainTable, joinTable);
+					Set<Relationship> relationships = App.Context.getRelationships(mainTable, joinTable);
 					// 构建join表上层表关系
 					List<Table> parentTables = relationships.stream().map(e -> e.getPrimaryColumn().getTable())
 							.collect(Collectors.toList());
@@ -124,7 +124,7 @@ public class DataRenderer {
 								currentTableObject = parentElement.getAsJsonObject();
 							}
 						} else {
-							AssociationType associationType = action.getDataContext()
+							AssociationType associationType = App.Context
 									.getAssociationType(parentTables.get(i), parentTables.get(i + 1));
 							currentTableObject = createJoinStructure(currentTableObject, parentTables.get(i + 1),
 									associationType);
@@ -133,7 +133,7 @@ public class DataRenderer {
 					// -- 构建 join 表结构
 					// join 表的父级表
 					Table parentTable = parentTables.get(parentTables.size() - 1);
-					AssociationType associationType = action.getDataContext().getAssociationType(parentTable,
+					AssociationType associationType = App.Context.getAssociationType(parentTable,
 							joinTable);
 					currentTableObject = createJoinStructure(currentTableObject, joinTable, associationType);
 					// 记录出现过的 join 表

@@ -2,7 +2,8 @@ package com.github.mengxianun.core;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+
+import org.apache.commons.text.RandomStringGenerator;
 
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.TableItem;
@@ -63,14 +64,8 @@ public class ActionUtil {
 	}
 
 	public static String createRandomString(int length) {
-		String base = "abcdefghijklmnopqrstuvwxyz";
-		Random random = new Random();
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < length; i++) {
-			int number = random.nextInt(base.length());
-			sb.append(base.charAt(number));
-		}
-		return sb.toString();
+		RandomStringGenerator generator = new RandomStringGenerator.Builder().withinRange('a', 'z').build();
+		return generator.generate(length);
 	}
 
 }

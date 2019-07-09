@@ -11,9 +11,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
@@ -33,7 +32,6 @@ import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
@@ -44,7 +42,7 @@ import com.google.gson.JsonSyntaxException;
 public abstract class AbstractTranslator implements Translator {
 
 	private static final Logger logger = LoggerFactory.getLogger(AbstractTranslator.class);
-	private final List<DataContextFactory> factories = new ArrayList<>();
+	protected final Map<String, DataContextFactory> factories = new HashMap<>();
 
 	protected void init(String configFile) {
 		init(convertToURL(configFile));
@@ -54,10 +52,15 @@ public abstract class AbstractTranslator implements Translator {
 		if (configFileURL != null) {
 			readConfig(configFileURL);
 		}
-		readTablesConfig(App.Config.getString(ConfigAttributes.TABLE_CONFIG_PATH));
+		try {
+			parseAllTableConfig(App.Config.getString(ConfigAttributes.TABLE_CONFIG_PATH));
+		} catch (IOException e) {
+			logger.error("Read table config file parse error", e);
+		}
+		//		App.injector(this);
 	}
 
-	private URL convertToURL(String configFile) {
+	protected URL convertToURL(String configFile) {
 		try {
 			URL configFileURL = Resources.getResource(configFile);
 			App.Config.set(ConfigAttributes.CONFIG_FILE, configFile);
@@ -68,7 +71,7 @@ public abstract class AbstractTranslator implements Translator {
 		return null;
 	}
 
-	private void readConfig(URL configFileURL) {
+	protected void readConfig(URL configFileURL) {
 		try {
 			String configurationFileContent = Resources.toString(configFileURL, StandardCharsets.UTF_8);
 			JsonObject configurationJsonObject = new JsonParser().parse(configurationFileContent).getAsJsonObject();
@@ -82,29 +85,36 @@ public abstract class AbstractTranslator implements Translator {
 		}
 	}
 
-	private void createDataContexts() {
+	protected void createDataContexts() {
 		discoverFromClasspath();
 
 		JsonObject dataSourcesJsonObject = App.Config.getJsonObject(ConfigAttributes.DATASOURCES);
-		// 是否配置了默认数据源, 在没有配置默认数据源的情况下, 将第一个数据源设置为默认数据源
-		if (!dataSourcesJsonObject.has(ConfigAttributes.DEFAULT_DATASOURCE)) {
-			String defaultDataSourceName = dataSourcesJsonObject.keySet().iterator().next();
-			App.Config.set(ConfigAttributes.DEFAULT_DATASOURCE, defaultDataSourceName);
-		}
-
 		for (Entry<String, JsonElement> entry : dataSourcesJsonObject.entrySet()) {
 			String dataSourceName = entry.getKey();
 			JsonObject dataSourceJsonObject = dataSourcesJsonObject.getAsJsonObject(dataSourceName);
-			String type = parseDataContextType(dataSourceName, dataSourceJsonObject);
-			for (DataContextFactory dataContextFactory : factories) {
-				if (dataContextFactory.getType().equals(type)) {
-					dataSourceJsonObject.remove(ConfigAttributes.DATASOURCE_TYPE);
-					DataContext dataContext = dataContextFactory.create(dataSourceJsonObject);
-					addDataContext(dataSourceName, dataContext);
-					break;
-				}
+			
+			if (App.hasDataContext(dataSourceName)) {
+				logger.info("Data source [{}] already exists", dataSourceName);
+				continue;
+			}
+			String type = parseDataContextType(dataSourceJsonObject);
+			if (type == null || !factories.containsKey(type)) {
+				String message = String.format("Data source [%s] type [%s] is not supported", dataSourceName, type);
+				logger.error(message, new DataException());
+				continue;
+			}
+			DataContextFactory dataContextFactory = factories.get(type);
+			if (dataContextFactory != null) {
+				dataSourceJsonObject.remove(ConfigAttributes.DATASOURCE_TYPE);
+				DataContext dataContext = dataContextFactory.create(dataSourceJsonObject);
+				addDataContext(dataSourceName, dataContext);
+				logger.info("Initialize data source [{}] successfully", dataSourceName);
+			} else {
+				logger.info("Initialize data source [{}] failed, Could not find DataContextFactory with type [{}]", dataSourceName, type);
 			}
 		}
+
+		App.initDefaultDataSource();
 	}
 
 	/**
@@ -114,20 +124,22 @@ public abstract class AbstractTranslator implements Translator {
 	 * @param dataSourceJsonObject
 	 * @return
 	 */
-	private String parseDataContextType(String dataSourceName, JsonObject dataSourceJsonObject) {
+	protected String parseDataContextType(JsonObject dataSourceJsonObject) {
+		String type = null;
 		if (dataSourceJsonObject.has(ConfigAttributes.DATASOURCE_TYPE)) {
-			return dataSourceJsonObject.get(ConfigAttributes.DATASOURCE_TYPE).getAsString();
+			type = dataSourceJsonObject.get(ConfigAttributes.DATASOURCE_TYPE).getAsString();
 		} else {
 			if (dataSourceJsonObject.has(DataSourceAttributes.URL)) {
 				String url = dataSourceJsonObject.get(DataSourceAttributes.URL).getAsString();
-				for (DataContextFactory dataContextFactory : factories) {
-					if (url.contains(dataContextFactory.getType())) {
-						return dataContextFactory.getType();
+				for (String factoryType : factories.keySet()) {
+					if (url.contains(factoryType)) {
+						type = factoryType;
+						break;
 					}
 				}
 			}
 		}
-		throw new DataException(String.format("Data source [%s] lacks the type attribute", dataSourceName));
+		return type;
 	}
 
 	/**
@@ -141,8 +153,9 @@ public abstract class AbstractTranslator implements Translator {
 	 * <li>-- table2.json
 	 * 
 	 * @param tablesConfigPath
+	 * @throws IOException
 	 */
-	private void readTablesConfig(String tablesConfigPath) {
+	protected void readTablesConfig(String tablesConfigPath) throws IOException {
 		URL tablesConfigURL = Thread.currentThread().getContextClassLoader().getResource(tablesConfigPath);
 		if (tablesConfigURL == null) {
 			return;
@@ -157,8 +170,6 @@ public abstract class AbstractTranslator implements Translator {
 			try (FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
 				Path tableConfigPath = fileSystem.getPath("/WEB-INF/classes/" + tablesConfigPath);
 				traverseTablesConfig(tableConfigPath);
-			} catch (IOException e) {
-				throw new DataException(e);
 			}
 		} else {
 			Path tableConfigPath = Paths.get(new File(uri).getPath());
@@ -167,35 +178,74 @@ public abstract class AbstractTranslator implements Translator {
 
 	}
 
+	protected void parseAllTableConfig(String tableConfigPath) throws IOException {
+		Map<String, DataContext> dataContexts = App.getDataContexts();
+		for (Map.Entry<String, DataContext> entry : dataContexts.entrySet()) {
+			String dataContextName = entry.getKey();
+			DataContext dataContext = entry.getValue();
+			String sourceTableConfigDir = tableConfigPath + File.separator + dataContextName;
+			parseSourceTableConfig(sourceTableConfigDir, dataContext);
+		}
+	}
+
+	protected void parseSourceTableConfig(String sourceTableConfigDir, DataContext dataContext) throws IOException {
+		URL tablesConfigURL = Thread.currentThread().getContextClassLoader().getResource(sourceTableConfigDir);
+		if (tablesConfigURL == null) {
+			return;
+		}
+		URI uri;
+		try {
+			uri = tablesConfigURL.toURI();
+		} catch (URISyntaxException e) {
+			throw new DataException(e);
+		}
+		if (uri.getScheme().equals("jar")) {
+			try (FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
+				Path sourceTableConfigDirPath = fileSystem.getPath("/WEB-INF/classes/" + sourceTableConfigDir);
+				parseSourceTableConfig(sourceTableConfigDirPath, dataContext);
+			}
+		} else {
+			Path sourceTableConfigDirPath = Paths.get(new File(uri).getPath());
+			parseSourceTableConfig(sourceTableConfigDirPath, dataContext);
+		}
+	}
+
 	/**
 	 * 遍历数据库表存储路径
 	 * 
 	 * @param tableConfigPath
+	 * @throws IOException
 	 */
-	private void traverseTablesConfig(Path tableConfigPath) {
+	protected void traverseTablesConfig(Path tableConfigPath) throws IOException {
 		try (Stream<Path> stream = Files.walk(tableConfigPath, 2)) { // 这里循环2层, 由结构决定
 			stream.filter(Files::isRegularFile).forEach(path -> {
 				Path parentPath = path.getParent();
 				try {
 					// 根目录下的表配置文件, 默认为默认数据源的表配置
 					if (Files.isSameFile(parentPath, tableConfigPath)) {
-						DataContext dataContext = getDefaultDataContext();
-						readTableConfig(path, dataContext);
+						DataContext dataContext = App.getDefaultDataContext();
+						parseTableConfigFile(path, dataContext);
 						return;
 					} else {
 						String parentFileName = parentPath.getFileName().toString();
 						if (!App.hasDataContext(parentFileName)) { // 文件名不是数据源
 							return;
 						}
-						DataContext dataContext = getDataContext(parentFileName);
-						readTableConfig(path, dataContext);
+						DataContext dataContext = App.getDataContext(parentFileName);
+						parseTableConfigFile(path, dataContext);
 					}
 				} catch (IOException e) {
 					throw new DataException(e);
 				}
 			});
-		} catch (IOException e) {
-			throw new DataException(e);
+		}
+	}
+
+	protected void parseSourceTableConfig(Path sourceTableConfigDir, DataContext dataContext) throws IOException {
+		try (Stream<Path> stream = Files.walk(sourceTableConfigDir, 1)) {
+			stream.filter(Files::isRegularFile).forEach(path -> {
+				parseTableConfigFile(path, dataContext);
+			});
 		}
 	}
 
@@ -206,7 +256,7 @@ public abstract class AbstractTranslator implements Translator {
 	 *            数据表配置文件路径
 	 * @param dataContext
 	 */
-	private void readTableConfig(Path path, DataContext dataContext) {
+	protected void parseTableConfigFile(Path path, DataContext dataContext) {
 		if (dataContext == null) {
 			return;
 		}
@@ -247,8 +297,7 @@ public abstract class AbstractTranslator implements Translator {
 							// 添加主表对外表的关联
 							dataContext.addRelationship(column, targetColumn, associationType);
 							// 添加外表对主表的关联
-							dataContext.addRelationship(targetColumn, column,
-									associationType.reverse());
+							dataContext.addRelationship(targetColumn, column, associationType.reverse());
 						}
 					}
 				}
@@ -258,25 +307,19 @@ public abstract class AbstractTranslator implements Translator {
 		}
 	}
 
-	public void addDataContext(String name, DataContext dataContext) {
+	protected void addDataContext(String name, DataContext dataContext) {
 		if (App.hasDataContext(name)) {
 			throw new DataException(String.format("DataContext [%s] already exists", name));
 		}
 		App.addDataContext(name, dataContext);
 		if (!App.Config.has(ConfigAttributes.DEFAULT_DATASOURCE)
 				|| Strings.isNullOrEmpty(App.Config.getString(ConfigAttributes.DEFAULT_DATASOURCE))) {
-			String defaultDataSourceName = App.getDatacontexts().keySet().iterator().next();
+			String defaultDataSourceName = App.getDataContexts().keySet().iterator().next();
 			App.Config.set(ConfigAttributes.DEFAULT_DATASOURCE, defaultDataSourceName);
 		}
 	}
 
-	@Override
-	public void registerDataContext(String name, DataContext dataContext) {
-		addDataContext(name, dataContext);
-		init(App.Config.getString(ConfigAttributes.CONFIG_FILE));
-	}
-
-	public void discoverFromClasspath() {
+	protected void discoverFromClasspath() {
 		final ServiceLoader<DataContextFactory> serviceLoader = ServiceLoader.load(DataContextFactory.class);
 		for (DataContextFactory factory : serviceLoader) {
 			addFactory(factory);
@@ -284,46 +327,20 @@ public abstract class AbstractTranslator implements Translator {
 	}
 
 	public void addFactory(DataContextFactory factory) {
-		factories.add(factory);
+		factories.put(factory.getType(), factory);
 	}
 
-	public DataContext getDataContext(String dataSourceName) {
-		return App.getDatacontext(dataSourceName);
-	}
-
-	public DataContext getDefaultDataContext() {
-		return getDataContext(getDefaultDataSource());
-	}
-
-	public String getDefaultDataSource() {
-		return App.Config.getString(ConfigAttributes.DEFAULT_DATASOURCE);
-	}
-
-	@Override
-	public List<String> getDataSourceNames() {
-		return Lists.newArrayList(App.getDatacontextNames());
-	}
-
-	@Override
-	public String getDataSourceName(String type) {
-		Map<String, DataContext> datacontexts = App.getDatacontexts();
-		for (Map.Entry<String, DataContext> entry : datacontexts.entrySet()) {
-			String sourceName = entry.getKey();
-			DataContext dataContext = entry.getValue();
-			if (dataContext.getDialect().getType().equals(type)) {
-				return sourceName;
-			}
-		}
-		return null;
+	public void reInit() {
+		init(App.Config.getString(ConfigAttributes.CONFIG_FILE));
 	}
 
 	/**
 	 * 释放资源
 	 */
 	@PreDestroy
-	public void destroy() {
+	protected void destroy() {
 		logger.info("Destroy all DataContext...");
-		for (Map.Entry<String, DataContext> entry : App.getDatacontexts().entrySet()) {
+		for (Map.Entry<String, DataContext> entry : App.getDataContexts().entrySet()) {
 			String name = entry.getKey();
 			DataContext dataContext = entry.getValue();
 			dataContext.destroy();

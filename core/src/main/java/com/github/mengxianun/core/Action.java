@@ -1,10 +1,8 @@
 package com.github.mengxianun.core;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.FilterItem;
 import com.github.mengxianun.core.item.GroupItem;
@@ -14,14 +12,14 @@ import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
 import com.github.mengxianun.core.json.Operation;
+import com.github.mengxianun.core.json.Template;
 import com.github.mengxianun.core.schema.Table;
+import com.google.gson.JsonObject;
 
 public class Action {
 
+	private JsonObject requestData;
 	private Operation operation;
-
-	private DataContext dataContext;
-
 	private List<TableItem> tableItems;
 	private List<ColumnItem> columnItems;
 	private List<JoinItem> joinItems;
@@ -31,6 +29,8 @@ public class Action {
 	private LimitItem limitItem;
 	private List<ValueItem> valueItems;
 	private ResultType resultType;
+	private Template template;
+	private String nativeContent;
 	private SQLBuilder sqlBuilder;
 	private boolean distinct;
 
@@ -189,6 +189,26 @@ public class Action {
 		return operation != null && operation == Operation.DELETE;
 	}
 
+	public boolean isTransaction() {
+		return operation != null && operation == Operation.TRANSACTION;
+	}
+
+	public boolean isStruct() {
+		return operation != null && operation == Operation.STRUCT;
+	}
+
+	public boolean isNative() {
+		return operation != null && operation == Operation.NATIVE;
+	}
+
+	public boolean isResultFile() {
+		return resultType != null;
+	}
+
+	public boolean isTemplate() {
+		return template != null;
+	}
+
 	public boolean isJoin() {
 		return !joinItems.isEmpty();
 	}
@@ -198,13 +218,12 @@ public class Action {
 	}
 
 	public boolean columnAliasEnabled() {
-		return dataContext.getDialect().columnAliasEnabled();
+		return App.Context.columnAliasEnabled();
 	}
 
 	public Action count() {
 		Action count = new Action();
 		count.setOperation(Operation.DETAIL);
-		count.setDataContext(dataContext);
 		count.build();
 		String countSql = sqlBuilder.countSql();
 		List<Object> countParams = sqlBuilder.countParams();
@@ -216,13 +235,7 @@ public class Action {
 
 	public void build() {
 		if (sqlBuilder == null) {
-			Class<? extends SQLBuilder> sqlBuilderClass = dataContext.getDialect().getSQLBuilder();
-			try {
-				Constructor<? extends SQLBuilder> constructor = sqlBuilderClass.getConstructor(Action.class);
-				sqlBuilder = constructor.newInstance(this);
-			} catch (Exception e) {
-				throw new DataException(e);
-			}
+			sqlBuilder = new SQLBuilder(this);
 		}
 		sqlBuilder.toSql();
 	}
@@ -235,20 +248,20 @@ public class Action {
 		return sqlBuilder.getParams();
 	}
 
+	public JsonObject getRequestData() {
+		return requestData;
+	}
+
+	public void setRequestData(JsonObject requestData) {
+		this.requestData = requestData;
+	}
+
 	public Operation getOperation() {
 		return operation;
 	}
 
 	public void setOperation(Operation operation) {
 		this.operation = operation;
-	}
-
-	public DataContext getDataContext() {
-		return dataContext;
-	}
-
-	public void setDataContext(DataContext dataContext) {
-		this.dataContext = dataContext;
 	}
 
 	public List<TableItem> getTableItems() {
@@ -321,6 +334,22 @@ public class Action {
 
 	public void setResultType(ResultType resultType) {
 		this.resultType = resultType;
+	}
+
+	public Template getTemplate() {
+		return template;
+	}
+
+	public void setTemplate(Template template) {
+		this.template = template;
+	}
+
+	public String getNativeContent() {
+		return nativeContent;
+	}
+
+	public void setNativeContent(String nativeContent) {
+		this.nativeContent = nativeContent;
 	}
 
 	public SQLBuilder getSqlBuilder() {

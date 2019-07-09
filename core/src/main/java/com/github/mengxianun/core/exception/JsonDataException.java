@@ -28,10 +28,6 @@ public class JsonDataException extends DataException {
 		super(message, resultStatus);
 	}
 
-	public JsonDataException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
-	}
-
 	public JsonDataException(String message, Throwable cause, ResultStatus resultStatus) {
 		super(message, cause, resultStatus);
 	}

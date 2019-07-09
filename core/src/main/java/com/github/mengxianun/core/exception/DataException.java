@@ -6,24 +6,24 @@ public class DataException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 
-	protected int code;
+	protected final int code;
 
 	public DataException() {
-		super();
+		this.code = 0;
 	}
 
-	public DataException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
+	public DataException(String message) {
+		super(message);
+		this.code = ResultStatus.SYSTEM_ERROR.code();
+	}
+
+	public DataException(String format, Object... args) {
+		super(String.format(format, args));
 		this.code = ResultStatus.SYSTEM_ERROR.code();
 	}
 
 	public DataException(String message, Throwable cause) {
 		super(message, cause);
-		this.code = ResultStatus.SYSTEM_ERROR.code();
-	}
-
-	public DataException(String message) {
-		super(message);
 		this.code = ResultStatus.SYSTEM_ERROR.code();
 	}
 
