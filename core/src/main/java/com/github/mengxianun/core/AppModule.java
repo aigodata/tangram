@@ -1,7 +1,7 @@
 package com.github.mengxianun.core;
 
-import com.github.mengxianun.core.interceptor.Entrance;
-import com.github.mengxianun.core.interceptor.EntranceInterceptor;
+import com.github.mengxianun.core.interceptor.entrance.Entrance;
+import com.github.mengxianun.core.interceptor.entrance.EntranceInterceptor;
 import com.google.inject.AbstractModule;
 import com.google.inject.matcher.Matchers;
 

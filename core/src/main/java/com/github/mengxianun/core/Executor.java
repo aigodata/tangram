@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.github.mengxianun.core.attributes.ResultAttributes;
-import com.github.mengxianun.core.interceptor.Entrance;
+import com.github.mengxianun.core.interceptor.entrance.Entrance;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.json.JsonAttributes;

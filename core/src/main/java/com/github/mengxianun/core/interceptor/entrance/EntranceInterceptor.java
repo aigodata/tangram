@@ -1,4 +1,4 @@
-package com.github.mengxianun.core.interceptor;
+package com.github.mengxianun.core.interceptor.entrance;
 
 import java.time.Duration;
 
