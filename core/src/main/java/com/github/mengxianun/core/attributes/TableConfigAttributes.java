@@ -15,5 +15,7 @@ public interface TableConfigAttributes {
 	String ASSOCIATION_TYPE = "type";
 	// 列忽略, 返回数据不包含该列
 	String COLUMN_IGNORE = "ignore";
+	// JSON 节点的 key 名称
+	String JSON_KEY = "json_key";
 
 }
