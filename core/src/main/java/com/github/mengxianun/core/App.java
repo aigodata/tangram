@@ -95,10 +95,6 @@ public final class App {
 		return injector;
 	}
 
-	public static AppObjectFactory factory() {
-		return injector.getInstance(AppObjectFactory.class);
-	}
-
 	public static void cleanup() {
 		currentDataContext.remove();
 	}

@@ -11,6 +11,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.mengxianun.core.attributes.AssociationType;
 import com.github.mengxianun.core.attributes.ResultAttributes;
 import com.github.mengxianun.core.data.DataSet;
@@ -38,6 +41,8 @@ import com.google.gson.JsonObject;
 
 public abstract class AbstractDataContext implements DataContext {
 
+	private static final Logger logger = LoggerFactory.getLogger(AbstractDataContext.class);
+
 	protected Metadata metadata = new Metadata();
 
 	protected Dialect dialect;
@@ -64,12 +69,8 @@ public abstract class AbstractDataContext implements DataContext {
 			resultSet = new DefaultDataResult(executeTransaction(action));
 		} else if (action.isNative()) {
 			resultSet = executeNative(action.getNativeContent());
-		} else if (action.isQuery()) {
-			resultSet = new DefaultDataResult(queryAnd(action));
-		} else if (action.isInsert()) {
-			resultSet = new DefaultDataResult(insert(action));
-		} else if (action.isDelete()) {
-			resultSet = new DefaultDataResult(update(action));
+		} else if (action.isCRUD()) {
+			resultSet = executeCRUD(action);
 		} else {
 			throw new UnsupportedOperationException(action.getOperation().name());
 		}
@@ -106,14 +107,33 @@ public abstract class AbstractDataContext implements DataContext {
 		return multiResult;
 	}
 
-	private Object queryAnd(Action action) {
-		DataSet dataSet = query(action);
+	protected DataResult executeCRUD(Action action) {
+		DataResult resultSet = null;
+		action.build();
+		String sql = action.getSql();
+		Object[] params = action.getParams().toArray();
+
+		logger.debug("SQL: {}", sql);
+		logger.debug("Params: {}", params);
+
+		if (action.isQuery()) {
+			resultSet = new DefaultDataResult(queryAnd(action, sql, params));
+		} else if (action.isInsert()) {
+			resultSet = new DefaultDataResult(insert(sql, params));
+		} else if (action.isDelete()) {
+			resultSet = new DefaultDataResult(update(sql, params));
+		}
+		return resultSet;
+	}
+
+	private Object queryAnd(Action action, String sql, Object... params) {
+		DataSet dataSet = query(sql, params);
 		return processQuery(dataSet, action);
 	}
 
 	private Object processQuery(DataSet dataSet, Action action) {
 		Object result = render(dataSet.toRows());
-		if (action.isLimit()) {
+		if (action.isSelect() || action.isLimit()) {
 			result = wrapPageResult(result, action);
 		}
 		return result;
@@ -129,7 +149,7 @@ public abstract class AbstractDataContext implements DataContext {
 		long end = limitItem.getEnd();
 
 		Action countAction = action.count();
-		DataSet countDataSet = query(countAction);
+		DataSet countDataSet = query(countAction.getSql(), countAction.getParams());
 		Row row = countDataSet.getRow();
 		long count = (long) row.getValue(0);
 		JsonObject pageResult = new JsonObject();
@@ -140,20 +160,11 @@ public abstract class AbstractDataContext implements DataContext {
 		return pageResult;
 	}
 
-	protected DataSet query(Action action) {
-		return query(action.getSql(), action.getParams().toArray());
-	}
-
-	protected UpdateSummary insert(Action action) {
-		return insert(action.getSql(), action.getParams().toArray());
-	}
-
-	protected UpdateSummary update(Action action) {
-		return update(action.getSql(), action.getParams().toArray());
-	}
-
 	@Override
 	public DataResult executeSql(String sql, Object... params) {
+		logger.debug("SQL: {}", sql);
+		logger.debug("Params: {}", params);
+
 		sql = sql.trim();
 		if (sql.toUpperCase().startsWith("SELECT")) {
 			return new DefaultDataResult(query(sql, params));

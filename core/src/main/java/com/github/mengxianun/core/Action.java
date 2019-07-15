@@ -193,6 +193,10 @@ public class Action {
 		return operation != null && operation == Operation.DELETE;
 	}
 
+	public boolean isCRUD() {
+		return isQuery() || isInsert() || isUpdate() || isDelete();
+	}
+
 	public boolean isTransaction() {
 		return operation != null && operation == Operation.TRANSACTION;
 	}

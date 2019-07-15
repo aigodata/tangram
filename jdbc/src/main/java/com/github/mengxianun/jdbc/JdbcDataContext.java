@@ -25,7 +25,6 @@ import com.github.mengxianun.core.data.update.DefaultUpdateSummary;
 import com.github.mengxianun.core.data.update.InsertSummary;
 import com.github.mengxianun.core.data.update.UpdateSummary;
 import com.github.mengxianun.core.resutset.DataResult;
-import com.github.mengxianun.core.resutset.DefaultDataResult;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultColumnType;
@@ -245,18 +244,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			@Override
 			public void run() {
 				for (Action action : actions) {
-					DataResult dataResult = null;
-					if (action.isQuery()) {
-						DataSet dataSet = query(action);
-						dataResult = new DefaultDataResult(dataSet);
-					} else if (action.isInsert()) {
-						UpdateSummary updateSummary = insert(action);
-						dataResult = new DefaultDataResult(updateSummary);
-					} else if (action.isUpdate() || action.isDelete()) {
-						UpdateSummary updateSummary = update(action);
-						dataResult = new DefaultDataResult(updateSummary);
-					}
-					multiResults.add(dataResult);
+					multiResults.add(executeCRUD(action));
 				}
 
 			}
@@ -271,8 +259,6 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	protected DataSet query(String sql, Object... params) {
-		logger.debug("SQL: {}", sql);
-		logger.debug("Params: {}", params);
 		try {
 			List<Object[]> values = runner.query(sql, new ArrayListHandler(), params);
 			return new JdbcDataSet(null, values);
@@ -290,9 +276,6 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	protected UpdateSummary insert(String sql, Object... params) {
-		logger.debug("SQL: {}", sql);
-		logger.debug("Params: {}", params);
-
 		try {
 			Object[] generatedKeys = runner.insert(sql, new ArrayHandler(), params);
 			return new InsertSummary(generatedKeys);
@@ -309,9 +292,6 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	protected UpdateSummary update(String sql, Object... params) {
-		logger.debug("SQL: {}", sql);
-		logger.debug("Params: {}", params);
-
 		try {
 			int updateCount = runner.update(sql, params);
 			return new DefaultUpdateSummary(updateCount);
