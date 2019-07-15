@@ -4,21 +4,21 @@ import java.util.List;
 import java.util.Set;
 
 import com.github.mengxianun.core.attributes.AssociationType;
+import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
-import com.google.gson.JsonElement;
 
 public interface DataContext {
 
-	public JsonElement action(Action action);
+	public DataResult execute(Action action);
 
-	public JsonElement action(Action... actions);
+	public List<DataResult> execute(Action... actions);
 
-	public JsonElement executeNative(String script);
+	public DataResult executeSql(String sql, Object... params);
 
-	public JsonElement executeNative(Table table, String script);
+	public DataResult executeNative(String statement);
 
 	public List<Schema> getSchemas();
 

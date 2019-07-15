@@ -1,5 +1,6 @@
 package com.github.mengxianun.core;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,6 +12,16 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import com.github.mengxianun.core.attributes.AssociationType;
+import com.github.mengxianun.core.attributes.ResultAttributes;
+import com.github.mengxianun.core.data.DataSet;
+import com.github.mengxianun.core.data.Row;
+import com.github.mengxianun.core.data.update.UpdateSummary;
+import com.github.mengxianun.core.item.LimitItem;
+import com.github.mengxianun.core.item.TableItem;
+import com.github.mengxianun.core.json.JsonAttributes;
+import com.github.mengxianun.core.render.JsonRenderer;
+import com.github.mengxianun.core.resutset.DataResult;
+import com.github.mengxianun.core.resutset.DefaultDataResult;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
@@ -20,7 +31,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 public abstract class AbstractDataContext implements DataContext {
 
@@ -39,12 +53,123 @@ public abstract class AbstractDataContext implements DataContext {
 				}
 			});
 
-	protected abstract void initializeMetadata();
+	protected abstract void initMetadata();
 
 	@Override
-	public JsonElement executeNative(Table table, String script) {
-		return executeNative(script);
+	public DataResult execute(Action action) {
+		DataResult resultSet = null;
+		if (action.isStruct()) {
+			resultSet = new DefaultDataResult(executeStruct(action));
+		} else if (action.isTransaction()) {
+			resultSet = new DefaultDataResult(executeTransaction(action));
+		} else if (action.isNative()) {
+			resultSet = executeNative(action.getNativeContent());
+		} else if (action.isQuery()) {
+			resultSet = new DefaultDataResult(queryAnd(action));
+		} else if (action.isInsert()) {
+			resultSet = new DefaultDataResult(insert(action));
+		} else if (action.isDelete()) {
+			resultSet = new DefaultDataResult(update(action));
+		} else {
+			throw new UnsupportedOperationException(action.getOperation().name());
+		}
+		return resultSet;
 	}
+
+	private JsonElement executeStruct(Action action) {
+		TableItem tableItem = action.getTableItems().get(0);
+		Table table = tableItem.getTable();
+		return new Gson().toJsonTree(table);
+	}
+
+	private Object executeTransaction(Action action) {
+		List<Object> multiResult = new ArrayList<>();
+		JsonObject jsonData = action.getRequestData();
+		JsonArray transactionArray = jsonData.getAsJsonArray(JsonAttributes.TRANSACTION);
+		List<Action> actions = new ArrayList<>();
+		for (int i = 0; i < transactionArray.size(); i++) {
+			JsonObject innerJsonData = transactionArray.get(i).getAsJsonObject();
+			JsonParser innerJsonParser = new JsonParser(innerJsonData);
+			Action innerAction = innerJsonParser.parse();
+			innerAction.build();
+			actions.add(innerAction);
+		}
+		List<DataResult> dataResults = execute(actions.toArray(new Action[] {}));
+		for (int i = 0; i < dataResults.size(); i++) {
+			Object innerResult = dataResults.get(i);
+			Action innerAction = actions.get(i);
+			if (innerAction.isQuery()) {
+				innerResult = processQuery((DataSet) innerResult, innerAction);
+			}
+			multiResult.add(innerResult);
+		}
+		return multiResult;
+	}
+
+	private Object queryAnd(Action action) {
+		DataSet dataSet = query(action);
+		return processQuery(dataSet, action);
+	}
+
+	private Object processQuery(DataSet dataSet, Action action) {
+		Object result = render(dataSet.toRows());
+		if (action.isLimit()) {
+			result = wrapPageResult(result, action);
+		}
+		return result;
+	}
+
+	private Object render(List<Row> rows) {
+		return new JsonRenderer().render(rows);
+	}
+
+	private JsonObject wrapPageResult(Object result, Action action) {
+		LimitItem limitItem = action.getLimitItem();
+		long start = limitItem.getStart();
+		long end = limitItem.getEnd();
+
+		Action countAction = action.count();
+		DataSet countDataSet = query(countAction);
+		Row row = countDataSet.getRow();
+		long count = (long) row.getValue(0);
+		JsonObject pageResult = new JsonObject();
+		pageResult.addProperty(ResultAttributes.START, start);
+		pageResult.addProperty(ResultAttributes.END, end);
+		pageResult.addProperty(ResultAttributes.TOTAL, count);
+		pageResult.add(ResultAttributes.DATA, new Gson().toJsonTree(result));
+		return pageResult;
+	}
+
+	protected DataSet query(Action action) {
+		return query(action.getSql(), action.getParams().toArray());
+	}
+
+	protected UpdateSummary insert(Action action) {
+		return insert(action.getSql(), action.getParams().toArray());
+	}
+
+	protected UpdateSummary update(Action action) {
+		return update(action.getSql(), action.getParams().toArray());
+	}
+
+	@Override
+	public DataResult executeSql(String sql, Object... params) {
+		sql = sql.trim();
+		if (sql.toUpperCase().startsWith("SELECT")) {
+			return new DefaultDataResult(query(sql, params));
+		} else if (sql.toUpperCase().startsWith("INSERT")) {
+			return new DefaultDataResult(insert(sql, params));
+		} else if (sql.toUpperCase().startsWith("UPDATE") || sql.toUpperCase().startsWith("DELETE")) {
+			return new DefaultDataResult(update(sql, params));
+		}
+		throw new UnsupportedOperationException();
+	}
+
+	protected abstract DataSet query(String sql, Object... params);
+
+	protected abstract UpdateSummary insert(String sql, Object... params);
+
+	protected abstract UpdateSummary update(String sql, Object... params);
 
 	@Override
 	public List<Schema> getSchemas() {

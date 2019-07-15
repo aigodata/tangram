@@ -174,7 +174,11 @@ public class Action {
 	}
 
 	public boolean isSelect() {
-		return operation != null && (operation == Operation.QUERY || operation == Operation.SELECT);
+		return operation != null && (operation == Operation.SELECT);
+	}
+
+	public boolean isQuery() {
+		return isDetail() || isSelect();
 	}
 
 	public boolean isUpdate() {
