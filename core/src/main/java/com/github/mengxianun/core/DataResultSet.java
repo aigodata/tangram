@@ -4,15 +4,13 @@ import com.google.gson.JsonElement;
 
 public interface DataResultSet {
 
-	public long getTook();
+	public int getCode();
+
+	public String getMessage();
 
 	public Object getData();
 
 	public JsonElement getJsonData();
-
-	public int getCode();
-
-	public String getMessage();
 
 	public boolean isFile();
 

@@ -7,7 +7,6 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.http.ParseException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
@@ -18,15 +17,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.ResultStatus;
+import com.github.mengxianun.core.resutset.DataResult;
+import com.github.mengxianun.core.resutset.DefaultDataResult;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Schema;
-import com.github.mengxianun.core.schema.Table;
-import com.github.mengxianun.elasticsearch.dialect.ElasticsearchDialect;
-import com.github.mengxianun.elasticsearch.processor.ElasticsearchRowProcessor;
 import com.github.mengxianun.jdbc.JdbcDataContext;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -39,20 +36,12 @@ public class ElasticsearchDataContext extends JdbcDataContext {
 	private final RestClient client;
 
 	public ElasticsearchDataContext(DataSource dataSource, RestClient client) {
-		if (dataSource == null || client == null) {
-			throw new IllegalArgumentException("DataSource and RestClient cannot be null");
-		}
-		this.dataSource = dataSource;
-		this.dialect = new ElasticsearchDialect();
-		this.runner = new QueryRunner(dataSource);
-		this.convert = new ElasticsearchRowProcessor();
-		closeConnection.set(true);
+		super(dataSource);
 		this.client = client;
-		initializeMetadata();
 	}
 
 	@Override
-	public void initializeMetadata() {
+	public void initMetadata() {
 		JsonObject allMappings = null;
 		try {
 			// 查询所有索引的mapping
@@ -60,7 +49,7 @@ public class ElasticsearchDataContext extends JdbcDataContext {
 			String responseBody = EntityUtils.toString(response.getEntity());
 			allMappings = new JsonParser().parse(responseBody).getAsJsonObject();
 		} catch (IOException e) {
-			logger.error(String.format("Elasticsearch index mapping failed to read"), e);
+			logger.error("Elasticsearch index mapping failed to read", e);
 			return;
 		}
 		List<Schema> schemas = new ArrayList<>();
@@ -86,18 +75,17 @@ public class ElasticsearchDataContext extends JdbcDataContext {
 	}
 
 	@Override
-	public JsonElement executeNative(Table table, String script) {
+	public DataResult executeNative(String statement) {
 		String responseBody = null;
-		try {
-			NStringEntity nStringEntity = new NStringEntity(script, ContentType.APPLICATION_JSON);
-			Response response = client.performRequest("GET", "/" + table + "/_search", new HashMap<>(), nStringEntity);
+		try (NStringEntity nStringEntity = new NStringEntity(statement, ContentType.APPLICATION_JSON)) {
+			Response response = client.performRequest("GET", "/_search", new HashMap<>(), nStringEntity);
 			responseBody = EntityUtils.toString(response.getEntity());
 		} catch (ParseException | IOException e) {
 			logger.error(ResultStatus.NATIVE_FAILED.message(), e);
 			throw new ElasticsearchDataException(ResultStatus.NATIVE_FAILED);
 		}
 		JsonObject responseObject = new JsonParser().parse(responseBody).getAsJsonObject();
-		return responseObject;
+		return new DefaultDataResult(responseObject);
 	}
 
 	@Override

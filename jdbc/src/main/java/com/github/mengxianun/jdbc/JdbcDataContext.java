@@ -7,51 +7,44 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.handlers.ScalarHandler;
+import org.apache.commons.dbutils.handlers.ArrayListHandler;
+import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.github.mengxianun.core.AbstractDataContext;
-import com.github.mengxianun.core.Action;
+import com.github.mengxianun.core.Atom;
 import com.github.mengxianun.core.ResultStatus;
-import com.github.mengxianun.core.attributes.ResultAttributes;
-import com.github.mengxianun.core.json.JsonAttributes;
+import com.github.mengxianun.core.data.DataSet;
+import com.github.mengxianun.core.data.update.DefaultUpdateSummary;
+import com.github.mengxianun.core.data.update.InsertSummary;
+import com.github.mengxianun.core.data.update.UpdateSummary;
+import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultColumnType;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Schema;
-import com.github.mengxianun.jdbc.dbutils.handler.JsonArrayHandler;
-import com.github.mengxianun.jdbc.dbutils.handler.JsonObjectHandler;
-import com.github.mengxianun.jdbc.dbutils.processor.JsonRowProcessor;
 import com.github.mengxianun.jdbc.dialect.JdbcDialectFactory;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 public class JdbcDataContext extends AbstractDataContext {
 
 	private static final Logger logger = LoggerFactory.getLogger(JdbcDataContext.class);
-
-	protected DataSource dataSource;
 	// 当前线程操作的数据库连接
-	protected static ThreadLocal<Connection> threadLocalConnection = new ThreadLocal<>();
+	private static final ThreadLocal<Connection> threadLocalConnection = new ThreadLocal<>();
 	// 当前线程操作是否自动关闭连接
-	protected static ThreadLocal<Boolean> closeConnection = new ThreadLocal<>();
-	//
-	protected QueryRunner runner;
-	// 结果行处理器
-	protected JsonRowProcessor convert = new JsonRowProcessor();
+	public static final ThreadLocal<Boolean> closeConnection = new ThreadLocal<>();
 
-	public JdbcDataContext() {
-	}
+	protected final DataSource dataSource;
+	//
+	protected final QueryRunner runner;
 
 	public JdbcDataContext(DataSource dataSource) {
 		if (dataSource == null) {
@@ -61,11 +54,11 @@ public class JdbcDataContext extends AbstractDataContext {
 		this.dialect = JdbcDialectFactory.getDialect(dataSource);
 		this.runner = new QueryRunner(dataSource);
 		closeConnection.set(true);
-		initializeMetadata();
+		initMetadata();
 	}
 
 	@Override
-	public void initializeMetadata() {
+	public void initMetadata() {
 		List<Schema> schemas = new ArrayList<>();
 		metadata.setSchemas(schemas);
 		// source.add(metadata.SCHEMAS, schemas);
@@ -135,84 +128,52 @@ public class JdbcDataContext extends AbstractDataContext {
 			}
 
 		} catch (SQLException e) {
-			logger.error("Initialize metadata failed.", e);
 			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 		}
 	}
 
-	public void startTransaction() {
+	public void startTransaction() throws SQLException {
 		Connection conn = threadLocalConnection.get();
-		try {
-			if (conn == null) {
-				conn = getConnection();
-			}
-			threadLocalConnection.set(conn);
-			conn.setAutoCommit(false);
-			closeConnection.set(false);
-			if (logger.isDebugEnabled()) {
-				logger.debug("Start new transaction.");
-			}
-		} catch (SQLException e) {
-			logger.error("Start new transaction failed.", e);
-			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
+		if (conn == null) {
+			conn = getConnection();
 		}
+		threadLocalConnection.set(conn);
+		conn.setAutoCommit(false);
+		closeConnection.set(false);
+		logger.debug("Start new transaction.");
 	}
 
 	public Connection getConnection() throws SQLException {
 		Connection conn = threadLocalConnection.get();
 		if (conn == null) {
-			try {
-				return dataSource.getConnection();
-			} catch (SQLException e) {
-				logger.error("Could not establish connection", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
-			}
+			return dataSource.getConnection();
 		} else {
 			return conn;
 		}
 	}
 
-	public void commit() {
+	public void commit() throws SQLException {
 		Connection conn = threadLocalConnection.get();
 		if (conn != null) {
-			try {
-				conn.commit();
-				if (logger.isDebugEnabled()) {
-					logger.debug("Transaction commit.");
-				}
-			} catch (SQLException e) {
-				logger.error("Transaction commit failed.", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
-			}
+			conn.commit();
+			logger.debug("Transaction commit.");
 		}
 	}
 
-	public void rollback() {
+	public void rollback() throws SQLException {
 		Connection conn = threadLocalConnection.get();
 		if (conn != null) {
-			try {
-				conn.rollback();
-				if (logger.isDebugEnabled()) {
-					logger.debug("Transaction rollback.");
-				}
-			} catch (SQLException e) {
-				logger.error("Transaction rollback failed.", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
-			}
+			conn.rollback();
+			logger.debug("Transaction rollback.");
 		}
 	}
 
-	public void close() {
+	public void close() throws SQLException {
 		Connection conn = threadLocalConnection.get();
 		if (conn != null) {
 			try {
 				conn.close();
-				if (logger.isDebugEnabled()) {
-					logger.debug("Transaction close.");
-				}
-			} catch (SQLException e) {
-				logger.error("Transaction close failed.", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
+				logger.debug("Transaction close.");
 			} finally {
 				threadLocalConnection.remove();
 				closeConnection.set(true);
@@ -226,6 +187,7 @@ public class JdbcDataContext extends AbstractDataContext {
 	 * @param atoms
 	 * @throws SQLException
 	 */
+	@Override
 	public void trans(Atom... atoms) {
 		if (null == atoms) {
 			return;
@@ -236,36 +198,31 @@ public class JdbcDataContext extends AbstractDataContext {
 				atom.run();
 			}
 			commit();
-		} catch (Exception e) {
-			rollback();
-			throw e;
+		} catch (SQLException e) {
+			try {
+				rollback();
+			} catch (SQLException e1) {
+				throw new JdbcDataException("Transaction rollback failed.");
+			}
 		} finally {
-			close();
+			try {
+				close();
+			} catch (SQLException e) {
+				logger.error("Transaction close failed.", e);
+			}
 		}
 	}
 
 	@Override
-	public JsonElement action(Action action) {
-		JsonElement result = null;
-		String sql = action.getSql();
-		List<Object> params = action.getParams();
+	public DataResult executeNative(String statement) {
+		return executeSql(statement);
+	}
+
+	@Override
+	protected DataSet query(String sql, Object... params) {
 		try {
-			if (action.isDetail()) {
-				result = runner.query(sql, new JsonObjectHandler(convert), params.toArray());
-			} else if (action.isSelect()) {
-				result = runner.query(sql, new JsonArrayHandler(convert), params.toArray());
-			} else if (action.isInsert()) {
-				Object primaryKey = runner.insert(sql, new ScalarHandler<>(), params.toArray());
-				JsonObject jsonObject = new JsonObject();
-				jsonObject.add(ResultAttributes.PRIMARY_KEY.toString().toLowerCase(),
-						new Gson().toJsonTree(primaryKey));
-				result = jsonObject;
-			} else if (action.isUpdate() || action.isDelete()) {
-				int count = runner.update(sql, params.toArray());
-				JsonObject jsonObject = new JsonObject();
-				jsonObject.addProperty(ResultAttributes.COUNT.toString().toLowerCase(), count);
-				result = jsonObject;
-			}
+			List<Object[]> values = runner.query(sql, new ArrayListHandler(), params);
+			return new JdbcDataSet(null, values);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
@@ -275,54 +232,39 @@ public class JdbcDataContext extends AbstractDataContext {
 			logger.error(ResultStatus.DATASOURCE_SQL_FAILED.message(), realReasion);
 			throw new JdbcDataException(ResultStatus.DATASOURCE_SQL_FAILED, realReasion.getMessage());
 		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("SQL: {}", sql);
-			logger.debug("Params: {}", params);
-		}
-		return result;
+
 	}
 
 	@Override
-	public JsonElement action(Action... actions) {
-		JsonArray transactionResult = new JsonArray();
-		trans(new Atom() {
-
-			@Override
-			public void run() {
-				for (Action action : actions) {
-					JsonElement actionResult = action(action);
-					transactionResult.add(actionResult);
-				}
-
-			}
-		});
-		return transactionResult;
-	}
-
-	@Override
-	public JsonElement executeNative(String script) {
-		JsonElement result = null;
-		script = script.trim();
+	protected UpdateSummary insert(String sql, Object... params) {
 		try {
-			if (script.startsWith(JsonAttributes.SELECT)) {
-				result = runner.query(script, new JsonArrayHandler());
-			} else if (script.startsWith(JsonAttributes.INSERT)) {
-				Object primaryKey = runner.insert(script, new ScalarHandler<>());
-				JsonObject jsonObject = new JsonObject();
-				jsonObject.add(ResultAttributes.PRIMARY_KEY.toString().toLowerCase(),
-						new Gson().toJsonTree(primaryKey));
-				result = jsonObject;
-			} else if (script.startsWith(JsonAttributes.UPDATE) || script.startsWith(JsonAttributes.DELETE)) {
-				int count = runner.update(script);
-				JsonObject jsonObject = new JsonObject();
-				jsonObject.addProperty(ResultAttributes.COUNT.toString().toLowerCase(), count);
-				result = jsonObject;
-			}
+			List<Map<String, Object>> insertContents = runner.insert(sql, new MapListHandler(), params);
+			return new InsertSummary(insertContents);
 		} catch (SQLException e) {
-			logger.error(ResultStatus.NATIVE_FAILED.message(), e);
-			throw new JdbcDataException(ResultStatus.NATIVE_FAILED);
+			Throwable realReasion = e;
+			SQLException nextException = e.getNextException();
+			if (nextException != null && nextException.getCause() != null) {
+				realReasion = nextException.getCause();
+			}
+			logger.error(ResultStatus.DATASOURCE_SQL_FAILED.message(), realReasion);
+			throw new JdbcDataException(ResultStatus.DATASOURCE_SQL_FAILED, realReasion.getMessage());
 		}
-		return result;
+	}
+
+	@Override
+	protected UpdateSummary update(String sql, Object... params) {
+		try {
+			int updateCount = runner.update(sql, params);
+			return new DefaultUpdateSummary(updateCount);
+		} catch (SQLException e) {
+			Throwable realReasion = e;
+			SQLException nextException = e.getNextException();
+			if (nextException != null && nextException.getCause() != null) {
+				realReasion = nextException.getCause();
+			}
+			logger.error(ResultStatus.DATASOURCE_SQL_FAILED.message(), realReasion);
+			throw new JdbcDataException(ResultStatus.DATASOURCE_SQL_FAILED, realReasion.getMessage());
+		}
 	}
 
 }

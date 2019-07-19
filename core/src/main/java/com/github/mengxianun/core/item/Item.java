@@ -6,7 +6,6 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Random;
 
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
@@ -62,22 +61,6 @@ public abstract class Item implements Serializable {
 			return realValueArray;
 		}
 		return value;
-	}
-
-	protected String getRandomAlias() {
-		return getRandomString(6);
-	}
-
-	protected String getRandomString(int length) {
-		// String base = "abcdefghijklmnopqrstuvwxyz0123456789";
-		String base = "abcdefghijklmnopqrstuvwxyz";
-		Random random = new Random();
-		StringBuffer sb = new StringBuffer();
-		for (int i = 0; i < length; i++) {
-			int number = random.nextInt(base.length());
-			sb.append(base.charAt(number));
-		}
-		return sb.toString();
 	}
 
 }

@@ -1,16 +1,33 @@
 package com.github.mengxianun.core;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.attributes.AssociationType;
+import com.github.mengxianun.core.attributes.ResultAttributes;
+import com.github.mengxianun.core.data.DataSet;
+import com.github.mengxianun.core.data.Row;
+import com.github.mengxianun.core.data.update.UpdateSummary;
+import com.github.mengxianun.core.item.LimitItem;
+import com.github.mengxianun.core.item.TableItem;
+import com.github.mengxianun.core.json.JsonAttributes;
+import com.github.mengxianun.core.render.JsonRenderer;
+import com.github.mengxianun.core.resutset.DataResult;
+import com.github.mengxianun.core.resutset.DefaultDataResult;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
@@ -20,9 +37,15 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 
 public abstract class AbstractDataContext implements DataContext {
+
+	private static final Logger logger = LoggerFactory.getLogger(AbstractDataContext.class);
 
 	protected Metadata metadata = new Metadata();
 
@@ -39,12 +62,152 @@ public abstract class AbstractDataContext implements DataContext {
 				}
 			});
 
-	protected abstract void initializeMetadata();
+	protected abstract void initMetadata();
 
 	@Override
-	public JsonElement executeNative(Table table, String script) {
-		return executeNative(script);
+	public DataResult execute(Action action) {
+		DataResult resultSet = null;
+		if (action.isStruct()) {
+			resultSet = executeStruct(action);
+		} else if (action.isTransaction()) {
+			resultSet = executeTransaction(action);
+		} else if (action.isNative()) {
+			resultSet = executeNative(action.getNativeContent());
+		} else if (action.isCRUD()) {
+			resultSet = executeCRUD(action);
+		} else {
+			throw new UnsupportedOperationException(action.getOperation().name());
+		}
+		return resultSet;
 	}
+
+	@Override
+	public List<DataResult> execute(Action... actions) {
+		List<DataResult> multiResults = new ArrayList<>();
+		trans(new Atom() {
+
+			@Override
+			public void run() {
+				for (Action action : actions) {
+					multiResults.add(executeCRUD(action));
+				}
+
+			}
+		});
+		return multiResults;
+	}
+
+	protected abstract void trans(Atom... atoms);
+
+	private DataResult executeStruct(Action action) {
+		TableItem tableItem = action.getTableItems().get(0);
+		Table table = tableItem.getTable();
+		return new DefaultDataResult(new Gson().toJsonTree(table));
+	}
+
+	private DataResult executeTransaction(Action action) {
+		JsonObject jsonData = action.getRequestData();
+		JsonArray transactionArray = jsonData.getAsJsonArray(JsonAttributes.TRANSACTION);
+		List<Action> actions = new ArrayList<>();
+		for (int i = 0; i < transactionArray.size(); i++) {
+			JsonObject innerJsonData = transactionArray.get(i).getAsJsonObject();
+			JsonParser innerJsonParser = new JsonParser(innerJsonData);
+			Action innerAction = innerJsonParser.parse();
+			innerAction.build();
+			actions.add(innerAction);
+		}
+		List<DataResult> dataResults = execute(actions.toArray(new Action[] {}));
+		List<Object> multiResult = dataResults.stream().map(e -> e.getData()).collect(Collectors.toList());
+		return new DefaultDataResult(multiResult);
+	}
+
+	protected DataResult executeCRUD(Action action) {
+		DataResult resultSet = null;
+		String sql = action.getSql();
+		Object[] params = action.getParams().toArray();
+
+		logger.debug("SQL: {}", sql);
+		logger.debug("Params: {}", params);
+
+		if (action.isQuery()) {
+			resultSet = new DefaultDataResult(queryAnd(action, sql, params));
+		} else if (action.isInsert()) {
+			resultSet = new DefaultDataResult(insert(sql, params));
+		} else if (action.isUpdate() || action.isDelete()) {
+			resultSet = new DefaultDataResult(update(sql, params));
+		}
+		return resultSet;
+	}
+
+	private Object queryAnd(Action action, String sql, Object... params) {
+		DataSet dataSet = query(sql, params);
+		return processQuery(dataSet, action);
+	}
+
+	private Object processQuery(DataSet dataSet, Action action) {
+		Object result = render(dataSet.toRows(), action);
+		if (action.isSelect() && action.isLimit()) {
+			result = wrapPageResult(result, action);
+		}
+		return result;
+	}
+
+	private Object render(List<Row> rows, Action action) {
+		JsonElement jsonData = new JsonRenderer(action).render(rows);
+		return getNativeObject(jsonData);
+	}
+
+	private Object getNativeObject(JsonElement jsonData) {
+		if (jsonData.isJsonArray()) {
+			Type dataType = new TypeToken<List<Map<String, Object>>>() {}.getType();
+			return new Gson().fromJson(jsonData, dataType);
+		} else if (jsonData.isJsonObject()) {
+			Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
+			return new Gson().fromJson(jsonData, dataType);
+		} else {
+			Type dataType = new TypeToken<Object>() {}.getType();
+			return new Gson().fromJson(jsonData, dataType);
+		}
+	}
+
+	private Map<String, Object> wrapPageResult(Object result, Action action) {
+		LimitItem limitItem = action.getLimitItem();
+		long start = limitItem.getStart();
+		long end = limitItem.getEnd();
+
+		Action countAction = action.count();
+		DataSet countDataSet = query(countAction.getSql(), countAction.getParams().toArray());
+		Row row = countDataSet.getRow();
+		long count = (long) row.getValue(0);
+		Map<String, Object> pageResult = new LinkedHashMap<>();
+		pageResult.put(ResultAttributes.START, start);
+		pageResult.put(ResultAttributes.END, end);
+		pageResult.put(ResultAttributes.TOTAL, count);
+		pageResult.put(ResultAttributes.DATA, result);
+		return pageResult;
+	}
+
+	@Override
+	public DataResult executeSql(String sql, Object... params) {
+		logger.debug("SQL: {}", sql);
+		logger.debug("Params: {}", params);
+
+		sql = sql.trim();
+		if (sql.toUpperCase().startsWith("SELECT")) {
+			return new DefaultDataResult(query(sql, params));
+		} else if (sql.toUpperCase().startsWith("INSERT")) {
+			return new DefaultDataResult(insert(sql, params));
+		} else if (sql.toUpperCase().startsWith("UPDATE") || sql.toUpperCase().startsWith("DELETE")) {
+			return new DefaultDataResult(update(sql, params));
+		}
+		throw new UnsupportedOperationException();
+	}
+
+	protected abstract DataSet query(String sql, Object... params);
+
+	protected abstract UpdateSummary insert(String sql, Object... params);
+
+	protected abstract UpdateSummary update(String sql, Object... params);
 
 	@Override
 	public List<Schema> getSchemas() {

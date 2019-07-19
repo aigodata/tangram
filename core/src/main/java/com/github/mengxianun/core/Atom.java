@@ -1,4 +1,4 @@
-package com.github.mengxianun.jdbc;
+package com.github.mengxianun.core;
 
 public interface Atom extends Runnable {
 

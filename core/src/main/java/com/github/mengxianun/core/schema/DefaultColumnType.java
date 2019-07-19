@@ -29,7 +29,6 @@ public class DefaultColumnType implements ColumnType {
 
 	@Override
 	public boolean isBinary() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 

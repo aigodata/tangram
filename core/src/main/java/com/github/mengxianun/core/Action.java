@@ -174,7 +174,11 @@ public class Action {
 	}
 
 	public boolean isSelect() {
-		return operation != null && (operation == Operation.QUERY || operation == Operation.SELECT);
+		return operation != null && (operation == Operation.SELECT);
+	}
+
+	public boolean isQuery() {
+		return isDetail() || isSelect();
 	}
 
 	public boolean isUpdate() {
@@ -187,6 +191,10 @@ public class Action {
 
 	public boolean isDelete() {
 		return operation != null && operation == Operation.DELETE;
+	}
+
+	public boolean isCRUD() {
+		return isQuery() || isInsert() || isUpdate() || isDelete();
 	}
 
 	public boolean isTransaction() {

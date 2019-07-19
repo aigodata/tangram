@@ -3,8 +3,8 @@ package com.github.mengxianun.core;
 import java.net.URL;
 
 import com.github.mengxianun.core.attributes.ConfigAttributes;
+import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.resutset.DefaultDataResultSet;
-import com.google.gson.JsonElement;
 
 public class DefaultTranslator extends AbstractTranslator {
 
@@ -21,13 +21,19 @@ public class DefaultTranslator extends AbstractTranslator {
 	}
 
 	@Override
-	public DataResultSet translate(String json) {
+	protected DataResultSet execute(Action action) {
+		Object result = null;
+		DataResult dataResult = App.currentDataContext().execute(action);
 
-		Executor executor = App.getInjector().getInstance(Executor.class);
-		JsonElement result = executor.execute(json);
+		if (dataResult.isQuery()) {
+			result = dataResult.getDataSet();
+		} else if (dataResult.isUpdate()) {
+			result = dataResult.getUpdateSummary().getSummary();
+		} else {
+			result = dataResult.getData();
+		}
 
-		return new DefaultDataResultSet(0L, result);
-
+		return new DefaultDataResultSet(result);
 	}
 
 }

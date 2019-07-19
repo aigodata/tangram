@@ -11,6 +11,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,9 +29,11 @@ import com.github.mengxianun.core.attributes.ConfigAttributes;
 import com.github.mengxianun.core.attributes.DataSourceAttributes;
 import com.github.mengxianun.core.attributes.TableConfigAttributes;
 import com.github.mengxianun.core.exception.DataException;
+import com.github.mengxianun.core.exception.JsonDataException;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Charsets;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.io.Resources;
 import com.google.gson.JsonElement;
@@ -264,6 +267,43 @@ public abstract class AbstractTranslator implements Translator {
 	public void reInit() {
 		init(App.Config.getString(ConfigAttributes.CONFIG_FILE));
 	}
+
+	@Override
+	public DataResultSet translate(String json) {
+		// 设置当前线程的上下文
+		com.github.mengxianun.core.JsonParser parser = new com.github.mengxianun.core.JsonParser(json);
+		String sourceName = parser.parseSource();
+		if (Strings.isNullOrEmpty(sourceName)) {
+			sourceName = App.getDefaultDataSource();
+		}
+		if (!App.hasDataContext(sourceName)) {
+			throw new JsonDataException(ResultStatus.DATASOURCE_NOT_EXIST.fill(sourceName));
+		}
+		App.setCurrentDataContext(sourceName);
+
+		logger.debug("Request: {}", json);
+
+		// Stopwatch
+		Stopwatch stopwatch = Stopwatch.createStarted();
+
+		// Run
+		Action action = parser.parse();
+		action.build();
+
+		DataResultSet dataResultSet = execute(action);
+
+		// Done
+		Duration duration = stopwatch.stop().elapsed();
+
+		logger.debug("Operation is completed, taking {} milliseconds", duration.toMillis());
+
+		// 清理当前线程的上下文
+		App.cleanup();
+
+		return dataResultSet;
+	}
+
+	protected abstract DataResultSet execute(Action action);
 
 	/**
 	 * 释放资源
