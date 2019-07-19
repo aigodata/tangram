@@ -27,6 +27,7 @@ import com.google.gson.JsonPrimitive;
  * @author mengxiangyun
  *
  */
+@Deprecated
 public class DataRenderer {
 
 	/**
