@@ -8,16 +8,13 @@ import java.util.stream.IntStream;
 
 import com.github.mengxianun.core.data.DefaultRow;
 import com.github.mengxianun.core.data.Row;
-import com.github.mengxianun.core.data.SimpleDataSetHeader;
-import com.github.mengxianun.core.item.ColumnItem;
 
 public class RowProcessor {
 
-	public Row toRow(ResultSet rs, List<ColumnItem> items) throws SQLException {
-		SimpleDataSetHeader header = new SimpleDataSetHeader(items);
+	public Row toRow(ResultSet rs) throws SQLException {
 		List<Object> values = new ArrayList<>();
 		IntStream.range(0, rs.getMetaData().getColumnCount()).forEach(values::add);
-		return new DefaultRow(header, values.toArray());
+		return new DefaultRow(null, values.toArray());
 	}
 
 }

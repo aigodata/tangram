@@ -1,26 +1,28 @@
 package com.github.mengxianun.core.data.update;
 
+import java.util.List;
 import java.util.Map;
-
-import com.github.mengxianun.core.attributes.ResultAttributes;
-import com.google.common.collect.ImmutableMap;
 
 public class InsertSummary implements UpdateSummary {
 
-	private final Object[] generatedKeys;
+	// 插入的数据内容
+	private final List<Map<String, Object>> contents;
 
-	public InsertSummary(Object[] generatedKeys) {
-		this.generatedKeys = generatedKeys;
+	public InsertSummary(List<Map<String, Object>> contents) {
+		this.contents = contents;
 	}
 
 	@Override
 	public int getUpdateCount() {
-		return generatedKeys.length;
+		return contents.size();
 	}
 
 	@Override
-	public Map<String, Object> getSummary() {
-		return ImmutableMap.of(ResultAttributes.PRIMARY_KEY, generatedKeys);
+	public Object getSummary() {
+		if (contents.size() == 1) {
+			return contents.get(0);
+		}
+		return contents;
 	}
 
 }

@@ -49,7 +49,13 @@ public class DefaultDataResult implements DataResult {
 
 	@Override
 	public Object getData() {
-		return data;
+		if (isQuery()) {
+			return dataSet;
+		} else if (isUpdate()) {
+			return updateSummary.getSummary();
+		} else {
+			return data;
+		}
 	}
 
 }

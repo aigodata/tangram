@@ -4,11 +4,11 @@ import java.util.List;
 
 import com.github.mengxianun.core.item.ColumnItem;
 
-public class SimpleDataSetHeader implements DataSetHeader {
+public class DefaultDataSetHeader implements DataSetHeader {
 
 	private final List<ColumnItem> items;
 
-	public SimpleDataSetHeader(List<ColumnItem> items) {
+	public DefaultDataSetHeader(List<ColumnItem> items) {
 		this.items = items;
 	}
 

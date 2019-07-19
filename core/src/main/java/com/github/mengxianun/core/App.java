@@ -8,7 +8,6 @@ import org.apache.commons.text.RandomStringGenerator;
 
 import com.github.mengxianun.core.attributes.AssociationType;
 import com.github.mengxianun.core.attributes.ConfigAttributes;
-import com.github.mengxianun.core.exception.JsonDataException;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
@@ -81,10 +80,11 @@ public final class App {
 	}
 
 	public static void setCurrentDataContext(String name) {
-		if (!hasDataContext(name)) {
-			throw new JsonDataException(ResultStatus.DATASOURCE_NOT_EXIST.fill(name));
-		}
-		currentDataContext.set(getDataContext(name));
+		setCurrentDataContext(getDataContext(name));
+	}
+
+	public static void setCurrentDataContext(DataContext dataContext) {
+		currentDataContext.set(dataContext);
 	}
 
 	public static DataContext currentDataContext() {
@@ -99,7 +99,7 @@ public final class App {
 		currentDataContext.remove();
 	}
 
-	static class Config {
+	public static class Config {
 
 		private Config() {}
 
@@ -161,7 +161,7 @@ public final class App {
 		}
 	}
 
-	static class Context {
+	public static class Context {
 
 		private Context() {}
 

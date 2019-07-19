@@ -1,15 +1,18 @@
 package com.github.mengxianun.core;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +41,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 
 public abstract class AbstractDataContext implements DataContext {
 
@@ -64,9 +68,9 @@ public abstract class AbstractDataContext implements DataContext {
 	public DataResult execute(Action action) {
 		DataResult resultSet = null;
 		if (action.isStruct()) {
-			resultSet = new DefaultDataResult(executeStruct(action));
+			resultSet = executeStruct(action);
 		} else if (action.isTransaction()) {
-			resultSet = new DefaultDataResult(executeTransaction(action));
+			resultSet = executeTransaction(action);
 		} else if (action.isNative()) {
 			resultSet = executeNative(action.getNativeContent());
 		} else if (action.isCRUD()) {
@@ -77,14 +81,31 @@ public abstract class AbstractDataContext implements DataContext {
 		return resultSet;
 	}
 
-	private JsonElement executeStruct(Action action) {
-		TableItem tableItem = action.getTableItems().get(0);
-		Table table = tableItem.getTable();
-		return new Gson().toJsonTree(table);
+	@Override
+	public List<DataResult> execute(Action... actions) {
+		List<DataResult> multiResults = new ArrayList<>();
+		trans(new Atom() {
+
+			@Override
+			public void run() {
+				for (Action action : actions) {
+					multiResults.add(executeCRUD(action));
+				}
+
+			}
+		});
+		return multiResults;
 	}
 
-	private Object executeTransaction(Action action) {
-		List<Object> multiResult = new ArrayList<>();
+	protected abstract void trans(Atom... atoms);
+
+	private DataResult executeStruct(Action action) {
+		TableItem tableItem = action.getTableItems().get(0);
+		Table table = tableItem.getTable();
+		return new DefaultDataResult(new Gson().toJsonTree(table));
+	}
+
+	private DataResult executeTransaction(Action action) {
 		JsonObject jsonData = action.getRequestData();
 		JsonArray transactionArray = jsonData.getAsJsonArray(JsonAttributes.TRANSACTION);
 		List<Action> actions = new ArrayList<>();
@@ -96,20 +117,12 @@ public abstract class AbstractDataContext implements DataContext {
 			actions.add(innerAction);
 		}
 		List<DataResult> dataResults = execute(actions.toArray(new Action[] {}));
-		for (int i = 0; i < dataResults.size(); i++) {
-			Object innerResult = dataResults.get(i);
-			Action innerAction = actions.get(i);
-			if (innerAction.isQuery()) {
-				innerResult = processQuery((DataSet) innerResult, innerAction);
-			}
-			multiResult.add(innerResult);
-		}
-		return multiResult;
+		List<Object> multiResult = dataResults.stream().map(e -> e.getData()).collect(Collectors.toList());
+		return new DefaultDataResult(multiResult);
 	}
 
 	protected DataResult executeCRUD(Action action) {
 		DataResult resultSet = null;
-		action.build();
 		String sql = action.getSql();
 		Object[] params = action.getParams().toArray();
 
@@ -120,7 +133,7 @@ public abstract class AbstractDataContext implements DataContext {
 			resultSet = new DefaultDataResult(queryAnd(action, sql, params));
 		} else if (action.isInsert()) {
 			resultSet = new DefaultDataResult(insert(sql, params));
-		} else if (action.isDelete()) {
+		} else if (action.isUpdate() || action.isDelete()) {
 			resultSet = new DefaultDataResult(update(sql, params));
 		}
 		return resultSet;
@@ -132,31 +145,45 @@ public abstract class AbstractDataContext implements DataContext {
 	}
 
 	private Object processQuery(DataSet dataSet, Action action) {
-		Object result = render(dataSet.toRows());
-		if (action.isSelect() || action.isLimit()) {
+		Object result = render(dataSet.toRows(), action);
+		if (action.isSelect() && action.isLimit()) {
 			result = wrapPageResult(result, action);
 		}
 		return result;
 	}
 
-	private Object render(List<Row> rows) {
-		return new JsonRenderer().render(rows);
+	private Object render(List<Row> rows, Action action) {
+		JsonElement jsonData = new JsonRenderer(action).render(rows);
+		return getNativeObject(jsonData);
 	}
 
-	private JsonObject wrapPageResult(Object result, Action action) {
+	private Object getNativeObject(JsonElement jsonData) {
+		if (jsonData.isJsonArray()) {
+			Type dataType = new TypeToken<List<Map<String, Object>>>() {}.getType();
+			return new Gson().fromJson(jsonData, dataType);
+		} else if (jsonData.isJsonObject()) {
+			Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
+			return new Gson().fromJson(jsonData, dataType);
+		} else {
+			Type dataType = new TypeToken<Object>() {}.getType();
+			return new Gson().fromJson(jsonData, dataType);
+		}
+	}
+
+	private Map<String, Object> wrapPageResult(Object result, Action action) {
 		LimitItem limitItem = action.getLimitItem();
 		long start = limitItem.getStart();
 		long end = limitItem.getEnd();
 
 		Action countAction = action.count();
-		DataSet countDataSet = query(countAction.getSql(), countAction.getParams());
+		DataSet countDataSet = query(countAction.getSql(), countAction.getParams().toArray());
 		Row row = countDataSet.getRow();
 		long count = (long) row.getValue(0);
-		JsonObject pageResult = new JsonObject();
-		pageResult.addProperty(ResultAttributes.START, start);
-		pageResult.addProperty(ResultAttributes.END, end);
-		pageResult.addProperty(ResultAttributes.TOTAL, count);
-		pageResult.add(ResultAttributes.DATA, new Gson().toJsonTree(result));
+		Map<String, Object> pageResult = new LinkedHashMap<>();
+		pageResult.put(ResultAttributes.START, start);
+		pageResult.put(ResultAttributes.END, end);
+		pageResult.put(ResultAttributes.TOTAL, count);
+		pageResult.put(ResultAttributes.DATA, result);
 		return pageResult;
 	}
 

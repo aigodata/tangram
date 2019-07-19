@@ -29,6 +29,7 @@ import com.github.mengxianun.core.attributes.ConfigAttributes;
 import com.github.mengxianun.core.attributes.DataSourceAttributes;
 import com.github.mengxianun.core.attributes.TableConfigAttributes;
 import com.github.mengxianun.core.exception.DataException;
+import com.github.mengxianun.core.exception.JsonDataException;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Charsets;
@@ -270,9 +271,13 @@ public abstract class AbstractTranslator implements Translator {
 	@Override
 	public DataResultSet translate(String json) {
 		// 设置当前线程的上下文
-		String sourceName = new com.github.mengxianun.core.JsonParser(json).parseSource();
+		com.github.mengxianun.core.JsonParser parser = new com.github.mengxianun.core.JsonParser(json);
+		String sourceName = parser.parseSource();
 		if (Strings.isNullOrEmpty(sourceName)) {
 			sourceName = App.getDefaultDataSource();
+		}
+		if (!App.hasDataContext(sourceName)) {
+			throw new JsonDataException(ResultStatus.DATASOURCE_NOT_EXIST.fill(sourceName));
 		}
 		App.setCurrentDataContext(sourceName);
 
@@ -280,8 +285,13 @@ public abstract class AbstractTranslator implements Translator {
 
 		// Stopwatch
 		Stopwatch stopwatch = Stopwatch.createStarted();
+
 		// Run
-		DataResultSet dataResultSet = execute(json);
+		Action action = parser.parse();
+		action.build();
+
+		DataResultSet dataResultSet = execute(action);
+
 		// Done
 		Duration duration = stopwatch.stop().elapsed();
 
@@ -293,7 +303,7 @@ public abstract class AbstractTranslator implements Translator {
 		return dataResultSet;
 	}
 
-	protected abstract DataResultSet execute(String json);
+	protected abstract DataResultSet execute(Action action);
 
 	/**
 	 * 释放资源

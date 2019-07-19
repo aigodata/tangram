@@ -21,20 +21,14 @@ public class DefaultTranslator extends AbstractTranslator {
 	}
 
 	@Override
-	protected DataResultSet execute(String json) {
+	protected DataResultSet execute(Action action) {
 		Object result = null;
-
-		//		Executor executor = App.factory().createExecutor(App.currentDataContext());
-		//		DataResult dataResult = executor.execute(json);
-
-		Action action = new JsonParser(json).parse();
-		action.build();
 		DataResult dataResult = App.currentDataContext().execute(action);
 
 		if (dataResult.isQuery()) {
 			result = dataResult.getDataSet();
 		} else if (dataResult.isUpdate()) {
-			result = dataResult.getUpdateSummary();
+			result = dataResult.getUpdateSummary().getSummary();
 		} else {
 			result = dataResult.getData();
 		}

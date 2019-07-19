@@ -7,18 +7,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.handlers.ArrayHandler;
 import org.apache.commons.dbutils.handlers.ArrayListHandler;
+import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.github.mengxianun.core.AbstractDataContext;
-import com.github.mengxianun.core.Action;
+import com.github.mengxianun.core.Atom;
 import com.github.mengxianun.core.ResultStatus;
 import com.github.mengxianun.core.data.DataSet;
 import com.github.mengxianun.core.data.update.DefaultUpdateSummary;
@@ -127,84 +128,52 @@ public class JdbcDataContext extends AbstractDataContext {
 			}
 
 		} catch (SQLException e) {
-			logger.error("Initialize metadata failed.", e);
 			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 		}
 	}
 
-	public void startTransaction() {
+	public void startTransaction() throws SQLException {
 		Connection conn = threadLocalConnection.get();
-		try {
-			if (conn == null) {
-				conn = getConnection();
-			}
-			threadLocalConnection.set(conn);
-			conn.setAutoCommit(false);
-			closeConnection.set(false);
-			if (logger.isDebugEnabled()) {
-				logger.debug("Start new transaction.");
-			}
-		} catch (SQLException e) {
-			logger.error("Start new transaction failed.", e);
-			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
+		if (conn == null) {
+			conn = getConnection();
 		}
+		threadLocalConnection.set(conn);
+		conn.setAutoCommit(false);
+		closeConnection.set(false);
+		logger.debug("Start new transaction.");
 	}
 
 	public Connection getConnection() throws SQLException {
 		Connection conn = threadLocalConnection.get();
 		if (conn == null) {
-			try {
-				return dataSource.getConnection();
-			} catch (SQLException e) {
-				logger.error("Could not establish connection", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
-			}
+			return dataSource.getConnection();
 		} else {
 			return conn;
 		}
 	}
 
-	public void commit() {
+	public void commit() throws SQLException {
 		Connection conn = threadLocalConnection.get();
 		if (conn != null) {
-			try {
-				conn.commit();
-				if (logger.isDebugEnabled()) {
-					logger.debug("Transaction commit.");
-				}
-			} catch (SQLException e) {
-				logger.error("Transaction commit failed.", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
-			}
+			conn.commit();
+			logger.debug("Transaction commit.");
 		}
 	}
 
-	public void rollback() {
+	public void rollback() throws SQLException {
 		Connection conn = threadLocalConnection.get();
 		if (conn != null) {
-			try {
-				conn.rollback();
-				if (logger.isDebugEnabled()) {
-					logger.debug("Transaction rollback.");
-				}
-			} catch (SQLException e) {
-				logger.error("Transaction rollback failed.", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
-			}
+			conn.rollback();
+			logger.debug("Transaction rollback.");
 		}
 	}
 
-	public void close() {
+	public void close() throws SQLException {
 		Connection conn = threadLocalConnection.get();
 		if (conn != null) {
 			try {
 				conn.close();
-				if (logger.isDebugEnabled()) {
-					logger.debug("Transaction close.");
-				}
-			} catch (SQLException e) {
-				logger.error("Transaction close failed.", e);
-				throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
+				logger.debug("Transaction close.");
 			} finally {
 				threadLocalConnection.remove();
 				closeConnection.set(true);
@@ -218,6 +187,7 @@ public class JdbcDataContext extends AbstractDataContext {
 	 * @param atoms
 	 * @throws SQLException
 	 */
+	@Override
 	public void trans(Atom... atoms) {
 		if (null == atoms) {
 			return;
@@ -228,28 +198,19 @@ public class JdbcDataContext extends AbstractDataContext {
 				atom.run();
 			}
 			commit();
-		} catch (Exception e) {
-			rollback();
-			throw e;
-		} finally {
-			close();
-		}
-	}
-
-	@Override
-	public List<DataResult> execute(Action... actions) {
-		List<DataResult> multiResults = new ArrayList<>();
-		trans(new Atom() {
-
-			@Override
-			public void run() {
-				for (Action action : actions) {
-					multiResults.add(executeCRUD(action));
-				}
-
+		} catch (SQLException e) {
+			try {
+				rollback();
+			} catch (SQLException e1) {
+				throw new JdbcDataException("Transaction rollback failed.");
 			}
-		});
-		return multiResults;
+		} finally {
+			try {
+				close();
+			} catch (SQLException e) {
+				logger.error("Transaction close failed.", e);
+			}
+		}
 	}
 
 	@Override
@@ -277,8 +238,8 @@ public class JdbcDataContext extends AbstractDataContext {
 	@Override
 	protected UpdateSummary insert(String sql, Object... params) {
 		try {
-			Object[] generatedKeys = runner.insert(sql, new ArrayHandler(), params);
-			return new InsertSummary(generatedKeys);
+			List<Map<String, Object>> insertContents = runner.insert(sql, new MapListHandler(), params);
+			return new InsertSummary(insertContents);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
