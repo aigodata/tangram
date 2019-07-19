@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.attributes.AssociationType;
+import com.github.mengxianun.core.attributes.ColumnConfigAttributes;
 import com.github.mengxianun.core.attributes.TableConfigAttributes;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.item.ColumnItem;
@@ -158,16 +159,23 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 	}
 
 	private void addColumnValue(JsonObject record, ColumnItem columnItem, Object value) {
+		// 返回 key(列) 分3种情况
+		// 1. 指定了列别名的情况下, key 为指定的列别名. 例: column as alias
+		// 2. 只指定了列的情况下的情况下, key 为自动列名. 例: column
+		// 3. 列为表达式, 非具体字段, key 为自动生成的别名. 例: count(*)
+
 		Column column = columnItem.getColumn();
 		// 列名, 在列存在的情况下, 以列名表示, 否则按请求中列的原始内容表示
 		String columnName = column == null ? columnItem.getExpression() : column.getName();
 		// 如果请求中指定了列别名, 则返回结果的 key 为指定的列别名, 否则 key 为列名
 		String jsonKey = action.columnAliasEnabled() && columnItem.isCustomAlias() ? columnItem.getAlias()
 				: treatColumn(columnName);
-		// 返回 key(列) 分3种情况
-		// 1. 指定了列别名的情况下, key 为指定的列别名. 例: column as alias
-		// 2. 只指定了列的情况下的情况下, key 为自动列名. 例: column
-		// 3. 列为表达式, 非具体字段, key 为自动生成的别名. 例: count(*)
+		// 配置了 JSON_KEY 的情况
+		if (column != null && column.getConfig().has(ColumnConfigAttributes.JSON_KEY)) {
+			if (!columnItem.isCustomAlias()) {
+				jsonKey = column.getConfig().get(ColumnConfigAttributes.JSON_KEY).getAsString();
+			}
+		}
 		addColumnValue(record, column, jsonKey, value);
 	}
 
@@ -248,7 +256,14 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 
 	private JsonObject createJoinStructure(JsonObject currentTableObject, Table joinTable,
 			AssociationType associationType) {
-		return createJoinStructure(currentTableObject, joinTable.getName(), associationType);
+		// 配置了 JSON_KEY 的情况
+		String keyName = joinTable.getName();
+		// 配置了 JSON_KEY 的情况
+		JsonObject tableConfig = joinTable.getConfig();
+		if (tableConfig.has(TableConfigAttributes.JSON_KEY)) {
+			keyName = tableConfig.get(TableConfigAttributes.JSON_KEY).getAsString();
+		}
+		return createJoinStructure(currentTableObject, keyName, associationType);
 	}
 
 	private JsonObject createJoinStructure(JsonObject currentTableObject, String tableName,
