@@ -79,6 +79,10 @@ public class SQLBuilder {
 
 	public void toSql() {
 		if (action.isDetail() || action.isSelect()) {
+			// Detail 只查询一条数据
+			if (action.isDetail()) {
+				action.setLimitItem(new LimitItem(1, 2));
+			}
 			toSelect();
 		} else if (action.isInsert()) {
 			toInsert();
