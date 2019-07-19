@@ -26,10 +26,8 @@ java
 ```
 Translator translator = new DefaultTranslator(configJsonPath);
 DataResultSet dataResultSet = translator.translate(requestJson);
-if (dataResultSet.succeed()) {
-	Object data = dataResultSet.getData();
-	// 操作...
-}
+Object data = dataResultSet.getData();
+// 操作...
 ```
 
 request
@@ -58,8 +56,7 @@ response
 			"red",
 			"blue"
 		],
-		"dead": false,
-		"hobby_id": 1
+		"isOld": false
 	}
 ]
 ```
@@ -122,8 +119,13 @@ Translator.translate方法为tangram引擎的唯一入口，接收json格式的�
 
 ```
 {
-    "query":"user" // 或者"user u"
-}	
+    "query":"user"
+}
+// 表别名
+{
+    "query":"user as u" // 或者"user u"
+}
+
 ```
 
 ### Fields
