@@ -53,7 +53,7 @@ Object data = dataResultSet.getData();
 
 ## Documentation
 
-See the detail [documentation](https://github.com/aigodata/tangram/blob/master/doc/README.md) or [Wiki](https://github.com/aigodata/tangram/wiki).
+See the detail [~~documentation~~](https://github.com/aigodata/tangram/blob/master/doc/README.md) or [Wiki](https://github.com/aigodata/tangram/wiki).
 
 ## License
 
