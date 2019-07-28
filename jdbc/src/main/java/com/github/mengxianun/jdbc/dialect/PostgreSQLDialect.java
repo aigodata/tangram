@@ -11,10 +11,10 @@ public class PostgreSQLDialect implements Dialect {
 		return "postgresql";
 	}
 
-	@Override
-	public boolean assignDatabase() {
-		return false;
-	}
+	//	@Override
+	//	public boolean assignDatabase() {
+	//		return false;
+	//	}
 
 	@Override
 	public boolean quoteTable() {

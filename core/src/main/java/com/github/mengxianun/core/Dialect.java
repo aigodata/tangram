@@ -13,7 +13,7 @@ public interface Dialect {
 	 * 
 	 * @return 是否指定数据库
 	 */
-	default boolean assignDatabase() {
+	default boolean schemaPrefix() {
 		return true;
 	}
 

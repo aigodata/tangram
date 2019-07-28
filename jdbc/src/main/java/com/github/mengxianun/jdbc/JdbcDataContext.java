@@ -5,7 +5,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.github.mengxianun.core.AbstractDataContext;
 import com.github.mengxianun.core.Atom;
+import com.github.mengxianun.core.Metadata;
 import com.github.mengxianun.core.ResultStatus;
 import com.github.mengxianun.core.data.DataSet;
 import com.github.mengxianun.core.data.update.DefaultUpdateSummary;
@@ -31,8 +31,8 @@ import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultColumnType;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
-import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.jdbc.dialect.JdbcDialectFactory;
+import com.google.common.base.Strings;
 
 public class JdbcDataContext extends AbstractDataContext {
 
@@ -59,9 +59,6 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	public void initMetadata() {
-		List<Schema> schemas = new ArrayList<>();
-		metadata.setSchemas(schemas);
-		// source.add(metadata.SCHEMAS, schemas);
 		String defaultCatalogName = null;
 		String defaultSchemaName = null;
 		// 获取 Catalog 和 Schema
@@ -72,63 +69,64 @@ public class JdbcDataContext extends AbstractDataContext {
 		try (Connection connection = DriverManager.getConnection(url, username, password)) {
 			defaultCatalogName = connection.getCatalog();
 			defaultSchemaName = connection.getSchema();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-		}
+			if (Strings.isNullOrEmpty(defaultSchemaName)) {
+				defaultSchemaName = defaultCatalogName;
+			}
+		} catch (SQLException ignore) {}
 
 		try (final Connection connection = getConnection()) {
-			DatabaseMetaData databasemetadata = connection.getMetaData();
+			DatabaseMetaData databaseMetaData = connection.getMetaData();
 			// String databaseProductName = databasemetadata.getDatabaseProductName();
 			// String databaseProductVersion = databasemetadata.getDatabaseProductVersion();
 			// String url = databasemetadata.getURL();
-			String identifierQuoteString = databasemetadata.getIdentifierQuoteString();
+			String identifierQuoteString = databaseMetaData.getIdentifierQuoteString();
 			metadata.setIdentifierQuoteString(identifierQuoteString);
-			metadata.setDefaultSchemaName(defaultCatalogName);
+			metadata.setDefaultSchemaName(defaultSchemaName);
 
-			// schema metadata
-			ResultSet catalogsResultSet = databasemetadata.getCatalogs();
-			while (catalogsResultSet.next()) {
-				String catalogName = catalogsResultSet.getString(1);
-				if ("information_schema".equals(catalogName)) {
-					continue;
-				}
-				schemas.add(new DefaultSchema(catalogName));
-			}
+			metadata.addSchema(new DefaultSchema("information_schema", defaultCatalogName));
+			metadata.addSchema(new DefaultSchema(defaultSchemaName, defaultCatalogName));
 
-			// table metadata
-			DefaultSchema defaultSchema = (DefaultSchema) metadata.getSchema(defaultCatalogName);
-			ResultSet tablesResultSet = databasemetadata.getTables(defaultCatalogName, defaultSchemaName, "%", null);
-			while (tablesResultSet.next()) {
-				// String tableCatalog = tablesResultSet.getString(1);
-				// String tableSchema = tablesResultSet.getString(2);
-				String tableName = tablesResultSet.getString(3);
-				// String tableType = tablesResultSet.getString(4);
-				String remarks = tablesResultSet.getString(5);
-				defaultSchema.addTable(new DefaultTable(tableName, defaultSchema, remarks));
-			}
-
-			// column metadata
-			ResultSet columnsResultSet = databasemetadata.getColumns(defaultCatalogName, defaultSchemaName, "%", null);
-			while (columnsResultSet.next()) {
-				// String columnCatalog = columnsResultSet.getString(1);
-				// String columnSchema = columnsResultSet.getString(2);
-				String columnTable = columnsResultSet.getString(3);
-				String columnName = columnsResultSet.getString(4);
-				String columnDataType = columnsResultSet.getString(5);
-				String columnTypeName = columnsResultSet.getString(6);
-				Integer columnSize = columnsResultSet.getInt(7);
-				Boolean columnNullable = columnsResultSet.getBoolean(11);
-				String columnRemarks = columnsResultSet.getString(12);
-				// Boolean isAutoincrement = columnsResultSet.getBoolean(23);
-
-				DefaultTable table = (DefaultTable) metadata.getTable(defaultCatalogName, columnTable);
-				ColumnType columnType = new DefaultColumnType(Integer.parseInt(columnDataType), columnTypeName);
-				table.addColumn(
-						new DefaultColumn(table, columnType, columnName, columnNullable, columnRemarks, columnSize));
-			}
+			loadMetadata(databaseMetaData, defaultCatalogName, "INFORMATION_SCHEMA", "%", null, metadata);
+			loadMetadata(databaseMetaData, defaultCatalogName, defaultSchemaName, "%", null, metadata);
 
 		} catch (SQLException e) {
 			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
+		}
+	}
+
+	private void loadMetadata(DatabaseMetaData databaseMetaData, String catalog, String schemaPattern,
+			String tableNamePattern, String columnNamePattern, Metadata metadata) throws SQLException {
+		// table metadata
+		DefaultSchema defaultSchema = (DefaultSchema) metadata.getSchema(schemaPattern);
+		ResultSet tablesResultSet = databaseMetaData.getTables(catalog, schemaPattern, "%",
+				new String[] { "TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY", "LOCAL TEMPORARY", "ALIAS" });
+		while (tablesResultSet.next()) {
+			// String tableCatalog = tablesResultSet.getString(1);
+			// String tableSchema = tablesResultSet.getString(2);
+			String tableName = tablesResultSet.getString(3);
+			// String tableType = tablesResultSet.getString(4);
+			String remarks = tablesResultSet.getString(5);
+			defaultSchema.addTable(new DefaultTable(tableName, defaultSchema, remarks));
+		}
+
+		// column metadata
+		ResultSet columnsResultSet = databaseMetaData.getColumns(catalog, schemaPattern, "%", columnNamePattern);
+		while (columnsResultSet.next()) {
+			// String columnCatalog = columnsResultSet.getString(1);
+			// String columnSchema = columnsResultSet.getString(2);
+			String columnTable = columnsResultSet.getString(3);
+			String columnName = columnsResultSet.getString(4);
+			String columnDataType = columnsResultSet.getString(5);
+			String columnTypeName = columnsResultSet.getString(6);
+			Integer columnSize = columnsResultSet.getInt(7);
+			Boolean columnNullable = columnsResultSet.getBoolean(11);
+			String columnRemarks = columnsResultSet.getString(12);
+			// Boolean isAutoincrement = columnsResultSet.getBoolean(23);
+
+			DefaultTable table = (DefaultTable) metadata.getTable(schemaPattern, columnTable);
+			ColumnType columnType = new DefaultColumnType(Integer.parseInt(columnDataType), columnTypeName);
+			table.addColumn(
+					new DefaultColumn(table, columnType, columnName, columnNullable, columnRemarks, columnSize));
 		}
 	}
 

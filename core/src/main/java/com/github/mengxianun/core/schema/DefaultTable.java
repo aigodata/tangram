@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 public class DefaultTable implements Table {
@@ -12,6 +13,8 @@ public class DefaultTable implements Table {
 	private Schema schema;
 	private String remarks;
 	private List<Column> columns;
+
+	private JsonObject info;
 	// 自定义配置i信息
 	private JsonObject config = new JsonObject();
 
@@ -106,6 +109,28 @@ public class DefaultTable implements Table {
 	@Override
 	public String getRemarks() {
 		return remarks;
+	}
+
+	@Override
+	public JsonObject getInfo() {
+		if (info != null && info.size() > 0) {
+			return info;
+		}
+		info = new JsonObject();
+		info.addProperty("name", name);
+		info.addProperty("remarks", remarks);
+		JsonArray columnsInfo = new JsonArray();
+		for (Column column : columns) {
+			String columnName = column.getName();
+			String columnType = column.getType().getName();
+
+			JsonObject columnInfo = new JsonObject();
+			columnInfo.addProperty("name", columnName);
+			columnInfo.addProperty("type", columnType);
+			columnsInfo.add(columnInfo);
+		}
+		info.add("columns", columnsInfo);
+		return info;
 	}
 
 	@Override

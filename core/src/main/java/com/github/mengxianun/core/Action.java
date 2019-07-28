@@ -205,6 +205,10 @@ public class Action {
 		return operation != null && operation == Operation.STRUCT;
 	}
 
+	public boolean isStructs() {
+		return operation != null && operation == Operation.STRUCTS;
+	}
+
 	public boolean isNative() {
 		return operation != null && operation == Operation.NATIVE;
 	}

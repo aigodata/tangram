@@ -19,7 +19,7 @@ public class ElasticsearchDialect implements Dialect {
 	}
 
 	@Override
-	public boolean assignDatabase() {
+	public boolean schemaPrefix() {
 		return false;
 	}
 

@@ -4,10 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 public class DefaultSchema implements Schema {
 
 	private String name;
+	private String catalog;
 	private List<Table> tables;
+
+	private JsonObject info;
 
 	public DefaultSchema() {
 		this.tables = new ArrayList<>();
@@ -16,16 +22,27 @@ public class DefaultSchema implements Schema {
 	public DefaultSchema(String name) {
 		this();
 		this.name = name;
+		this.catalog = name;
 	}
 
-	public DefaultSchema(String name, List<Table> tables) {
-		this.name = name;
+	public DefaultSchema(String name, String catalog) {
+		this(name);
+		this.catalog = catalog;
+	}
+
+	public DefaultSchema(String name, String catalog, List<Table> tables) {
+		this(name, catalog);
 		this.tables = tables;
 	}
 
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public String getCatalog() {
+		return catalog;
 	}
 
 	@Override
@@ -69,6 +86,19 @@ public class DefaultSchema implements Schema {
 		}
 
 		return foundTables.get(0);
+	}
+
+	@Override
+	public JsonObject getInfo() {
+		if (info != null && info.size() > 0) {
+			return info;
+		}
+		info = new JsonObject();
+		info.addProperty("name", name);
+		JsonArray tablesInfo = new JsonArray();
+		tables.stream().forEach(e -> tablesInfo.add(e.getInfo()));
+		info.add("tables", tablesInfo);
+		return info;
 	}
 
 	public void addTable(Table table) {

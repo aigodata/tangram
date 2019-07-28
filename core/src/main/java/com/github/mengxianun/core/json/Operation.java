@@ -8,6 +8,6 @@ package com.github.mengxianun.core.json;
  */
 public enum Operation {
 
-	QUERY, SELECT, INSERT, UPDATE, DELETE, DETAIL, TRANSACTION, STRUCT, NATIVE
+	QUERY, SELECT, INSERT, UPDATE, DELETE, DETAIL, TRANSACTION, STRUCT, STRUCTS, NATIVE
 
 }

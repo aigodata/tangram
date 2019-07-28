@@ -548,7 +548,7 @@ public class SQLBuilder {
 
 	public String spliceTable(Table table) {
 		StringBuilder tableBuilder = new StringBuilder();
-		if (dialect.assignDatabase()) {
+		if (dialect.schemaPrefix()) {
 			Schema schema = table.getSchema();
 			tableBuilder.append(quote(schema.getName())).append(".");
 		}

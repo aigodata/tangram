@@ -69,6 +69,8 @@ public abstract class AbstractDataContext implements DataContext {
 		DataResult resultSet = null;
 		if (action.isStruct()) {
 			resultSet = executeStruct(action);
+		} else if (action.isStructs()) {
+			resultSet = executeStructs(action);
 		} else if (action.isTransaction()) {
 			resultSet = executeTransaction(action);
 		} else if (action.isNative()) {
@@ -102,7 +104,12 @@ public abstract class AbstractDataContext implements DataContext {
 	private DataResult executeStruct(Action action) {
 		TableItem tableItem = action.getTableItems().get(0);
 		Table table = tableItem.getTable();
-		return new DefaultDataResult(new Gson().toJsonTree(table));
+		return new DefaultDataResult(table.getInfo());
+	}
+
+	private DataResult executeStructs(Action action) {
+		Schema schema = App.currentDataContext().getDefaultSchema();
+		return new DefaultDataResult(schema.getInfo());
 	}
 
 	private DataResult executeTransaction(Action action) {

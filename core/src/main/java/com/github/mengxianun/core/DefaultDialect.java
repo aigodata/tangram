@@ -8,11 +8,6 @@ public class DefaultDialect implements Dialect {
 	}
 
 	@Override
-	public boolean assignDatabase() {
-		return false;
-	}
-
-	@Override
 	public boolean quoteTable() {
 		return false;
 	}

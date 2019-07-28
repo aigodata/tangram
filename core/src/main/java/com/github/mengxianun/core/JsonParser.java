@@ -79,59 +79,24 @@ public class JsonParser {
 	}
 
 	private void parseOperation() {
+		Operation[] operations = Operation.values();
+		Set<String> keys = jsonData.keySet();
 		int operationCount = 0;
-		if (jsonData.has(JsonAttributes.DETAIL)) {
-			operation = Operation.DETAIL;
-			operationAttribute = JsonAttributes.DETAIL;
-			operationCount++;
+		for (String key : keys) {
+			for (Operation op : operations) {
+				if (op.name().equalsIgnoreCase(key)) {
+					operation = op;
+					operationAttribute = key;
+					operationCount++;
+					break;
+				}
+			}
 		}
-		if (jsonData.has(JsonAttributes.QUERY)) {
-			operation = Operation.QUERY;
-			operationAttribute = JsonAttributes.QUERY;
-			operationCount++;
-		}
-		if (jsonData.has(JsonAttributes.SELECT)) {
-			operation = Operation.SELECT;
-			operationAttribute = JsonAttributes.SELECT;
-			operationCount++;
-		}
-		if (jsonData.has(JsonAttributes.INSERT)) {
-			operation = Operation.INSERT;
-			operationAttribute = JsonAttributes.INSERT;
-			operationCount++;
-		}
-		if (jsonData.has(JsonAttributes.UPDATE)) {
-			operation = Operation.UPDATE;
-			operationAttribute = JsonAttributes.UPDATE;
-			operationCount++;
-		}
-		if (jsonData.has(JsonAttributes.DELETE)) {
-			operation = Operation.DELETE;
-			operationAttribute = JsonAttributes.DELETE;
-			operationCount++;
-		}
-		if (jsonData.has(JsonAttributes.TRANSACTION)) {
-			operation = Operation.TRANSACTION;
-			operationAttribute = JsonAttributes.TRANSACTION;
-			operationCount++;
-		}
-		if (jsonData.has(JsonAttributes.STRUCT)) {
-			operation = Operation.STRUCT;
-			operationAttribute = JsonAttributes.STRUCT;
-			operationCount++;
-		}
-		if (jsonData.has(JsonAttributes.NATIVE)) {
-			operation = Operation.NATIVE;
-			operationAttribute = JsonAttributes.NATIVE;
-			operationCount++;
-		}
-
 		if (operationCount > 1) {
 			throw new JsonDataException("Multiple operations were found in the Json data.");
 		} else if (operationCount < 1) {
 			throw new JsonDataException("No operations were found in the Json data.");
 		}
-
 	}
 
 	public String parseSource() {
@@ -148,6 +113,8 @@ public class JsonParser {
 				throw new JsonDataException("Cross-data source transactions are not supported.");
 			}
 			source = sources.iterator().next();
+		} else if (isStructs()) {
+			source = jsonData.get(operationAttribute).getAsString();
 		} else {
 			JsonElement tablesElement = jsonData.get(operationAttribute);
 			if (!tablesElement.isJsonObject() && !tablesElement.isJsonArray()) {
@@ -201,6 +168,9 @@ public class JsonParser {
 
 	public Action parse() {
 		if (isTransaction()) {
+			return action;
+		}
+		if (isStructs()) {
 			return action;
 		}
 		parseTables();
@@ -1248,7 +1218,11 @@ public class JsonParser {
 	}
 
 	public boolean isStruct() {
-		return operation != null && operation == Operation.STRUCT;
+		return operation != null && (operation == Operation.STRUCT);
+	}
+
+	public boolean isStructs() {
+		return operation != null && (operation == Operation.STRUCTS);
 	}
 
 	public boolean isNative() {

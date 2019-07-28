@@ -50,7 +50,7 @@ public class Metadata {
 	private String identifierQuoteString = "";
 
 	public Metadata() {
-		this.schemas = new ArrayList<>();
+		this(new ArrayList<>());
 	}
 
 	public Metadata(List<Schema> schemas) {
@@ -58,12 +58,12 @@ public class Metadata {
 	}
 
 	public Metadata(List<Schema> schemas, String defaultSchemaName) {
-		this.schemas = schemas;
+		this(schemas);
 		this.defaultSchemaName = defaultSchemaName;
 	}
 
 	public Metadata(List<Schema> schemas, String defaultSchemaName, String identifierQuoteString) {
-		this.schemas = schemas;
+		this(schemas);
 		this.defaultSchemaName = defaultSchemaName;
 		this.identifierQuoteString = identifierQuoteString;
 	}
@@ -73,7 +73,7 @@ public class Metadata {
 	}
 
 	public List<String> getSchemaNames() {
-		return schemas.stream().map(schema -> schema.getName()).collect(Collectors.toList());
+		return schemas.stream().map(Schema::getName).collect(Collectors.toList());
 	}
 
 	public Schema getSchema(String schemaName) {
@@ -83,7 +83,7 @@ public class Metadata {
 
 		List<Schema> foundSchemas = new ArrayList<>();
 		for (Schema schema : schemas) {
-			if (schema.getName().equalsIgnoreCase(schemaName)) {
+			if (schemaName.equalsIgnoreCase(schema.getName())) {
 				foundSchemas.add(schema);
 			}
 		}
@@ -107,6 +107,10 @@ public class Metadata {
 		return getSchema(defaultSchemaName);
 	}
 
+	public void addSchema(Schema schema) {
+		this.schemas.add(schema);
+	}
+
 	public List<Table> getTables(String schemaName) {
 		Schema schema = getSchema(schemaName);
 		if (schema == null) {
@@ -116,7 +120,16 @@ public class Metadata {
 	}
 
 	public Table getTable(String tableName) {
-		return getDefaultSchema().getTableByName(tableName);
+		Table table = getDefaultSchema().getTableByName(tableName);
+		if (table == null) {
+			for (Schema schema : schemas) {
+				table = schema.getTableByName(tableName);
+				if (table != null) {
+					break;
+				}
+			}
+		}
+		return table;
 	}
 
 	public Table getTable(String schemaName, String tableName) {

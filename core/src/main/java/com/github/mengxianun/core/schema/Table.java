@@ -20,6 +20,8 @@ public interface Table extends Name {
 
 	public String getRemarks();
 
+	public JsonObject getInfo();
+
 	public JsonObject getConfig();
 
 	default void setConfig(JsonObject config) {
