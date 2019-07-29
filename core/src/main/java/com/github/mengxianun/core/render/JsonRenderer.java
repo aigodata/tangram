@@ -79,6 +79,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 					 * 待优化
 					 */
 					Table mainTable = action.getTableItems().get(0).getTable();
+					// join 表的直接父级表
+					Table directParentTable = mainTable;
 					Set<Relationship> relationships = App.Context.getRelationships(mainTable, joinTable);
 					// 构建join表上层表关系
 					List<Table> parentTables = relationships.stream().map(e -> e.getPrimaryColumn().getTable())
@@ -90,6 +92,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 						// 如果该关联表不是请求中指定的关联表, 不构建关系结构
 						if (!action.getJoinTables().contains(parentTable)) {
 							continue;
+						} else {
+							directParentTable = parentTable;
 						}
 						// 已经构建了该 join 表的结构, 直接获取
 						if (uniqueRecord.has(parentTable.getName())) {
@@ -109,9 +113,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 						}
 					}
 					// -- 构建 join 表结构
-					// join 表的父级表
-					Table parentTable = parentTables.get(parentTables.size() - 1);
-					AssociationType associationType = App.Context.getAssociationType(parentTable, joinTable);
+
+					AssociationType associationType = App.Context.getAssociationType(directParentTable, joinTable);
 					currentTableObject = createJoinStructure(currentTableObject, joinTable, associationType);
 					// 记录出现过的 join 表
 					existJoinTables.add(joinTable.getName(), currentTableObject);
