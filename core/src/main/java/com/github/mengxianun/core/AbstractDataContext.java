@@ -366,22 +366,19 @@ public abstract class AbstractDataContext implements DataContext {
 		Set<Relationship> relationships = getRelationships(primaryTable, foreignTable);
 		Relationship first = Iterables.getFirst(relationships, null);
 		AssociationType associationType = first.getAssociationType();
-		Relationship last = Iterables.getLast(relationships, null);
-		if (last != null) {
+		if (associationType == AssociationType.ONE_TO_MANY || associationType == AssociationType.MANY_TO_MANY) {
+			return associationType;
+		}
+		if (relationships.size() > 1) {
+			Relationship last = Iterables.getLast(relationships, null);
 			AssociationType lastAssociationType = last.getAssociationType();
-			if (associationType == AssociationType.ONE_TO_ONE || associationType == AssociationType.ONE_TO_MANY) {
-				if (lastAssociationType == AssociationType.ONE_TO_MANY || lastAssociationType == AssociationType.MANY_TO_MANY) {
+			if (associationType == AssociationType.ONE_TO_ONE && (lastAssociationType == AssociationType.ONE_TO_MANY
+					|| lastAssociationType == AssociationType.MANY_TO_MANY)) {
 					associationType = AssociationType.ONE_TO_MANY;
-				} else {
-					associationType = AssociationType.ONE_TO_ONE;
-				}
 			} else if (associationType == AssociationType.MANY_TO_ONE
-					|| associationType == AssociationType.MANY_TO_MANY) {
-				if (lastAssociationType == AssociationType.ONE_TO_MANY || lastAssociationType == AssociationType.MANY_TO_MANY) {
+					&& (lastAssociationType == AssociationType.ONE_TO_MANY
+							|| lastAssociationType == AssociationType.MANY_TO_MANY)) {
 					associationType = AssociationType.MANY_TO_MANY;
-				} else {
-					associationType = AssociationType.MANY_TO_ONE;
-				}
 			}
 		}
 		return associationType;
