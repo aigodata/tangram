@@ -1088,8 +1088,10 @@ public class JsonParser {
 			tableItem = tempTableItems.get(table);
 		} else if (tempJoinTableItems.containsKey(table)) {
 			tableItem = tempJoinTableItems.get(table);
+		} else if (tempRelationTableItems.containsKey(table)) {
+			tableItem = tempRelationTableItems.get(table);
 		} else {
-			tableItem = new TableItem(table);
+			tableItem = new TableItem(table, App.Action.getTableAlias(table), false);
 			tempRelationTableItems.put(table, tableItem);
 		}
 		return tableItem;
