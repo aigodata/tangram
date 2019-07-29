@@ -270,6 +270,8 @@ public abstract class AbstractTranslator implements Translator {
 
 	@Override
 	public DataResultSet translate(String json) {
+		logger.debug("Request: {}", json);
+
 		// 设置当前线程的上下文
 		com.github.mengxianun.core.JsonParser parser = new com.github.mengxianun.core.JsonParser(json);
 		String sourceName = parser.parseSource();
@@ -280,8 +282,6 @@ public abstract class AbstractTranslator implements Translator {
 			throw new JsonDataException(ResultStatus.DATASOURCE_NOT_EXIST.fill(sourceName));
 		}
 		App.setCurrentDataContext(sourceName);
-
-		logger.debug("Request: {}", json);
 
 		// Stopwatch
 		Stopwatch stopwatch = Stopwatch.createStarted();
