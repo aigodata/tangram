@@ -24,10 +24,10 @@ import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.mengxianun.core.attributes.AssociationType;
-import com.github.mengxianun.core.attributes.ConfigAttributes;
-import com.github.mengxianun.core.attributes.DataSourceAttributes;
-import com.github.mengxianun.core.attributes.TableConfigAttributes;
+import com.github.mengxianun.core.config.AssociationType;
+import com.github.mengxianun.core.config.DataSourceConfig;
+import com.github.mengxianun.core.config.GlobalConfig;
+import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.exception.JsonDataException;
 import com.github.mengxianun.core.schema.Column;
@@ -56,7 +56,7 @@ public abstract class AbstractTranslator implements Translator {
 			readConfig(configFileURL);
 		}
 		try {
-			parseAllTableConfig(App.Config.getString(ConfigAttributes.TABLE_CONFIG_PATH));
+			parseAllTableConfig(App.Config.getString(GlobalConfig.TABLE_CONFIG_PATH));
 		} catch (IOException e) {
 			logger.error("Read table config file parse error", e);
 		}
@@ -65,7 +65,7 @@ public abstract class AbstractTranslator implements Translator {
 	protected URL convertToURL(String configFile) {
 		try {
 			URL configFileURL = Resources.getResource(configFile);
-			App.Config.set(ConfigAttributes.CONFIG_FILE, configFile);
+			App.Config.set(GlobalConfig.CONFIG_FILE, configFile);
 			return configFileURL;
 		} catch (Exception e) {
 			logger.error(String.format("Config file [%s] parse error", configFile), e);
@@ -90,7 +90,7 @@ public abstract class AbstractTranslator implements Translator {
 	protected void createDataContexts() {
 		discoverFromClasspath();
 
-		JsonObject dataSourcesJsonObject = App.Config.getJsonObject(ConfigAttributes.DATASOURCES);
+		JsonObject dataSourcesJsonObject = App.Config.getJsonObject(GlobalConfig.DATASOURCES);
 		for (Entry<String, JsonElement> entry : dataSourcesJsonObject.entrySet()) {
 			String dataSourceName = entry.getKey();
 			JsonObject dataSourceJsonObject = dataSourcesJsonObject.getAsJsonObject(dataSourceName);
@@ -107,7 +107,7 @@ public abstract class AbstractTranslator implements Translator {
 			}
 			DataContextFactory dataContextFactory = factories.get(type);
 			if (dataContextFactory != null) {
-				dataSourceJsonObject.remove(ConfigAttributes.DATASOURCE_TYPE);
+				dataSourceJsonObject.remove(GlobalConfig.DATASOURCE_TYPE);
 				DataContext dataContext = dataContextFactory.create(dataSourceJsonObject);
 				addDataContext(dataSourceName, dataContext);
 				logger.info("Initialize data source [{}] successfully", dataSourceName);
@@ -127,11 +127,11 @@ public abstract class AbstractTranslator implements Translator {
 	 */
 	protected String parseDataContextType(JsonObject dataSourceJsonObject) {
 		String type = null;
-		if (dataSourceJsonObject.has(ConfigAttributes.DATASOURCE_TYPE)) {
-			type = dataSourceJsonObject.get(ConfigAttributes.DATASOURCE_TYPE).getAsString();
+		if (dataSourceJsonObject.has(GlobalConfig.DATASOURCE_TYPE)) {
+			type = dataSourceJsonObject.get(GlobalConfig.DATASOURCE_TYPE).getAsString();
 		} else {
-			if (dataSourceJsonObject.has(DataSourceAttributes.URL)) {
-				String url = dataSourceJsonObject.get(DataSourceAttributes.URL).getAsString();
+			if (dataSourceJsonObject.has(DataSourceConfig.URL)) {
+				String url = dataSourceJsonObject.get(DataSourceConfig.URL).getAsString();
 				for (String factoryType : factories.keySet()) {
 					if (url.contains(factoryType)) {
 						type = factoryType;
@@ -206,25 +206,25 @@ public abstract class AbstractTranslator implements Translator {
 				return;
 			}
 			table.setConfig(tableConfig);
-			if (tableConfig.has(TableConfigAttributes.COLUMNS)) {
-				JsonObject columnsConfig = tableConfig.get(TableConfigAttributes.COLUMNS).getAsJsonObject();
+			if (tableConfig.has(TableConfig.COLUMNS)) {
+				JsonObject columnsConfig = tableConfig.get(TableConfig.COLUMNS).getAsJsonObject();
 				for (String columnName : columnsConfig.keySet()) {
 					Column column = dataContext.getColumn(tableName, columnName);
 					if (column != null) {
 						JsonObject columnConfig = columnsConfig.get(columnName).getAsJsonObject();
 						column.setConfig(columnConfig);
 						// 添加 Relationship
-						if (columnConfig.has(TableConfigAttributes.COLUMN_ASSOCIATION)) {
+						if (columnConfig.has(TableConfig.COLUMN_ASSOCIATION)) {
 							JsonObject associationConfig = columnConfig
-									.getAsJsonObject(TableConfigAttributes.COLUMN_ASSOCIATION);
+									.getAsJsonObject(TableConfig.COLUMN_ASSOCIATION);
 							String targetTableName = associationConfig
-									.getAsJsonPrimitive(TableConfigAttributes.ASSOCIATION_TARGET_TABLE).getAsString();
+									.getAsJsonPrimitive(TableConfig.ASSOCIATION_TARGET_TABLE).getAsString();
 							String targetColumnName = associationConfig
-									.getAsJsonPrimitive(TableConfigAttributes.ASSOCIATION_TARGET_COLUMN).getAsString();
+									.getAsJsonPrimitive(TableConfig.ASSOCIATION_TARGET_COLUMN).getAsString();
 							AssociationType associationType = associationConfig
-									.has(TableConfigAttributes.ASSOCIATION_TYPE)
+									.has(TableConfig.ASSOCIATION_TYPE)
 											? AssociationType.from(associationConfig
-													.getAsJsonPrimitive(TableConfigAttributes.ASSOCIATION_TYPE)
+													.getAsJsonPrimitive(TableConfig.ASSOCIATION_TYPE)
 													.getAsString())
 											: AssociationType.ONE_TO_ONE;
 							Column targetColumn = dataContext.getColumn(targetTableName, targetColumnName);
@@ -246,10 +246,10 @@ public abstract class AbstractTranslator implements Translator {
 			throw new DataException(String.format("DataContext [%s] already exists", name));
 		}
 		App.addDataContext(name, dataContext);
-		if (!App.Config.has(ConfigAttributes.DEFAULT_DATASOURCE)
-				|| Strings.isNullOrEmpty(App.Config.getString(ConfigAttributes.DEFAULT_DATASOURCE))) {
+		if (!App.Config.has(GlobalConfig.DEFAULT_DATASOURCE)
+				|| Strings.isNullOrEmpty(App.Config.getString(GlobalConfig.DEFAULT_DATASOURCE))) {
 			String defaultDataSourceName = App.getDataContexts().keySet().iterator().next();
-			App.Config.set(ConfigAttributes.DEFAULT_DATASOURCE, defaultDataSourceName);
+			App.Config.set(GlobalConfig.DEFAULT_DATASOURCE, defaultDataSourceName);
 		}
 	}
 
@@ -265,7 +265,7 @@ public abstract class AbstractTranslator implements Translator {
 	}
 
 	public void reInit() {
-		init(App.Config.getString(ConfigAttributes.CONFIG_FILE));
+		init(App.Config.getString(GlobalConfig.CONFIG_FILE));
 	}
 
 	@Override

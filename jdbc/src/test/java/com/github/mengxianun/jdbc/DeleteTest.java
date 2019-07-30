@@ -7,7 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.github.mengxianun.core.DataResultSet;
-import com.github.mengxianun.core.attributes.ResultAttributes;
+import com.github.mengxianun.core.config.ResultAttributes;
 import com.google.gson.JsonObject;
 
 @DisplayName("Jdbc delete test")

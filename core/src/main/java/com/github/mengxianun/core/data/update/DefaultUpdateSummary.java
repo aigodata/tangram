@@ -1,6 +1,6 @@
 package com.github.mengxianun.core.data.update;
 
-import com.github.mengxianun.core.attributes.ResultAttributes;
+import com.github.mengxianun.core.config.ResultAttributes;
 import com.google.common.collect.ImmutableMap;
 
 public class DefaultUpdateSummary implements UpdateSummary {

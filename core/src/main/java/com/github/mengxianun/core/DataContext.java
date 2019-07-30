@@ -3,7 +3,7 @@ package com.github.mengxianun.core;
 import java.util.List;
 import java.util.Set;
 
-import com.github.mengxianun.core.attributes.AssociationType;
+import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;

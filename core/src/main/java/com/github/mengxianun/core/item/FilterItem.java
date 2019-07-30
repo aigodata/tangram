@@ -3,8 +3,8 @@ package com.github.mengxianun.core.item;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.github.mengxianun.core.json.Connector;
-import com.github.mengxianun.core.json.Operator;
+import com.github.mengxianun.core.request.Connector;
+import com.github.mengxianun.core.request.Operator;
 
 public class FilterItem extends Item {
 

@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
-import com.github.mengxianun.core.attributes.AssociationType;
+import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.exception.JsonDataException;
 import com.github.mengxianun.core.item.ColumnItem;
@@ -22,13 +22,14 @@ import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
-import com.github.mengxianun.core.json.Connector;
-import com.github.mengxianun.core.json.JoinType;
-import com.github.mengxianun.core.json.JsonAttributes;
-import com.github.mengxianun.core.json.Operation;
-import com.github.mengxianun.core.json.Operator;
-import com.github.mengxianun.core.json.Order;
-import com.github.mengxianun.core.json.Template;
+import com.github.mengxianun.core.request.AdditionalKeywords;
+import com.github.mengxianun.core.request.Connector;
+import com.github.mengxianun.core.request.JoinType;
+import com.github.mengxianun.core.request.Operation;
+import com.github.mengxianun.core.request.Operator;
+import com.github.mengxianun.core.request.Order;
+import com.github.mengxianun.core.request.RequestKeyword;
+import com.github.mengxianun.core.request.Template;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Table;
@@ -119,8 +120,8 @@ public class JsonParser {
 			JsonElement tablesElement = jsonData.get(operationAttribute);
 			if (!tablesElement.isJsonObject() && !tablesElement.isJsonArray()) {
 				String tableString = tablesElement.getAsString().trim();
-				if (tableString.contains(JsonAttributes.ALIAS_KEY)) {
-					String[] tablePart = tableString.split(JsonAttributes.ALIAS_KEY);
+				if (tableString.contains(AdditionalKeywords.ALIAS_KEY.value())) {
+					String[] tablePart = tableString.split(AdditionalKeywords.ALIAS_KEY.value());
 					tableString = tablePart[0];
 				} else if (tableString.contains(" ")) {
 					String[] tablePart = tableString.split("\\s+");
@@ -143,8 +144,8 @@ public class JsonParser {
 		JsonElement tablesElement = jsonData.get(operationAttribute);
 		if (!tablesElement.isJsonObject() && !tablesElement.isJsonArray()) {
 			String tableString = tablesElement.getAsString().trim();
-			if (tableString.contains(JsonAttributes.ALIAS_KEY)) {
-				String[] tablePart = tableString.split(JsonAttributes.ALIAS_KEY);
+			if (tableString.contains(AdditionalKeywords.ALIAS_KEY.value())) {
+				String[] tablePart = tableString.split(AdditionalKeywords.ALIAS_KEY.value());
 				tableString = tablePart[0];
 			} else if (tableString.contains(" ")) {
 				String[] tablePart = tableString.split("\\s+");
@@ -251,8 +252,8 @@ public class JsonParser {
 	private TableItem parseTable(JsonElement tableElement) {
 		String tableString = tableElement.getAsString().trim();
 		String alias = null;
-		if (tableString.contains(JsonAttributes.ALIAS_KEY)) {
-			String[] tablePart = tableString.split(JsonAttributes.ALIAS_KEY);
+		if (tableString.contains(AdditionalKeywords.ALIAS_KEY.value())) {
+			String[] tablePart = tableString.split(AdditionalKeywords.ALIAS_KEY.value());
 			tableString = tablePart[0];
 			alias = tablePart[1];
 		} else if (tableString.contains(" ")) {
@@ -297,11 +298,11 @@ public class JsonParser {
 	}
 
 	public void parseJoins() {
-		if (!validAttribute(JsonAttributes.JOIN)) {
+		if (!validAttribute(RequestKeyword.JOIN.lowerName())) {
 			return;
 		}
 		List<JoinElement> joinElements = new ArrayList<>();
-		JsonElement joinsElement = jsonData.get(JsonAttributes.JOIN);
+		JsonElement joinsElement = jsonData.get(RequestKeyword.JOIN.lowerName());
 		if (joinsElement.isJsonArray()) {
 			((JsonArray) joinsElement).forEach(e -> joinElements.add(parseJoinTable(e)));
 		} else {
@@ -439,13 +440,13 @@ public class JsonParser {
 	 * 解析 fields 节点, 可以是数组或字符串. 如果是查询操作并且 json 中没有指定 fields 属性, 就查询所有列
 	 */
 	public void parseColumns() {
-		if (!validAttribute(JsonAttributes.FIELDS)) {
+		if (!validAttribute(RequestKeyword.FIELDS.lowerName())) {
 			if (isDetail() || isSelect()) {
 				createAllColumns();
 			}
 			return;
 		}
-		JsonElement columnsElement = jsonData.get(JsonAttributes.FIELDS);
+		JsonElement columnsElement = jsonData.get(RequestKeyword.FIELDS.lowerName());
 		if (columnsElement.isJsonObject()) {
 			throw new JsonDataException("fields node cannot be an object");
 		} else if (columnsElement.isJsonArray()) {
@@ -464,8 +465,8 @@ public class JsonParser {
 	private ColumnItem parseColumn(JsonElement columnElement) {
 		String columnString = columnElement.getAsString().trim();
 		String alias = null;
-		if (columnString.contains(JsonAttributes.ALIAS_KEY)) {
-			String[] columnPart = columnString.split(JsonAttributes.ALIAS_KEY);
+		if (columnString.contains(AdditionalKeywords.ALIAS_KEY.value())) {
+			String[] columnPart = columnString.split(AdditionalKeywords.ALIAS_KEY.value());
 			columnString = columnPart[0];
 			alias = columnPart[1];
 		} else if (columnString.contains(" ")) {
@@ -620,10 +621,10 @@ public class JsonParser {
 	 * 解析 where 节点, 可以是数组, 对象, 或字符串
 	 */
 	public void parseWhere() {
-		if (!validAttribute(JsonAttributes.WHERE)) {
+		if (!validAttribute(RequestKeyword.WHERE.lowerName())) {
 			return;
 		}
-		JsonElement whereElement = jsonData.get(JsonAttributes.WHERE);
+		JsonElement whereElement = jsonData.get(RequestKeyword.WHERE.lowerName());
 		if (whereElement.isJsonArray()) {
 			((JsonArray) whereElement).forEach(f -> action.addFilterItem(parseFilter(f)));
 		} else if (whereElement.isJsonObject()) {
@@ -839,10 +840,10 @@ public class JsonParser {
 	 * 解析 Group 节点, 可以是数组或字符串
 	 */
 	public void parseGroups() {
-		if (!validAttribute(JsonAttributes.GROUP)) {
+		if (!validAttribute(RequestKeyword.GROUP.lowerName())) {
 			return;
 		}
-		JsonElement groupsElement = jsonData.get(JsonAttributes.GROUP);
+		JsonElement groupsElement = jsonData.get(RequestKeyword.GROUP.lowerName());
 		if (groupsElement.isJsonObject()) {
 			throw new JsonDataException("group node cannot be an object");
 		} else if (groupsElement.isJsonArray()) {
@@ -868,10 +869,10 @@ public class JsonParser {
 	 * 解析 Order 节点, 可以是数组或字符串
 	 */
 	public void parseOrders() {
-		if (!validAttribute(JsonAttributes.ORDER)) {
+		if (!validAttribute(RequestKeyword.ORDER.lowerName())) {
 			return;
 		}
-		JsonElement ordersElement = jsonData.get(JsonAttributes.ORDER);
+		JsonElement ordersElement = jsonData.get(RequestKeyword.ORDER.lowerName());
 		if (ordersElement.isJsonObject()) {
 			throw new JsonDataException("order node cannot be an object");
 		} else if (ordersElement.isJsonArray()) {
@@ -909,10 +910,10 @@ public class JsonParser {
 	}
 
 	public void parseLimit() {
-		if (!validAttribute(JsonAttributes.LIMIT)) {
+		if (!validAttribute(RequestKeyword.LIMIT.lowerName())) {
 			return;
 		}
-		JsonElement limitElement = jsonData.get(JsonAttributes.LIMIT);
+		JsonElement limitElement = jsonData.get(RequestKeyword.LIMIT.lowerName());
 		if (!limitElement.isJsonArray()) {
 			throw new JsonDataException("limit node must be an array");
 		} else {
@@ -924,10 +925,10 @@ public class JsonParser {
 	}
 
 	public void parseValues() {
-		if (!validAttribute(JsonAttributes.VALUES)) {
+		if (!validAttribute(RequestKeyword.VALUES.lowerName())) {
 			return;
 		}
-		JsonElement valuesElement = jsonData.get(JsonAttributes.VALUES);
+		JsonElement valuesElement = jsonData.get(RequestKeyword.VALUES.lowerName());
 		if (!valuesElement.isJsonObject()) {
 			throw new JsonDataException("values node must be an object");
 		} else {
@@ -1154,27 +1155,27 @@ public class JsonParser {
 	}
 
 	public void parseNative() {
-		if (!validAttribute(JsonAttributes.NATIVE)) {
+		if (!validAttribute(RequestKeyword.NATIVE.lowerName())) {
 			return;
 		}
-		String nativeContent = jsonData.get(JsonAttributes.NATIVE).getAsString();
+		String nativeContent = jsonData.get(RequestKeyword.NATIVE.lowerName()).getAsString();
 		action.setNativeContent(nativeContent);
 	}
 
 	private void parseResult() {
-		if (!validAttribute(JsonAttributes.RESULT)) {
+		if (!validAttribute(RequestKeyword.RESULT.lowerName())) {
 			return;
 		}
-		String resultString = jsonData.get(JsonAttributes.RESULT).getAsString();
+		String resultString = jsonData.get(RequestKeyword.RESULT.lowerName()).getAsString();
 		ResultType resultType = ResultType.from(resultString);
 		action.setResultType(resultType);
 	}
 
 	private void parseTemplate() {
-		if (!validAttribute(JsonAttributes.TEMPLATE)) {
+		if (!validAttribute(RequestKeyword.TEMPLATE.lowerName())) {
 			return;
 		}
-		String templateString = jsonData.get(JsonAttributes.TEMPLATE).getAsString();
+		String templateString = jsonData.get(RequestKeyword.TEMPLATE.lowerName()).getAsString();
 		Template template = Template.from(templateString);
 		action.setTemplate(template);
 	}
@@ -1232,11 +1233,11 @@ public class JsonParser {
 	}
 
 	public boolean isResultFile() {
-		return jsonData.has(JsonAttributes.RESULT);
+		return jsonData.has(RequestKeyword.RESULT.lowerName());
 	}
 
 	public boolean isTemplate() {
-		return jsonData.has(JsonAttributes.TEMPLATE);
+		return jsonData.has(RequestKeyword.TEMPLATE.lowerName());
 	}
 
 	public Operation getOperation() {

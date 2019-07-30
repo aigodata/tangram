@@ -6,8 +6,8 @@ import java.util.Set;
 
 import org.apache.commons.text.RandomStringGenerator;
 
-import com.github.mengxianun.core.attributes.AssociationType;
-import com.github.mengxianun.core.attributes.ConfigAttributes;
+import com.github.mengxianun.core.config.AssociationType;
+import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
@@ -58,16 +58,16 @@ public final class App {
 	}
 
 	public static DataContext getDefaultDataContext() {
-		return dataContexts.get(ConfigAttributes.DEFAULT_DATASOURCE);
+		return dataContexts.get(GlobalConfig.DEFAULT_DATASOURCE);
 	}
 
 	public static String getDefaultDataSource() {
-		return Config.getString(ConfigAttributes.DEFAULT_DATASOURCE);
+		return Config.getString(GlobalConfig.DEFAULT_DATASOURCE);
 	}
 
 	public static void initDefaultDataSource() {
-		if (Config.has(ConfigAttributes.DEFAULT_DATASOURCE)) {
-			String defaultDataSource = Config.getString(ConfigAttributes.DEFAULT_DATASOURCE);
+		if (Config.has(GlobalConfig.DEFAULT_DATASOURCE)) {
+			String defaultDataSource = Config.getString(GlobalConfig.DEFAULT_DATASOURCE);
 			if (!Strings.isNullOrEmpty(defaultDataSource)) {
 				return;
 			}
@@ -75,7 +75,7 @@ public final class App {
 		Set<String> dataContextNames = getDataContextNames();
 		if (!dataContextNames.isEmpty()) {
 			// 将第一个数据源设置为默认数据源
-			Config.set(ConfigAttributes.DEFAULT_DATASOURCE, dataContextNames.iterator().next());
+			Config.set(GlobalConfig.DEFAULT_DATASOURCE, dataContextNames.iterator().next());
 		}
 	}
 
@@ -112,18 +112,18 @@ public final class App {
 
 		static {
 			// 初始化默认属性
-			configuration.addProperty(ConfigAttributes.CONFIG_FILE, DEFAULT_CONFIG_FILE);
-			configuration.add(ConfigAttributes.DATASOURCES, JsonNull.INSTANCE);
-			configuration.addProperty(ConfigAttributes.UPSERT, false);
-			configuration.addProperty(ConfigAttributes.NATIVE, false);
-			configuration.addProperty(ConfigAttributes.LOG, false);
-			configuration.addProperty(ConfigAttributes.DEFAULT_DATASOURCE, "");
-			configuration.addProperty(ConfigAttributes.TABLE_CONFIG_PATH, DEFAULT_TABLE_CONFIG_PATH);
-			configuration.add(ConfigAttributes.TABLE_CONFIG, JsonNull.INSTANCE);
+			configuration.addProperty(GlobalConfig.CONFIG_FILE, DEFAULT_CONFIG_FILE);
+			configuration.add(GlobalConfig.DATASOURCES, JsonNull.INSTANCE);
+			configuration.addProperty(GlobalConfig.UPSERT, false);
+			configuration.addProperty(GlobalConfig.NATIVE, false);
+			configuration.addProperty(GlobalConfig.LOG, false);
+			configuration.addProperty(GlobalConfig.DEFAULT_DATASOURCE, "");
+			configuration.addProperty(GlobalConfig.TABLE_CONFIG_PATH, DEFAULT_TABLE_CONFIG_PATH);
+			configuration.add(GlobalConfig.TABLE_CONFIG, JsonNull.INSTANCE);
 			// 预处理开关
-			configuration.add(ConfigAttributes.PRE_HANDLER, JsonNull.INSTANCE);
+			configuration.add(GlobalConfig.PRE_HANDLER, JsonNull.INSTANCE);
 			// 权限控制
-			configuration.add(ConfigAttributes.AUTH_CONTROL, JsonNull.INSTANCE);
+			configuration.add(GlobalConfig.AUTH_CONTROL, JsonNull.INSTANCE);
 		}
 
 		public static JsonElement get(String key) {

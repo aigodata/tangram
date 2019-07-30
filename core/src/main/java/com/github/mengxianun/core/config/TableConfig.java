@@ -1,6 +1,6 @@
-package com.github.mengxianun.core.attributes;
+package com.github.mengxianun.core.config;
 
-public interface TableConfigAttributes {
+public interface TableConfig {
 
 	// 列
 	String COLUMNS = "columns";

@@ -1,5 +1,6 @@
-package com.github.mengxianun.core.json;
+package com.github.mengxianun.core.request;
 
+@Deprecated
 public interface JsonAttributes {
 	
 	// 类型
@@ -28,18 +29,5 @@ public interface JsonAttributes {
 	public static final String RESULT = "result";
 	// 模板
 	public static final String TEMPLATE = "template";
-	/*
-	 * 操作类型
-	 */
-	public static final String DETAIL = "detail";
-	public static final String QUERY = "query";
-	public static final String SELECT = "select";
-	public static final String INSERT = "insert";
-	public static final String UPDATE = "update";
-	public static final String DELETE = "delete";
-	// 事务
-	public static final String TRANSACTION = "transaction";
-	// 配置结构信息
-	public static final String STRUCT = "struct";
 
 }

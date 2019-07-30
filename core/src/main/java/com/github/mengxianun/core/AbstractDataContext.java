@@ -17,15 +17,15 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.mengxianun.core.attributes.AssociationType;
-import com.github.mengxianun.core.attributes.ResultAttributes;
+import com.github.mengxianun.core.config.AssociationType;
+import com.github.mengxianun.core.config.ResultAttributes;
 import com.github.mengxianun.core.data.DataSet;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.data.update.UpdateSummary;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.TableItem;
-import com.github.mengxianun.core.json.JsonAttributes;
 import com.github.mengxianun.core.render.JsonRenderer;
+import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.resutset.DefaultDataResult;
 import com.github.mengxianun.core.schema.Column;
@@ -114,7 +114,7 @@ public abstract class AbstractDataContext implements DataContext {
 
 	private DataResult executeTransaction(Action action) {
 		JsonObject jsonData = action.getRequestData();
-		JsonArray transactionArray = jsonData.getAsJsonArray(JsonAttributes.TRANSACTION);
+		JsonArray transactionArray = jsonData.getAsJsonArray(Operation.TRANSACTION.name().toLowerCase());
 		List<Action> actions = new ArrayList<>();
 		for (int i = 0; i < transactionArray.size(); i++) {
 			JsonObject innerJsonData = transactionArray.get(i).getAsJsonObject();
@@ -124,7 +124,7 @@ public abstract class AbstractDataContext implements DataContext {
 			actions.add(innerAction);
 		}
 		List<DataResult> dataResults = execute(actions.toArray(new Action[] {}));
-		List<Object> multiResult = dataResults.stream().map(e -> e.getData()).collect(Collectors.toList());
+		List<Object> multiResult = dataResults.stream().map(DataResult::getData).collect(Collectors.toList());
 		return new DefaultDataResult(multiResult);
 	}
 

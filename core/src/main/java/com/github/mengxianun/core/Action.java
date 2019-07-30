@@ -11,8 +11,8 @@ import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
-import com.github.mengxianun.core.json.Operation;
-import com.github.mengxianun.core.json.Template;
+import com.github.mengxianun.core.request.Operation;
+import com.github.mengxianun.core.request.Template;
 import com.github.mengxianun.core.schema.Table;
 import com.google.gson.JsonObject;
 

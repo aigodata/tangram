@@ -2,7 +2,7 @@ package com.github.mengxianun.core.schema;
 
 import java.util.Objects;
 
-import com.github.mengxianun.core.attributes.AssociationType;
+import com.github.mengxianun.core.config.AssociationType;
 
 public class Relationship {
 

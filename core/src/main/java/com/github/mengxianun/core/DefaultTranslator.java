@@ -2,14 +2,14 @@ package com.github.mengxianun.core;
 
 import java.net.URL;
 
-import com.github.mengxianun.core.attributes.ConfigAttributes;
+import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.resutset.DefaultDataResultSet;
 
 public class DefaultTranslator extends AbstractTranslator {
 
 	public DefaultTranslator() {
-		this(App.Config.getString(ConfigAttributes.CONFIG_FILE));
+		this(App.Config.getString(GlobalConfig.CONFIG_FILE));
 	}
 
 	public DefaultTranslator(String configFile) {

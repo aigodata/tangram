@@ -2,7 +2,7 @@ package com.github.mengxianun.core.item;
 
 import java.util.List;
 
-import com.github.mengxianun.core.json.JoinType;
+import com.github.mengxianun.core.request.JoinType;
 import com.github.mengxianun.core.schema.Table;
 
 /**

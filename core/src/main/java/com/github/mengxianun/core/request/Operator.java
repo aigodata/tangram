@@ -1,4 +1,4 @@
-package com.github.mengxianun.core.json;
+package com.github.mengxianun.core.request;
 
 /**
  * 请求 JSON 中 where 的条件运算符

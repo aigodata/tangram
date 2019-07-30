@@ -1,6 +1,6 @@
-package com.github.mengxianun.core.attributes;
+package com.github.mengxianun.core.config;
 
-public interface ConfigAttributes {
+public interface GlobalConfig {
 
 	// 配置文件
 	String CONFIG_FILE = "config_file";

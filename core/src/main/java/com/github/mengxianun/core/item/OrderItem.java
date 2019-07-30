@@ -1,6 +1,6 @@
 package com.github.mengxianun.core.item;
 
-import com.github.mengxianun.core.json.Order;
+import com.github.mengxianun.core.request.Order;
 
 public class OrderItem extends Item {
 

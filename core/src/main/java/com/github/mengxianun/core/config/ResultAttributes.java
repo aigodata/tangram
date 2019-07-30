@@ -1,4 +1,4 @@
-package com.github.mengxianun.core.attributes;
+package com.github.mengxianun.core.config;
 
 public interface ResultAttributes {
 
