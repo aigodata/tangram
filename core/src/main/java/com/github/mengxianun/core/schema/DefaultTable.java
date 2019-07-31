@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.github.mengxianun.core.config.ColumnConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -84,11 +83,6 @@ public class DefaultTable implements Table {
 		for (Column column : columns) {
 			if (column.getName().equalsIgnoreCase(columnName)) {
 				foundColumns.add(column);
-			} else if (column.getConfig().has(ColumnConfig.ALIAS)) {
-				String alias = column.getConfig().get(ColumnConfig.ALIAS).getAsString();
-				if (alias.equals(columnName)) {
-					foundColumns.add(column);
-				}
 			}
 		}
 
