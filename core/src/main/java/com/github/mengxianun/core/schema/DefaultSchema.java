@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.github.mengxianun.core.config.TableConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -70,6 +71,11 @@ public class DefaultSchema implements Schema {
 		for (Table table : tables) {
 			if (table.getName().equalsIgnoreCase(tableName)) {
 				foundTables.add(table);
+			} else if (table.getConfig().has(TableConfig.ALIAS)) {
+				String alias = table.getConfig().get(TableConfig.ALIAS).getAsString();
+				if (alias.equals(tableName)) {
+					foundTables.add(table);
+				}
 			}
 		}
 
