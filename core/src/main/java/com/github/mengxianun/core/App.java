@@ -116,14 +116,9 @@ public final class App {
 			configuration.add(GlobalConfig.DATASOURCES, JsonNull.INSTANCE);
 			configuration.addProperty(GlobalConfig.UPSERT, false);
 			configuration.addProperty(GlobalConfig.NATIVE, false);
-			configuration.addProperty(GlobalConfig.LOG, false);
 			configuration.addProperty(GlobalConfig.DEFAULT_DATASOURCE, "");
 			configuration.addProperty(GlobalConfig.TABLE_CONFIG_PATH, DEFAULT_TABLE_CONFIG_PATH);
 			configuration.add(GlobalConfig.TABLE_CONFIG, JsonNull.INSTANCE);
-			// 预处理开关
-			configuration.add(GlobalConfig.PRE_HANDLER, JsonNull.INSTANCE);
-			// 权限控制
-			configuration.add(GlobalConfig.AUTH_CONTROL, JsonNull.INSTANCE);
 		}
 
 		public static JsonElement get(String key) {
