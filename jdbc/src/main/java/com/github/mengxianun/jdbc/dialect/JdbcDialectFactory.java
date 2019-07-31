@@ -22,7 +22,7 @@ public class JdbcDialectFactory extends DialectFactory {
 	 * 
 	 * @param dataSource
 	 *            数据源
-	 * @return
+	 * @return Dialect
 	 */
 	public static Dialect getDialect(DataSource dataSource) {
 		try (Connection connection = dataSource.getConnection()) {

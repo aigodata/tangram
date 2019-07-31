@@ -31,7 +31,7 @@ public interface DataContext {
 	 * 
 	 * @param tableName
 	 *            Config中配置的表别名或者实际的表名
-	 * @return
+	 * @return Table
 	 */
 	public Table getTable(String tableName);
 
