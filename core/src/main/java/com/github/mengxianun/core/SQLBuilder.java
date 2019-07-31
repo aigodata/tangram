@@ -171,7 +171,7 @@ public class SQLBuilder {
 			// To optimize
 			////////////////////////////////////////////
 			// join 和 limit 同时存在时, 并且存在一对多或多对多的情况下, 分页会出问题.
-			// 这里将主表作为基础表(子查询), 特殊处理.
+			// 这里将主表作为基础表(子查询), 进行Inner Join.
 			if (!action.getJoinItems().isEmpty() && action.getLimitItem() != null && action.isHandleJoinLimit()) {
 				tablesBuilder.append(toJoinLimit(tableItem));
 			}
