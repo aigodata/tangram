@@ -140,33 +140,6 @@ public class JsonParser {
 		return source;
 	}
 
-	public String parseSimpleTable() {
-		JsonElement tablesElement = jsonData.get(operationAttribute);
-		if (!tablesElement.isJsonObject() && !tablesElement.isJsonArray()) {
-			String tableString = tablesElement.getAsString().trim();
-			if (tableString.contains(AdditionalKeywords.ALIAS_KEY.value())) {
-				String[] tablePart = tableString.split(AdditionalKeywords.ALIAS_KEY.value());
-				tableString = tablePart[0];
-			} else if (tableString.contains(" ")) {
-				String[] tablePart = tableString.split("\\s+");
-				if (tablePart.length == 2) {
-					if (tablePart[0].matches(wordRegex) && tablePart[1].matches(wordRegex)) {
-						tableString = tablePart[0];
-					}
-				}
-			}
-			String tableName;
-			if (tableString.contains(".")) {
-				String[] tableSchema = tableString.split("\\.");
-				tableName = tableSchema[1];
-			} else {
-				tableName = tableString;
-			}
-			return tableName;
-		}
-		return null;
-	}
-
 	public Action parse() {
 		if (isTransaction()) {
 			return action;
@@ -1038,14 +1011,11 @@ public class JsonParser {
 		List<TableItem> tableItems = action.getTableItems();
 		for (TableItem tableItem : tableItems) {
 			Table table = tableItem.getTable();
-			if (table == null) {
-				continue;
-			}
-			List<Column> columns = table.getColumns();
-			Optional<Column> optionalColumn = columns.stream().filter(c -> c.getName().equalsIgnoreCase(columnString))
-					.findFirst();
-			if (optionalColumn.isPresent()) {
-				return optionalColumn.get();
+			if (table != null) {
+				Column column = table.getColumnByName(columnString);
+				if (column != null) {
+					return column;
+				}
 			}
 		}
 		return null;
