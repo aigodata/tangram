@@ -22,5 +22,4 @@ public final class GlobalConfig {
 	public static final String TABLE_CONFIG = "table_config";
 	// 别名表达式, 参见 JEXL
 	public static final String TABLE_ALIAS_EXPRESSION = "table_alias_expression";
-
 }
