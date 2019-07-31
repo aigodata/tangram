@@ -20,6 +20,7 @@ public final class GlobalConfig {
 	public static final String TABLE_CONFIG_PATH = "table_config_path";
 	// 所有数据库表配置, 该属性项非配置文件配置, 是项目自动生成的属性, 目的是将数据库表的配置信息与项目全局的配置信息放在一个对象里 全局配置
 	public static final String TABLE_CONFIG = "table_config";
-
+	// 别名表达式, 参见 JEXL
+	public static final String TABLE_ALIAS_EXPRESSION = "table_alias_expression";
 
 }

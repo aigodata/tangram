@@ -1,9 +1,15 @@
 package com.github.mengxianun.core;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.jexl3.JexlBuilder;
+import org.apache.commons.jexl3.JexlContext;
+import org.apache.commons.jexl3.JexlEngine;
+import org.apache.commons.jexl3.JexlExpression;
+import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.text.RandomStringGenerator;
 
 import com.github.mengxianun.core.config.AssociationType;
@@ -89,6 +95,22 @@ public final class App {
 
 	public static DataContext currentDataContext() {
 		return currentDataContext.get();
+	}
+
+	/**
+	 * 获取表或者列等的别名, 根据配置的别名表达式
+	 * 
+	 * @param element
+	 *            获取别名的元素, 比如表或者列等
+	 * @return
+	 */
+	public static String getAliasKey(String element) {
+		JexlEngine jexl = new JexlBuilder().create();
+		String jexlExp = App.Config.getString(GlobalConfig.TABLE_ALIAS_EXPRESSION);
+		JexlExpression e = jexl.createExpression(jexlExp);
+		JexlContext jc = new MapContext();
+		jc.set("$", element);
+		return e.evaluate(jc).toString();
 	}
 
 	public static Injector getInjector() {
@@ -181,6 +203,16 @@ public final class App {
 		}
 
 		public static Table getTable(String tableName) {
+			// tableName 为请求中的表名, 该表名有可能是别名, 也可能是实际的表名
+			// 1 根据全局配置的表别名查询
+			Schema schema = currentDataContext().getDefaultSchema();
+			List<Table> tables = schema.getTables();
+			for (Table table : tables) {
+				if (tableName.equalsIgnoreCase(getAliasKey(table.getName()))) {
+					return table;
+				}
+			}
+			// 2 根据表名查询
 			return currentDataContext().getTable(tableName);
 		}
 
