@@ -174,9 +174,9 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		String jsonKey = action.columnAliasEnabled() && columnItem.isCustomAlias() ? columnItem.getAlias()
 				: treatColumn(columnName);
 		// 配置了 JSON_KEY 的情况
-		if (column != null && column.getConfig().has(ColumnConfig.JSON_KEY)) {
+		if (column != null && column.getConfig().has(ColumnConfig.ALIAS)) {
 			if (!columnItem.isCustomAlias()) {
-				jsonKey = column.getConfig().get(ColumnConfig.JSON_KEY).getAsString();
+				jsonKey = column.getConfig().get(ColumnConfig.ALIAS).getAsString();
 			}
 		}
 		addColumnValue(record, column, jsonKey, value);
@@ -262,8 +262,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		String keyName = joinTable.getName();
 		// 配置了 JSON_KEY 的情况
 		JsonObject tableConfig = joinTable.getConfig();
-		if (tableConfig.has(TableConfig.JSON_KEY)) {
-			keyName = tableConfig.get(TableConfig.JSON_KEY).getAsString();
+		if (tableConfig.has(TableConfig.ALIAS)) {
+			keyName = tableConfig.get(TableConfig.ALIAS).getAsString();
 		}
 		return createJoinStructure(currentTableObject, keyName, associationType);
 	}

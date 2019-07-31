@@ -6,6 +6,8 @@ public final class TableConfig {
 		throw new IllegalStateException("Utility class");
 	}
 
+	// 别名
+	public static final String ALIAS = "alias";
 	// 列
 	public static final String COLUMNS = "columns";
 	// 列显示
@@ -19,7 +21,5 @@ public final class TableConfig {
 	public static final String ASSOCIATION_TYPE = "type";
 	// 列忽略, 返回数据不包含该列
 	public static final String COLUMN_IGNORE = "ignore";
-	// JSON 节点的 key 名称
-	public static final String JSON_KEY = "json_key";
 
 }

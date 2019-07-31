@@ -7,7 +7,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.github.mengxianun.core.config.AssociationType;
-import com.github.mengxianun.core.config.ColumnConfig;
 import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.JoinColumnItem;
@@ -225,15 +224,7 @@ public class DataRenderer {
 		// 3. 列为表达式, 非具体字段, key 为自动生成的别名. 例: count(*)
 		String recordKey = Strings.isNullOrEmpty(columnItem.getAlias()) ? columnKey : columnItem.getAlias();
 		JsonElement value = getValue(originalData, recordKey, columnName);
-
-		// 配置了 JSON_KEY 的情况
-		String jsonKey = columnKey;
-		if (column != null && column.getConfig().has(ColumnConfig.JSON_KEY)) {
-			if (!columnItem.isCustomAlias()) {
-				jsonKey = column.getConfig().get(ColumnConfig.JSON_KEY).getAsString();
-			}
-		}
-		addColumnValue(record, column, jsonKey, value);
+		addColumnValue(record, column, columnKey, value);
 	}
 
 	private void addColumnValue(JsonObject record, Column column, String columnKey, JsonElement value) {
@@ -308,13 +299,7 @@ public class DataRenderer {
 
 	private JsonObject createJoinStructure(JsonObject currentTableObject, Table joinTable,
 			AssociationType associationType) {
-		String keyName = joinTable.getName();
-		// 配置了 JSON_KEY 的情况
-		JsonObject tableConfig = joinTable.getConfig();
-		if (tableConfig.has(TableConfig.JSON_KEY)) {
-			keyName = tableConfig.get(TableConfig.JSON_KEY).getAsString();
-		}
-		return createJoinStructure(currentTableObject, keyName, associationType);
+		return createJoinStructure(currentTableObject, joinTable.getName(), associationType);
 	}
 
 	private JsonObject createJoinStructure(JsonObject currentTableObject, String tableName,
