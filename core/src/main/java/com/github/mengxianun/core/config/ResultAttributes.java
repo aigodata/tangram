@@ -1,13 +1,17 @@
 package com.github.mengxianun.core.config;
 
-public interface ResultAttributes {
+public final class ResultAttributes {
 
-	String PRIMARY_KEY = "primary_key";
-	String COUNT = "count";
+	private ResultAttributes() {
+		throw new IllegalStateException("Utility class");
+	}
+
+	public static final String PRIMARY_KEY = "primary_key";
+	public static final String COUNT = "count";
 	// 分页相关
-	String DATA = "data";
-	String START = "start";
-	String END = "end";
-	String TOTAL = "total";
+	public static final String DATA = "data";
+	public static final String START = "start";
+	public static final String END = "end";
+	public static final String TOTAL = "total";
 
 }

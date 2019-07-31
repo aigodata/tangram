@@ -1,9 +1,13 @@
 package com.github.mengxianun.core.config;
 
 
-public interface ColumnConfig {
+public final class ColumnConfig {
+
+	private ColumnConfig() {
+		throw new IllegalStateException("Utility class");
+	}
 
 	// JSON 节点的 key 名称
-	String JSON_KEY = "json_key";
+	public static final String JSON_KEY = "json_key";
 
 }

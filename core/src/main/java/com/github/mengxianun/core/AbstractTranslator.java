@@ -107,7 +107,7 @@ public abstract class AbstractTranslator implements Translator {
 			}
 			DataContextFactory dataContextFactory = factories.get(type);
 			if (dataContextFactory != null) {
-				dataSourceJsonObject.remove(GlobalConfig.DATASOURCE_TYPE);
+				dataSourceJsonObject.remove(DataSourceConfig.TYPE);
 				DataContext dataContext = dataContextFactory.create(dataSourceJsonObject);
 				addDataContext(dataSourceName, dataContext);
 				logger.info("Initialize data source [{}] successfully", dataSourceName);
@@ -127,8 +127,8 @@ public abstract class AbstractTranslator implements Translator {
 	 */
 	protected String parseDataContextType(JsonObject dataSourceJsonObject) {
 		String type = null;
-		if (dataSourceJsonObject.has(GlobalConfig.DATASOURCE_TYPE)) {
-			type = dataSourceJsonObject.get(GlobalConfig.DATASOURCE_TYPE).getAsString();
+		if (dataSourceJsonObject.has(DataSourceConfig.TYPE)) {
+			type = dataSourceJsonObject.get(DataSourceConfig.TYPE).getAsString();
 		} else {
 			if (dataSourceJsonObject.has(DataSourceConfig.URL)) {
 				String url = dataSourceJsonObject.get(DataSourceConfig.URL).getAsString();
