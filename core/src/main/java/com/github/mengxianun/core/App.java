@@ -13,7 +13,9 @@ import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.text.RandomStringGenerator;
 
 import com.github.mengxianun.core.config.AssociationType;
+import com.github.mengxianun.core.config.ColumnConfig;
 import com.github.mengxianun.core.config.GlobalConfig;
+import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
@@ -102,7 +104,7 @@ public final class App {
 	 * 
 	 * @param element
 	 *            获取别名的元素, 比如表或者列等
-	 * @return
+	 * @return Alias
 	 */
 	public static String getAliasKey(String element) {
 		JexlEngine jexl = new JexlBuilder().create();
@@ -202,30 +204,72 @@ public final class App {
 			return currentDataContext().getSchema(schemaName);
 		}
 
-		public static Table getTable(String tableName) {
-			// tableName 为请求中的表名, 该表名有可能是别名, 也可能是实际的表名
-			// 1 根据全局配置的表别名查询
+		public static Table getTable(String nameOrAlias) {
+			// 1 根据别名查询
 			Schema schema = currentDataContext().getDefaultSchema();
 			List<Table> tables = schema.getTables();
 			for (Table table : tables) {
-				if (tableName.equalsIgnoreCase(getAliasKey(table.getName()))) {
-					return table;
+				if (table.getConfig().has(TableConfig.ALIAS)) { // 表配置文件配置的表别名
+					String alias = table.getConfig().get(TableConfig.ALIAS).getAsString();
+					if (alias.equals(nameOrAlias)) {
+						return table;
+					}
+				} else if (Config.has(GlobalConfig.TABLE_ALIAS_EXPRESSION)) { // 全局配置的表别名
+					if (nameOrAlias.equalsIgnoreCase(getAliasKey(table.getName()))) {
+						return table;
+					}
 				}
 			}
-			// 2 根据表名查询
-			return currentDataContext().getTable(tableName);
+			// 2 根据实名查询
+			return currentDataContext().getTable(nameOrAlias);
 		}
 
 		public static Table getTable(String schemaName, String tableName) {
 			return currentDataContext().getTable(schemaName, tableName);
 		}
 
-		public static Column getColumn(String tableName, String columnName) {
-			return currentDataContext().getColumn(tableName, columnName);
+		/**
+		 * 获取请求和响应数据中表的别名
+		 * 
+		 * @param table
+		 * @return Alias
+		 */
+		public static String getTableAlias(Table table) {
+			if (table.getConfig().has(TableConfig.ALIAS)) { // 表配置文件配置的表别名
+				return table.getConfig().get(TableConfig.ALIAS).getAsString();
+			} else if (Config.has(GlobalConfig.TABLE_ALIAS_EXPRESSION)) { // 全局配置的表别名
+				return getAliasKey(table.getName());
+			} else {
+				return table.getName();
+			}
+		}
+
+		public static Column getColumn(String tableNameOrAlias, String columnNameOrAlias) {
+			// 1 根据别名查询
+			Table table = getTable(tableNameOrAlias);
+			List<Column> columns = table.getColumns();
+			for (Column column : columns) {
+				if (column.getConfig().has(ColumnConfig.ALIAS)) {
+					String alias = column.getConfig().get(ColumnConfig.ALIAS).getAsString();
+					if (alias.equals(columnNameOrAlias)) {
+						return column;
+					}
+				}
+			}
+			// 2 根据实名查询
+			return currentDataContext().getColumn(tableNameOrAlias, columnNameOrAlias);
 		}
 
 		public static Column getColumn(String schemaName, String tableName, String columnName) {
 			return currentDataContext().getColumn(schemaName, tableName, columnName);
+		}
+
+		public static String getColumnAlias(Column column) {
+			if (column.getConfig().has(ColumnConfig.ALIAS)) {
+				return column.getConfig().get(ColumnConfig.ALIAS).getAsString();
+			} else {
+				return column.getName();
+			}
 		}
 
 		public static void destroy() {
