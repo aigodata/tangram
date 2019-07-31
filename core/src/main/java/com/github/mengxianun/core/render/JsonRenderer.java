@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.config.AssociationType;
-import com.github.mengxianun.core.config.ColumnConfig;
 import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.item.ColumnItem;
@@ -162,24 +161,16 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 	}
 
 	private void addColumnValue(JsonObject record, ColumnItem columnItem, Object value) {
-		// 返回 key(列) 分3种情况
-		// 1. 指定了列别名的情况下, key 为指定的列别名. 例: column as alias
-		// 2. 只指定了列的情况下的情况下, key 为自动列名. 例: column
-		// 3. 列为表达式, 非具体字段, key 为自动生成的别名. 例: count(*)
-
+		String columnKey = "";
 		Column column = columnItem.getColumn();
-		// 列名, 在列存在的情况下, 以列名表示, 否则按请求中列的原始内容表示
-		String columnName = column == null ? columnItem.getExpression() : column.getName();
-		// 如果请求中指定了列别名, 则返回结果的 key 为指定的列别名, 否则 key 为列名
-		String jsonKey = action.columnAliasEnabled() && columnItem.isCustomAlias() ? columnItem.getAlias()
-				: treatColumn(columnName);
-		// 配置了 JSON_KEY 的情况
-		if (column != null && column.getConfig().has(ColumnConfig.ALIAS)) {
-			if (!columnItem.isCustomAlias()) {
-				jsonKey = column.getConfig().get(ColumnConfig.ALIAS).getAsString();
-			}
+		if (action.columnAliasEnabled() && columnItem.isCustomAlias()) { // 自定义别名
+			columnKey = columnItem.getAlias();
+		} else if (column == null) { // 表达式, 如函数
+			columnKey = columnItem.getExpression();
+		} else {
+			columnKey = App.Context.getColumnAlias(column);
 		}
-		addColumnValue(record, column, jsonKey, value);
+		addColumnValue(record, column, columnKey, value);
 	}
 
 	private void addColumnValue(JsonObject record, Column column, String key, Object value) {
@@ -225,16 +216,6 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 
 	}
 
-	/**
-	 * 处理返回的列名, 变成小写
-	 * 
-	 * @param columnName
-	 * @return
-	 */
-	private String treatColumn(String columnName) {
-		return columnName.toLowerCase();
-	}
-
 	private Number render(Column column, Number value) {
 		if (column == null) {
 			return value;
@@ -258,14 +239,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 
 	private JsonObject createJoinStructure(JsonObject currentTableObject, Table joinTable,
 			AssociationType associationType) {
-		// 配置了 JSON_KEY 的情况
-		String keyName = joinTable.getName();
-		// 配置了 JSON_KEY 的情况
-		JsonObject tableConfig = joinTable.getConfig();
-		if (tableConfig.has(TableConfig.ALIAS)) {
-			keyName = tableConfig.get(TableConfig.ALIAS).getAsString();
-		}
-		return createJoinStructure(currentTableObject, keyName, associationType);
+		String tableKey = App.Context.getTableAlias(joinTable);
+		return createJoinStructure(currentTableObject, tableKey, associationType);
 	}
 
 	private JsonObject createJoinStructure(JsonObject currentTableObject, String tableName,
