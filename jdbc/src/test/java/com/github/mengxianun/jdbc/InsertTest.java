@@ -7,7 +7,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.github.mengxianun.core.DataResultSet;
-import com.github.mengxianun.core.config.ResultAttributes;
 import com.google.gson.JsonObject;
 
 @DisplayName("Jdbc insert test")
@@ -19,9 +18,9 @@ public class InsertTest extends TestSupport {
 	void testInsertTable() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "insert.json");
 		JsonObject result = (JsonObject) dataResultSet.getJsonData();
-		assertTrue(result.has(ResultAttributes.PRIMARY_KEY.toString().toLowerCase()));
-		int primaryKey = result.getAsJsonPrimitive(ResultAttributes.PRIMARY_KEY.toString().toLowerCase()).getAsInt();
-		assertEquals(primaryKey, 1);
+		assertTrue(result.has("ID"));
+		int primaryKey = result.getAsJsonPrimitive("ID").getAsInt();
+		assertEquals(1, primaryKey);
 	}
 
 }

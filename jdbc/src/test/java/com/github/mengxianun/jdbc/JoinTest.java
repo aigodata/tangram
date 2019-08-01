@@ -28,7 +28,7 @@ public class JoinTest extends TestSupport {
 		JsonObject resultData = dataResultSet.getJsonData().getAsJsonObject();
 		assertTrue(resultData.has("total"));
 		JsonArray realData = resultData.get("data").getAsJsonArray();
-		assertEquals(realData.size(), 2);
+		assertEquals(2, realData.size());
 	}
 
 }

@@ -29,7 +29,7 @@ public class TransactionTest extends TestSupport {
 		DataResultSet dataResultSet = runJson(jsonObject.toString());
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		JsonObject resultJsonObject = (JsonObject) result.get(0);
-		assertEquals(resultJsonObject.get("name").getAsString(), name);
+		assertEquals(name, resultJsonObject.get("NAME").getAsString());
 	}
 
 	@Test
