@@ -268,7 +268,7 @@ public class SQLBuilder {
 				Table rightTable = rightTableItem.getTable();
 				String rightTableAlias = rightTableItem.getAlias();
 				if (i == 0) {
-					joinsBuilder.append(process(rightTable.getName()));
+					joinsBuilder.append(spliceTable(rightTable));
 					if (!Strings.isNullOrEmpty(rightTableAlias) && dialect.tableAliasEnabled()) {
 						joinsBuilder.append(ALIAS_KEY).append(rightTableAlias);
 					}
