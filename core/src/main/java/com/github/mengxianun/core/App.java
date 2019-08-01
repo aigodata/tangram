@@ -241,8 +241,14 @@ public final class App {
 		}
 
 		public static Column getColumn(String tableNameOrAlias, String columnNameOrAlias) {
+			return getColumn(getTable(tableNameOrAlias), columnNameOrAlias);
+		}
+
+		public static Column getColumn(Table table, String columnNameOrAlias) {
+			if (table == null) {
+				throw new IllegalArgumentException("Table cannot be null");
+			}
 			// 1 根据别名查询
-			Table table = getTable(tableNameOrAlias);
 			List<Column> columns = table.getColumns();
 			for (Column column : columns) {
 				if (column.getConfig().has(ColumnConfig.ALIAS)) {
@@ -253,7 +259,7 @@ public final class App {
 				}
 			}
 			// 2 根据实名查询
-			return currentDataContext().getColumn(tableNameOrAlias, columnNameOrAlias);
+			return currentDataContext().getColumn(table.getName(), columnNameOrAlias);
 		}
 
 		public static Column getColumn(String schemaName, String tableName, String columnName) {
