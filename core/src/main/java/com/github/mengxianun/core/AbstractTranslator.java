@@ -58,7 +58,7 @@ public abstract class AbstractTranslator implements Translator {
 		try {
 			parseAllTableConfig(App.Config.getString(GlobalConfig.TABLE_CONFIG_PATH));
 		} catch (IOException e) {
-			logger.error("Read table config file parse error", e);
+			logger.error("Table config file parse error", e);
 		}
 	}
 
