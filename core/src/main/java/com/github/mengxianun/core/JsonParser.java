@@ -1008,14 +1008,10 @@ public class JsonParser {
 	 * @return
 	 */
 	private Column findMainColumn(String columnString) {
-		List<TableItem> tableItems = action.getTableItems();
-		for (TableItem tableItem : tableItems) {
-			Table table = tableItem.getTable();
-			if (table != null) {
-				Column column = table.getColumnByName(columnString);
-				if (column != null) {
-					return column;
-				}
+		for (TableItem tableItem : action.getTableItems()) {
+			Column column = App.Context.getColumn(tableItem.getTable(), columnString);
+			if (column != null) {
+				return column;
 			}
 		}
 		return null;
@@ -1028,8 +1024,7 @@ public class JsonParser {
 	 * @return
 	 */
 	private Column findJoinColumn(String columnString) {
-		List<JoinItem> joinItems = action.getJoinItems();
-		for (JoinItem joinItem : joinItems) {
+		for (JoinItem joinItem : action.getJoinItems()) {
 			List<Column> primaryTableColumns = joinItem.getLeftColumns().get(0).getTableItem().getTable().getColumns();
 			List<Column> foreignTableColumns = joinItem.getRightColumns().get(0).getTableItem().getTable().getColumns();
 			Optional<Column> primaryColumn = primaryTableColumns.stream().filter(c -> c.getName().equals(columnString))
@@ -1075,8 +1070,7 @@ public class JsonParser {
 	 * @return
 	 */
 	private TableItem getMainTableItem(Table table) {
-		List<TableItem> tableItems = action.getTableItems();
-		for (TableItem tableItem : tableItems) {
+		for (TableItem tableItem : action.getTableItems()) {
 			Table mainTable = tableItem.getTable();
 			if (mainTable == table) {
 				return tableItem;
@@ -1092,8 +1086,7 @@ public class JsonParser {
 	 * @return
 	 */
 	private TableItem getJoinTableItem(Table table) {
-		List<JoinItem> joinItems = action.getJoinItems();
-		for (JoinItem joinItem : joinItems) {
+		for (JoinItem joinItem : action.getJoinItems()) {
 			TableItem tableItem = joinItem.getRightColumns().get(0).getTableItem();
 			Table joinTable = tableItem.getTable();
 			if (joinTable == table) {
@@ -1112,8 +1105,7 @@ public class JsonParser {
 	private ColumnItem findColumnItem(String columnString) {
 		Column findColumn = findColumn(columnString);
 		// 根据列别名查找
-		List<ColumnItem> columnItems = action.getColumnItems();
-		for (ColumnItem columnItem : columnItems) {
+		for (ColumnItem columnItem : action.getColumnItems()) {
 			Column column = columnItem.getColumn();
 			String columnName = column == null ? "" : column.getName();
 			if (columnString.equals(columnItem.getAlias()) || columnString.equalsIgnoreCase(columnName)
