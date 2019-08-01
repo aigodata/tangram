@@ -26,7 +26,7 @@ public interface Dialect {
 	 * 处理关键字
 	 * 
 	 * @param keyword
-	 * @return
+	 * @return 处理后的关键字
 	 */
 	default String processKeyword(String keyword) {
 		return keyword;
@@ -69,9 +69,9 @@ public interface Dialect {
 	}
 	
 	/**
-	 * 分页起始
+	 * 数据库记录起始位置, 默认从1开始
 	 * 
-	 * @return
+	 * @return 数据库记录起始位置
 	 */
 	default long offset() {
 		return 1;
