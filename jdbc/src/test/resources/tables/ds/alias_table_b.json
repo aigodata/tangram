@@ -1,0 +1,16 @@
+{
+  "alias":"bbb",
+  "columns":{
+    "name":{
+      "alias":"bname"
+    },
+    "a_id":{
+      "alias":"B-Aid",
+      "association": {
+        "target_table": "alias_table_a",
+        "target_column": "id",
+        "type":"1_1"
+      }
+    }
+  }
+}

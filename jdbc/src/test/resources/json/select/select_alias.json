@@ -1,0 +1,5 @@
+{
+  "select":"alias_table_a",
+  "fields":["alias_table_a.id", "alias_table_a.name", "bbb.id", "alias_table_b.bname", "bbb.B-Aid", "table_c.*"],
+  "join":["bbb", "table_c"]
+}

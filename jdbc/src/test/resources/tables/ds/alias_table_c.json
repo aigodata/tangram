@@ -1,0 +1,14 @@
+{
+  "columns":{
+    "name":{
+      "alias":"cname"
+    },
+    "a_id":{
+      "association": {
+        "target_table": "alias_table_a",
+        "target_column": "id",
+        "type":"1_1"
+      }
+    }
+  }
+}

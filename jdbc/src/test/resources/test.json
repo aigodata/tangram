@@ -6,5 +6,6 @@
             "username": "test",
             "password": "123456"
         }
-    }
+    },
+    "table_alias_expression": "$.replaceFirst(\"^ALIAS_\", \"\")"
 }

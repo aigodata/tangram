@@ -1,0 +1,10 @@
+{
+  "columns":{
+    "id":{
+      "alias":"aid"
+    },
+    "name":{
+      "alias":"A-name"
+    }
+  }
+}

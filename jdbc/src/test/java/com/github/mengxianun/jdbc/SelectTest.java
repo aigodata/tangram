@@ -165,4 +165,22 @@ public class SelectTest extends TestSupport {
 		assertEquals("cde", lastElementName);
 	}
 
+	@Test
+	void testAlias() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_alias.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertTrue(result.size() > 0);
+		JsonObject data = result.get(0).getAsJsonObject();
+		assertTrue(data.has("aid"));
+		assertTrue(data.has("A-name"));
+		assertTrue(data.has("bbb"));
+		JsonObject dataB = data.get("bbb").getAsJsonObject();
+		assertTrue(dataB.has("bname"));
+		assertTrue(dataB.has("B-Aid"));
+		assertTrue(data.has("TABLE_C"));
+		JsonObject dataC = data.get("TABLE_C").getAsJsonObject();
+		assertTrue(dataC.has("ID"));
+		assertTrue(dataC.has("cname"));
+	}
+
 }
