@@ -184,10 +184,6 @@ public final class App {
 
 		private Context() {}
 
-		public static String identifierQuoteString() {
-			return currentDataContext().getIdentifierQuoteString();
-		}
-
 		public static Dialect dialect() {
 			return currentDataContext().getDialect();
 		}

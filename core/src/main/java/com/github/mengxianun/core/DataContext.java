@@ -41,8 +41,6 @@ public interface DataContext {
 
 	public Column getColumn(String schemaName, String tableName, String columnName);
 
-	public String getIdentifierQuoteString();
-
 	public Dialect getDialect();
 
 	public void destroy();
