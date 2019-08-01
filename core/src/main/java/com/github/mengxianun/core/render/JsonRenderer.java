@@ -29,7 +29,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 	}
 
 	@Override
-	public JsonElement render(List<Row> rows) {
+	public JsonArray render(List<Row> rows) {
 		// 主表唯一记录对象, key 为主表所有列的的值拼接的字符串, value 为主表唯一记录的对象
 		JsonObject uniqueRecords = new JsonObject();
 		for (Row row : rows) {
