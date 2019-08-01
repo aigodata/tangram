@@ -47,7 +47,7 @@ public abstract class AbstractDataContext implements DataContext {
 
 	private static final Logger logger = LoggerFactory.getLogger(AbstractDataContext.class);
 
-	protected Metadata metadata = new Metadata();
+	protected final Metadata metadata = new Metadata();
 
 	protected Dialect dialect;
 	// Key 为主表, Value 为 Map 类型, Key为外表, 值为主外表的关联关系
@@ -160,7 +160,15 @@ public abstract class AbstractDataContext implements DataContext {
 	}
 
 	private Object render(List<Row> rows, Action action) {
-		JsonElement jsonData = new JsonRenderer(action).render(rows);
+		JsonArray jsonArrayData = new JsonRenderer(action).render(rows);
+		JsonElement jsonData = jsonArrayData;
+		if (action.isDetail()) {
+			if (jsonArrayData.size() > 0) {
+				jsonData = jsonArrayData.get(0);
+			} else {
+				jsonData = new JsonObject();
+			}
+		}
 		return getNativeObject(jsonData);
 	}
 
@@ -249,11 +257,6 @@ public abstract class AbstractDataContext implements DataContext {
 	@Override
 	public Column getColumn(String schemaName, String tableName, String columnName) {
 		return metadata.getColumn(schemaName, tableName, columnName);
-	}
-
-	@Override
-	public String getIdentifierQuoteString() {
-		return metadata.getIdentifierQuoteString();
 	}
 
 	public Dialect getDialect() {
