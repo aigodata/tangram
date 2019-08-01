@@ -7,7 +7,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 
 import com.github.mengxianun.core.config.AssociationType;
@@ -1025,17 +1024,10 @@ public class JsonParser {
 	 */
 	private Column findJoinColumn(String columnString) {
 		for (JoinItem joinItem : action.getJoinItems()) {
-			List<Column> primaryTableColumns = joinItem.getLeftColumns().get(0).getTableItem().getTable().getColumns();
-			List<Column> foreignTableColumns = joinItem.getRightColumns().get(0).getTableItem().getTable().getColumns();
-			Optional<Column> primaryColumn = primaryTableColumns.stream().filter(c -> c.getName().equals(columnString))
-					.findFirst();
-			if (primaryColumn.isPresent()) {
-				return primaryColumn.get();
-			}
-			Optional<Column> foreignColumn = foreignTableColumns.stream().filter(c -> c.getName().equals(columnString))
-					.findFirst();
-			if (foreignColumn.isPresent()) {
-				return foreignColumn.get();
+			Table joinTable = joinItem.getRightColumns().get(0).getTableItem().getTable();
+			Column column = App.Context.getColumn(joinTable, columnString);
+			if (column != null) {
+				return column;
 			}
 
 		}
