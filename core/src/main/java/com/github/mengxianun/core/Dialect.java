@@ -4,10 +4,6 @@ public interface Dialect {
 
 	public String getType();
 
-	default Class<? extends SQLBuilder> getSQLBuilder() {
-		return SQLBuilder.class;
-	}
-
 	/**
 	 * 是否指定数据库. 例: select database.table
 	 * 
@@ -18,21 +14,22 @@ public interface Dialect {
 	}
 
 	/**
-	 * 验证数据库表是否存在
+	 * 是否验证数据库表是否存在
 	 * 
-	 * @return 数据库表是否存在
+	 * @return 是否验证数据库表是否存在
 	 */
 	default boolean validTableExists() {
 		return true;
 	}
 
 	/**
-	 * 是否用引用符号包裹表和列. 例: select "column" from "table". 引用符号因数据库不同而不同, MySQL 为 '`'
+	 * 处理关键字
 	 * 
-	 * @return 是否用引用符号包裹表和列
+	 * @param keyword
+	 * @return
 	 */
-	default boolean quoteTable() {
-		return true;
+	default String processKeyword(String keyword) {
+		return keyword;
 	}
 
 	/**
@@ -69,6 +66,15 @@ public interface Dialect {
 	 */
 	default String getJsonPlaceholder() {
 		return "?";
+	}
+	
+	/**
+	 * 分页起始
+	 * 
+	 * @return
+	 */
+	default long offset() {
+		return 1;
 	}
 
 }
