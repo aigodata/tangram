@@ -469,12 +469,11 @@ public class JsonParser {
 			return null;
 		}
 		// 指定表的所有列. 例: "fields": "table.*", "fields": "datasource.table.*"
-		if (".*".equals(columnString)) {
+		if (columnString.endsWith(".*")) {
 			String tableName = null;
 			long dotCount = columnString.chars().filter(ch -> ch == '.').count();
 			String[] columnParts = columnString.split("\\.");
 			if (dotCount == 2) { // schema.table.column
-				// String schemaName = columnParts[0];
 				tableName = columnParts[1];
 			} else if (dotCount == 1) { // table.column
 				tableName = columnParts[0];
@@ -516,15 +515,17 @@ public class JsonParser {
 	 * 添加指定表的所有列
 	 * 
 	 * @param tableName
+	 *            表名或表别名(配置)
 	 */
 	private void createTableColumns(String tableName) {
-		if (tableName == null) {
+		if (Strings.isNullOrEmpty(tableName)) {
 			return;
 		}
+		Table table = App.Context.getTable(tableName);
 		List<TableItem> tableItems = action.getTableItems();
 		for (TableItem tableItem : tableItems) {
-			Table table = tableItem.getTable();
-			if (table.getName().equals(tableName)) {
+			Table mainTable = tableItem.getTable();
+			if (table == mainTable) {
 				createMainTableItemColumns(tableItem);
 				return;
 			}
@@ -533,7 +534,7 @@ public class JsonParser {
 		for (JoinItem joinItem : joinItems) {
 			TableItem joinTableItem = joinItem.getRightColumns().get(0).getTableItem();
 			Table joinTable = joinTableItem.getTable();
-			if (joinTable.getName().equals(tableName)) {
+			if (table == joinTable) {
 				createJoinTableItemColumns(joinTableItem);
 				return;
 			}
