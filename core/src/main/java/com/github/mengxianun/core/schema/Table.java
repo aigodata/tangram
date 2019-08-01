@@ -8,6 +8,8 @@ public interface Table extends Name {
 
 	public Schema getSchema();
 
+	public TableType getType();
+
 	public int getColumnCount();
 
 	public List<Column> getColumns();

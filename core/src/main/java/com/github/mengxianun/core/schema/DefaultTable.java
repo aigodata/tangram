@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 public class DefaultTable implements Table {
 
 	private String name;
+	private TableType type;
 	private Schema schema;
 	private String remarks;
 	private List<Column> columns;
@@ -27,23 +28,24 @@ public class DefaultTable implements Table {
 		this.name = name;
 	}
 
-	public DefaultTable(String name, Schema schema) {
-		this();
-		this.name = name;
+	public DefaultTable(String name, TableType type) {
+		this(name);
+		this.type = type;
+
+	}
+
+	public DefaultTable(String name, TableType type, Schema schema) {
+		this(name, type);
 		this.schema = schema;
 	}
 
-	public DefaultTable(String name, Schema schema, String remarks) {
-		this();
-		this.name = name;
-		this.schema = schema;
+	public DefaultTable(String name, TableType type, Schema schema, String remarks) {
+		this(name, type, schema);
 		this.remarks = remarks;
 	}
 
-	public DefaultTable(String name, Schema schema, String remarks, List<Column> columns) {
-		this.name = name;
-		this.schema = schema;
-		this.remarks = remarks;
+	public DefaultTable(String name, TableType type, Schema schema, String remarks, List<Column> columns) {
+		this(name, type, schema, remarks);
 		this.columns = columns;
 
 	}
@@ -56,6 +58,11 @@ public class DefaultTable implements Table {
 	@Override
 	public Schema getSchema() {
 		return schema;
+	}
+
+	@Override
+	public TableType getType() {
+		return type;
 	}
 
 	@Override
@@ -152,6 +159,10 @@ public class DefaultTable implements Table {
 
 	public void setSchema(Schema schema) {
 		this.schema = schema;
+	}
+
+	public void setType(TableType type) {
+		this.type = type;
 	}
 
 	public void setRemarks(String remarks) {
