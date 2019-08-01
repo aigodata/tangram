@@ -81,7 +81,7 @@ public class SQLBuilder {
 		if (action.isDetail() || action.isSelect()) {
 			// Detail 只查询一条数据
 			if (action.isDetail()) {
-				action.setLimitItem(new LimitItem(1, 2));
+				action.setLimitItem(new LimitItem(dialect.offset(), dialect.offset() + 1));
 			}
 			toSelect();
 		} else if (action.isInsert()) {
@@ -223,9 +223,9 @@ public class SQLBuilder {
 		String innerAlias = ActionUtil.createTableAlias(tableItem.getTable());
 		builder.append(ALIAS_KEY).append(innerAlias);
 		builder.append(JOIN_ON);
-		builder.append(originalTableAlias).append(".").append(quote(table.getColumns().get(0).getName()));
+		builder.append(originalTableAlias).append(".").append(process(table.getColumns().get(0).getName()));
 		builder.append(" = ");
-		builder.append(innerAlias).append(".").append(quote(table.getColumns().get(0).getName()));
+		builder.append(innerAlias).append(".").append(process(table.getColumns().get(0).getName()));
 		return builder.toString();
 	}
 
@@ -268,7 +268,7 @@ public class SQLBuilder {
 				Table rightTable = rightTableItem.getTable();
 				String rightTableAlias = rightTableItem.getAlias();
 				if (i == 0) {
-					joinsBuilder.append(quote(rightTable.getName()));
+					joinsBuilder.append(process(rightTable.getName()));
 					if (!Strings.isNullOrEmpty(rightTableAlias) && dialect.tableAliasEnabled()) {
 						joinsBuilder.append(ALIAS_KEY).append(rightTableAlias);
 					}
@@ -279,16 +279,16 @@ public class SQLBuilder {
 				if (!Strings.isNullOrEmpty(leftTableAlias) && dialect.tableAliasEnabled()) {
 					joinsBuilder.append(leftTableAlias);
 				} else {
-					joinsBuilder.append(quote(leftTable.getName()));
+					joinsBuilder.append(process(leftTable.getName()));
 				}
-				joinsBuilder.append(".").append(quote(leftColumnItem.getColumn().getName()));
+				joinsBuilder.append(".").append(process(leftColumnItem.getColumn().getName()));
 				joinsBuilder.append(" = ");
 				if (!Strings.isNullOrEmpty(rightTableAlias) && dialect.tableAliasEnabled()) {
 					joinsBuilder.append(rightTableAlias);
 				} else {
-					joinsBuilder.append(quote(rightTable.getName()));
+					joinsBuilder.append(process(rightTable.getName()));
 				}
-				joinsBuilder.append(".").append(quote(rightColumnItem.getColumn().getName()));
+				joinsBuilder.append(".").append(process(rightColumnItem.getColumn().getName()));
 			}
 
 		}
@@ -472,7 +472,7 @@ public class SQLBuilder {
 			}
 			Column column = valueItem.getColumn();
 			Object value = valueItem.getRealValue();
-			tempColumnsBuilder.append(quote(column.getName()));
+			tempColumnsBuilder.append(process(column.getName()));
 			if (column.getType().isJson()) {
 				tempValuesBuilder.append(dialect.getJsonPlaceholder());
 			} else {
@@ -504,7 +504,7 @@ public class SQLBuilder {
 			}
 			Column column = valueItem.getColumn();
 			Object value = valueItem.getRealValue();
-			valuesBuilder.append(quote(column.getName())).append(" = ");
+			valuesBuilder.append(process(column.getName())).append(" = ");
 			if (column.getType().isJson()) {
 				valuesBuilder.append(dialect.getJsonPlaceholder());
 			} else {
@@ -550,9 +550,9 @@ public class SQLBuilder {
 		StringBuilder tableBuilder = new StringBuilder();
 		if (dialect.schemaPrefix()) {
 			Schema schema = table.getSchema();
-			tableBuilder.append(quote(schema.getName())).append(".");
+			tableBuilder.append(process(schema.getName())).append(".");
 		}
-		tableBuilder.append(quote(table.getName()));
+		tableBuilder.append(process(table.getName()));
 		return tableBuilder.toString();
 	}
 
@@ -586,7 +586,7 @@ public class SQLBuilder {
 				}
 				columnBuilder.append(".");
 			}
-			columnBuilder.append(quote(column.getName()));
+			columnBuilder.append(process(column.getName()));
 		}
 		return columnBuilder.toString();
 	}
@@ -620,24 +620,14 @@ public class SQLBuilder {
 			if (dialect.columnAliasEnabled() && !Strings.isNullOrEmpty(columnItem.getAlias())) {
 				columnBuilder.append(columnItem.getAlias());
 			} else {
-				columnBuilder.append(quote(column.getName()));
+				columnBuilder.append(process(column.getName()));
 			}
 		}
 		return columnBuilder.toString();
 	}
 
-	/**
-	 * 用引用符号包裹数据元素
-	 * 
-	 * @param element
-	 * @return 引号包装后的元素
-	 */
-	public String quote(String element) {
-		if (dialect.quoteTable() || SqlReservedWords.containsWord(element)) {
-			String identifierQuoteString = dataContext.getIdentifierQuoteString();
-			return identifierQuoteString + element + identifierQuoteString;
-		}
-		return element;
+	public String process(String element) {
+		return dialect.processKeyword(element);
 	}
 
 	public String countSql() {
