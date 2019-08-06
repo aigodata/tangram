@@ -197,10 +197,13 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			ColumnType columnType = column.getType();
 			if (columnType.isNumber()) {
 				Number number = null;
+				Double doubleValue = new Double(value.toString());
 				if (columnType.isInteger()) {
-					number = Long.parseLong(value.toString());
+					number = doubleValue.intValue();
+				} else if (columnType.isLong()) {
+					number = doubleValue.longValue();
 				} else if (columnType.isDouble()) {
-					number = Double.parseDouble(value.toString());
+					// It's already a double
 				}
 				record.addProperty(key, render(column, number));
 			} else if (columnType.isBoolean()) {
