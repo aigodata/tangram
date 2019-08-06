@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.github.mengxianun.core.config.AssociationType;
+import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
@@ -18,7 +19,7 @@ public interface DataContext {
 
 	public DataResult executeSql(String sql, Object... params);
 
-	public DataResult executeNative(String statement);
+	public DataResult executeNative(Operation operation, String resource, String statement);
 
 	public List<Schema> getSchemas();
 
@@ -42,6 +43,8 @@ public interface DataContext {
 	public Column getColumn(String schemaName, String tableName, String columnName);
 
 	public Dialect getDialect();
+
+	public SQLBuilder getSQLBuilder(Action action);
 
 	public void destroy();
 

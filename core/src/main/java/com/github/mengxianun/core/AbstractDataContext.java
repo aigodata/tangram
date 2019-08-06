@@ -50,6 +50,7 @@ public abstract class AbstractDataContext implements DataContext {
 	protected final Metadata metadata = new Metadata();
 
 	protected Dialect dialect;
+	protected SQLBuilder sqlBuilder;
 	// Key 为主表, Value 为 Map 类型, Key为外表, 值为主外表的关联关系
 	Map<Table, Map<Table, Set<Relationship>>> pfRelationships = new HashMap<>();
 	// 表关联关系缓存, Key 为两个表的对象
@@ -74,7 +75,10 @@ public abstract class AbstractDataContext implements DataContext {
 		} else if (action.isTransaction()) {
 			resultSet = executeTransaction(action);
 		} else if (action.isNative()) {
-			resultSet = executeNative(action.getNativeContent());
+			Operation operation = action.getOperation();
+			String resource = action.getTableItems().get(0).getExpression();
+			String nativeContent = action.getNativeContent();
+			resultSet = executeNative(operation, resource, nativeContent);
 		} else if (action.isCRUD()) {
 			resultSet = executeCRUD(action);
 		} else {
@@ -193,7 +197,7 @@ public abstract class AbstractDataContext implements DataContext {
 		Action countAction = action.count();
 		DataSet countDataSet = query(countAction.getSql(), countAction.getParams().toArray());
 		Row row = countDataSet.getRow();
-		long count = (long) row.getValue(0);
+		long count = new Double(row.getValue(0).toString()).longValue();
 		Map<String, Object> pageResult = new LinkedHashMap<>();
 		pageResult.put(ResultAttributes.START, start);
 		pageResult.put(ResultAttributes.END, end);
@@ -261,6 +265,11 @@ public abstract class AbstractDataContext implements DataContext {
 
 	public Dialect getDialect() {
 		return dialect;
+	}
+
+	@Override
+	public SQLBuilder getSQLBuilder(Action action) {
+		return new SQLBuilder(action);
 	}
 
 	@Override
