@@ -17,6 +17,7 @@ import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
 import com.github.mengxianun.core.request.Connector;
 import com.github.mengxianun.core.request.Operator;
+import com.github.mengxianun.core.request.Order;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
@@ -30,7 +31,8 @@ public class SQLBuilder {
 	public static final String PREFIX_GROUP_BY = " GROUP BY ";
 	public static final String PREFIX_HAVING = " HAVING ";
 	public static final String PREFIX_ORDER_BY = " ORDER BY ";
-	public static final String PREFIX_LIMIT = " LIMIT ";
+	public static final String LIMIT = " LIMIT ";
+	public static final String OFFSET = " OFFSET ";
 	public static final String ORDER_ASC = " ASC";
 	public static final String ORDER_DESC = " DESC";
 	public static final String INNER_JOIN = " INNER JOIN ";
@@ -52,9 +54,9 @@ public class SQLBuilder {
 	public static final String UPDATE_SET = " SET ";
 	public static final String PREFIX_DELETE_FROM = "DELETE FROM ";
 
-	private Action action;
-	private DataContext dataContext;
-	private Dialect dialect;
+	protected Action action;
+	protected DataContext dataContext;
+	protected Dialect dialect;
 	protected String sql;
 	protected List<Object> params = new ArrayList<>();
 	protected List<Object> whereParams = new ArrayList<>();
@@ -420,14 +422,10 @@ public class SQLBuilder {
 			ColumnItem columnItem = orderItem.getColumnItem();
 			ordersBuilder.append(spliceColumn(columnItem, assignTableAlias));
 
-			switch (orderItem.getOrder()) {
-			case DESC:
+			if (orderItem.getOrder() == Order.DESC) {
 				ordersBuilder.append(ORDER_DESC);
-				break;
-
-			default:
+			} else {
 				ordersBuilder.append(ORDER_ASC);
-				break;
 			}
 			comma = true;
 		}
@@ -444,10 +442,8 @@ public class SQLBuilder {
 		}
 		params.add(limitItem.getLimit());
 		params.add(limitItem.getStart());
-		//		StringBuilder limitBuilder = new StringBuilder(PREFIX_LIMIT);
-		//		limitBuilder.append("?, ?");
-		//		return limitString = limitBuilder.toString();
-		return limitString = " LIMIT ? OFFSET ?";
+		limitString = new StringBuilder().append(LIMIT).append("?").append(OFFSET).append("?").toString();
+		return limitString;
 	}
 
 	public String toInsertTable() {
