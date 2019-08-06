@@ -25,7 +25,6 @@ public class Metadata {
 	public static final String TYPE = "type";
 	public static final String VERSION = "version";
 	public static final String REMARKS = "remarks";
-	public static final String IDENTIFIER_QUOTE_STRING = "identifierQuoteString";
 
 	public static final String URL = "url";
 	public static final String DATA_SOURCES = "dataSources";
@@ -44,10 +43,8 @@ public class Metadata {
 	private List<Schema> schemas;
 
 	private String defaultCatalogName;
-
+	@Deprecated
 	private String defaultSchemaName;
-
-	private String identifierQuoteString = "";
 
 	public Metadata() {
 		this(new ArrayList<>());
@@ -60,12 +57,6 @@ public class Metadata {
 	public Metadata(List<Schema> schemas, String defaultSchemaName) {
 		this(schemas);
 		this.defaultSchemaName = defaultSchemaName;
-	}
-
-	public Metadata(List<Schema> schemas, String defaultSchemaName, String identifierQuoteString) {
-		this(schemas);
-		this.defaultSchemaName = defaultSchemaName;
-		this.identifierQuoteString = identifierQuoteString;
 	}
 
 	public List<Schema> getSchemas() {
@@ -178,14 +169,6 @@ public class Metadata {
 
 	public void setDefaultSchemaName(String defaultSchemaName) {
 		this.defaultSchemaName = defaultSchemaName;
-	}
-
-	public String getIdentifierQuoteString() {
-		return identifierQuoteString;
-	}
-
-	public void setIdentifierQuoteString(String identifierQuoteString) {
-		this.identifierQuoteString = identifierQuoteString;
 	}
 
 	public void setSchemas(List<Schema> schemas) {
