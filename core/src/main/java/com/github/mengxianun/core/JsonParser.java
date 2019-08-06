@@ -54,7 +54,7 @@ public class JsonParser {
 	private Operation operation;
 	private String operationAttribute;
 	// 解析结果对象
-	private Action action = new Action();
+	private final Action action = new Action();
 	// 表关联关系, 内部 List Table 从左到右依次关联. 不包含主表
 	private List<List<Table>> tempJoins = new ArrayList<>();
 	// 主表的TableItems
@@ -140,6 +140,11 @@ public class JsonParser {
 	}
 
 	public Action parse() {
+		// -------------
+		// Optimize
+		// -------------
+		action.setDataContext(App.currentDataContext());
+
 		if (isTransaction()) {
 			return action;
 		}
