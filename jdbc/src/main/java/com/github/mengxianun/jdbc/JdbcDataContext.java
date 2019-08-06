@@ -143,13 +143,13 @@ public class JdbcDataContext extends AbstractDataContext {
 		try (final Connection connection = getConnection()) {
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
 
-			metadata.addSchema(new DefaultSchema(INFORMATION_SCHEMA, catalog));
 			metadata.addSchema(new DefaultSchema(defaultSchema, catalog));
+			metadata.addSchema(new DefaultSchema(INFORMATION_SCHEMA, catalog));
 
-			String[] systemTypes = new String[] { TableType.SYSTEM_TABLE.name() };
-			loadMetadata(databaseMetaData, catalog, INFORMATION_SCHEMA, "%", systemTypes, null);
 			String[] types = Arrays.stream(tableTypes).map(TableType::name).toArray(String[]::new);
 			loadMetadata(databaseMetaData, catalog, defaultSchema, "%", types, null);
+			String[] systemTypes = new String[] { TableType.SYSTEM_TABLE.name() };
+			loadMetadata(databaseMetaData, catalog, INFORMATION_SCHEMA, "%", systemTypes, null);
 
 		} catch (SQLException e) {
 			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
