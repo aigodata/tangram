@@ -2,7 +2,6 @@ package com.github.mengxianun.elasticsearch;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.http.HttpHost;
@@ -10,13 +9,9 @@ import org.apache.http.ParseException;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetMappingsRequest;
-import org.elasticsearch.client.indices.GetMappingsResponse;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +34,7 @@ import com.github.mengxianun.elasticsearch.dialect.ElasticsearchDialect;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchColumnType;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class ElasticsearchDataContext extends AbstractDataContext {
@@ -46,8 +42,13 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	private static final Logger logger = LoggerFactory.getLogger(ElasticsearchDataContext.class);
 	// Elasticsearch 没有Schema, 这里定义一个虚拟的Schema, 用于程序调用
 	private static final String VIRTUAL_SCHEMA = "elasticsearch";
+	private static final String REQUEST_METHOD_GET = "GET";
+	private static final String REQUEST_ENDPOINT_ROOT = "/";
+	private static final String REQUEST_ENDPOINT_MAPPING = "/_mapping";
 
 	private final RestHighLevelClient client;
+
+	private final String version;
 
 	public ElasticsearchDataContext(HttpHost... httpHosts) {
 		this(new RestHighLevelClient(RestClient.builder(httpHosts)));
@@ -55,8 +56,16 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 	public ElasticsearchDataContext(RestHighLevelClient client) {
 		this.client = client;
+		this.version = readVersion();
 		dialect = new ElasticsearchDialect();
 		initMetadata();
+	}
+
+	private String readVersion() {
+		Request infoRequest = new Request(REQUEST_METHOD_GET, REQUEST_ENDPOINT_ROOT);
+		String infoString = request(infoRequest);
+		JsonObject infoObject = new Gson().fromJson(infoString, JsonObject.class);
+		return infoObject.getAsJsonObject("version").get("number").getAsString();
 	}
 
 	@Override
@@ -64,24 +73,21 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		DefaultSchema schema = new DefaultSchema(VIRTUAL_SCHEMA);
 		metadata.setSchemas(Lists.newArrayList(schema));
 
-		GetMappingsResponse getMappingsResponse = null;
-		try {
-			getMappingsResponse = client.indices().getMapping(new GetMappingsRequest(), RequestOptions.DEFAULT);
-		} catch (IOException e) {
-			logger.error("Elasticsearch index mapping failed to read", e);
-			return;
-		}
-		Map<String, MappingMetaData> mappings = getMappingsResponse.mappings();
-		for (Entry<String, MappingMetaData> entry : mappings.entrySet()) {
+		Request mappingRequest = new Request(REQUEST_METHOD_GET, REQUEST_ENDPOINT_MAPPING);
+		String mappingString = request(mappingRequest);
+		JsonObject mappingObject = new Gson().fromJson(mappingString, JsonObject.class);
+		for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
 			String index = entry.getKey();
-			MappingMetaData mappingMetaData = entry.getValue();
+			JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
 			DefaultTable table = new DefaultTable(index, TableType.TABLE, schema);
 			schema.addTable(table);
 
-			Map<String, Object> sourceMap = mappingMetaData.sourceAsMap();
-			JsonObject sourceJsonObject = new Gson().fromJson(sourceMap.toString(), JsonObject.class);
-
-			JsonObject properties = sourceJsonObject.getAsJsonObject("properties");
+			JsonObject mappingNode = mappingMetaData.getAsJsonObject("mappings");
+			if (mappingNode.size() == 0) {
+				continue;
+			}
+			JsonObject properties = mappingNode.getAsJsonObject(mappingNode.keySet().iterator().next())
+					.getAsJsonObject("properties");
 
 			for (String columnName : properties.keySet()) {
 				JsonObject columnProperties = properties.getAsJsonObject(columnName);
@@ -103,7 +109,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	protected DataSet query(String sql, Object... params) {
+	protected DataSet select(String sql, Object... params) {
 		String resultString = run(sql, params);
 		return new ElasticsearchSQLDataSet(resultString);
 	}
@@ -156,6 +162,15 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		return new DefaultDataResult(resultString);
 	}
 
+	public String request(Request request) {
+		try {
+			Response response = client.getLowLevelClient().performRequest(request);
+			return EntityUtils.toString(response.getEntity());
+		} catch (ParseException | IOException e) {
+			throw new ElasticsearchException("Elasticsearch Request failed", e);
+		}
+	}
+
 	@Override
 	public void destroy() {
 		try {
@@ -163,6 +178,10 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		} catch (IOException e) {
 			logger.error(ResultStatus.RESOURCE_DESTROY_FAILED.fill("Elasticsearch client"), e);
 		}
+	}
+
+	public String getVersion() {
+		return version;
 	}
 
 }
