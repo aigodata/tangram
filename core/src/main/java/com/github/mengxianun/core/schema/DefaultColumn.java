@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 
 public class DefaultColumn implements Column {
 
-	private static final long serialVersionUID = 1L;
 	private Table table;
 	private ColumnType columnType;
 	private String name;
@@ -24,6 +23,12 @@ public class DefaultColumn implements Column {
 
 	public DefaultColumn(Table table, String name) {
 		this.name = name;
+		this.table = table;
+	}
+
+	public DefaultColumn(Table table, ColumnType columnType, String name) {
+		this.name = name;
+		this.columnType = columnType;
 		this.table = table;
 	}
 
