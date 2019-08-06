@@ -141,23 +141,23 @@ public abstract class AbstractDataContext implements DataContext {
 		logger.debug("Params: {}", params);
 
 		if (action.isQuery()) {
-			resultSet = new DefaultDataResult(queryAnd(action, sql, params));
+			resultSet = new DefaultDataResult(query(action));
 		} else if (action.isInsert()) {
-			resultSet = new DefaultDataResult(insert(sql, params));
+			resultSet = new DefaultDataResult(insert(action));
 		} else if (action.isUpdate() || action.isDelete()) {
-			resultSet = new DefaultDataResult(update(sql, params));
+			resultSet = new DefaultDataResult(update(action));
 		}
 		return resultSet;
 	}
 
-	private Object queryAnd(Action action, String sql, Object... params) {
-		DataSet dataSet = query(sql, params);
-		return processQuery(dataSet, action);
+	private Object query(Action action) {
+		DataSet dataSet = select(action.getSql(), action.getParams().toArray());
+		Object result = render(dataSet.toRows(), action);
+		return processQuery(result, action);
 	}
 
-	private Object processQuery(DataSet dataSet, Action action) {
-		Object result = render(dataSet.toRows(), action);
-		if (action.isSelect() && action.isLimit()) {
+	private Object processQuery(Object result, Action action) {
+		if (action.isLimit()) {
 			result = wrapPageResult(result, action);
 		}
 		return result;
@@ -195,7 +195,7 @@ public abstract class AbstractDataContext implements DataContext {
 		long end = limitItem.getEnd();
 
 		Action countAction = action.count();
-		DataSet countDataSet = query(countAction.getSql(), countAction.getParams().toArray());
+		DataSet countDataSet = select(countAction.getSql(), countAction.getParams().toArray());
 		Row row = countDataSet.getRow();
 		long count = new Double(row.getValue(0).toString()).longValue();
 		Map<String, Object> pageResult = new LinkedHashMap<>();
@@ -213,7 +213,7 @@ public abstract class AbstractDataContext implements DataContext {
 
 		sql = sql.trim();
 		if (sql.toUpperCase().startsWith("SELECT")) {
-			return new DefaultDataResult(query(sql, params));
+			return new DefaultDataResult(select(sql, params));
 		} else if (sql.toUpperCase().startsWith("INSERT")) {
 			return new DefaultDataResult(insert(sql, params));
 		} else if (sql.toUpperCase().startsWith("UPDATE") || sql.toUpperCase().startsWith("DELETE")) {
@@ -222,7 +222,19 @@ public abstract class AbstractDataContext implements DataContext {
 		throw new UnsupportedOperationException();
 	}
 
-	protected abstract DataSet query(String sql, Object... params);
+	protected DataSet select(Action action) {
+		return select(action.getSql(), action.getParams().toArray());
+	}
+
+	protected UpdateSummary insert(Action action) {
+		return insert(action.getSql(), action.getParams().toArray());
+	}
+
+	protected UpdateSummary update(Action action) {
+		return update(action.getSql(), action.getParams().toArray());
+	}
+
+	protected abstract DataSet select(String sql, Object... params);
 
 	protected abstract UpdateSummary insert(String sql, Object... params);
 
