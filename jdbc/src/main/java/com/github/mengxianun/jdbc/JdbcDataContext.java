@@ -77,6 +77,10 @@ public class JdbcDataContext extends AbstractDataContext {
 	//
 	private final QueryRunner runner;
 
+	public JdbcDataContext(String url, String username, String password) {
+		this(new JdbcDataContextFactory().createDataSource(url, username, password));
+	}
+
 	public JdbcDataContext(DataSource dataSource) {
 		this(dataSource, TableType.DEFAULT_TABLE_TYPES);
 	}
@@ -128,6 +132,7 @@ public class JdbcDataContext extends AbstractDataContext {
 		databaseProductVersion = databaseProductVersionTemp;
 		identifierQuoteString = identifierQuoteStringTemp;
 
+		logger.info("Database product name: {}", databaseProductName);
 		dialect = createDialect(databaseProductName);
 
 		initMetadata();
@@ -187,8 +192,6 @@ public class JdbcDataContext extends AbstractDataContext {
 		if (Strings.isNullOrEmpty(databaseProductName)) {
 			dialectTemp = new DefaultDialect();
 		} else {
-			logger.debug("Database product name: {}", databaseProductName);
-
 			switch (databaseProductName) {
 			case DATABASE_PRODUCT_POSTGRESQL:
 				dialectTemp = new PostgreSQLDialect(this);
