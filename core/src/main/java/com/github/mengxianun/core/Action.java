@@ -18,6 +18,7 @@ import com.google.gson.JsonObject;
 
 public class Action {
 
+	private DataContext dataContext;
 	private JsonObject requestData;
 	private Operation operation;
 	private List<TableItem> tableItems;
@@ -50,10 +51,19 @@ public class Action {
 		handleJoinLimit = true;
 	}
 
-	public Action(Operation operation) {
-		this();
-		this.operation = operation;
+	public Action(DataContext dataContext) {
+		this(dataContext, null);
+	}
 
+	public Action(Operation operation) {
+		this(null, operation);
+
+	}
+
+	public Action(DataContext dataContext, Operation operation) {
+		this();
+		this.dataContext = dataContext;
+		this.operation = operation;
 	}
 
 	public void addTableItem(TableItem tableItem) {
@@ -234,8 +244,7 @@ public class Action {
 	}
 
 	public Action count() {
-		Action count = new Action();
-		count.setOperation(Operation.DETAIL);
+		Action count = new Action(dataContext, Operation.DETAIL);
 		count.build();
 		String countSql = sqlBuilder.countSql();
 		List<Object> countParams = sqlBuilder.countParams();
@@ -247,7 +256,7 @@ public class Action {
 
 	public void build() {
 		if (sqlBuilder == null) {
-			sqlBuilder = new SQLBuilder(this);
+			sqlBuilder = dataContext.getSQLBuilder(this);
 		}
 		sqlBuilder.toSql();
 	}
@@ -262,6 +271,14 @@ public class Action {
 
 	public JsonObject getRequestData() {
 		return requestData;
+	}
+
+	public DataContext getDataContext() {
+		return dataContext;
+	}
+
+	public void setDataContext(DataContext dataContext) {
+		this.dataContext = dataContext;
 	}
 
 	public void setRequestData(JsonObject requestData) {
