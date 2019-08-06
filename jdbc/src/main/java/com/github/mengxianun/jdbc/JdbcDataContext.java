@@ -322,7 +322,7 @@ public class JdbcDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	protected DataSet query(String sql, Object... params) {
+	protected DataSet select(String sql, Object... params) {
 		try {
 			List<Object[]> values = runner.query(sql, new ArrayListHandler(), params);
 			return new JdbcDataSet(null, values);
