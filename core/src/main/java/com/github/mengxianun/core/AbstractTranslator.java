@@ -112,7 +112,8 @@ public abstract class AbstractTranslator implements Translator {
 				addDataContext(dataSourceName, dataContext);
 				logger.info("Initialize data source [{}] successfully", dataSourceName);
 			} else {
-				logger.info("Initialize data source [{}] failed, Could not find DataContextFactory with type [{}]", dataSourceName, type);
+				logger.warn("Initialize data source [{}] failed, Could not find DataContextFactory with type [{}]",
+						dataSourceName, type);
 			}
 		}
 
