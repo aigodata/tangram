@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.github.mengxianun.core.DataResultSet;
+import com.github.mengxianun.core.config.ResultAttributes;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -25,10 +26,12 @@ public class JoinTest extends TestSupport {
 	@Test
 	void testJoinLimit() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "join_limit.json");
-		JsonObject resultData = dataResultSet.getJsonData().getAsJsonObject();
-		assertTrue(resultData.has("total"));
-		JsonArray realData = resultData.get("data").getAsJsonArray();
-		assertEquals(2, realData.size());
+		JsonObject result = dataResultSet.getJsonData().getAsJsonObject();
+		assertTrue(result.has(ResultAttributes.TOTAL));
+		long total = result.get(ResultAttributes.TOTAL).getAsLong();
+		assertEquals(3, total);
+		JsonArray data = result.get(ResultAttributes.DATA).getAsJsonArray();
+		assertEquals(2, data.size());
 	}
 
 }

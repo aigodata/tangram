@@ -20,7 +20,7 @@ public class DetailTest extends TestSupport {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "detail.json");
 		JsonElement jsonData = dataResultSet.getJsonData();
 		assertTrue(jsonData instanceof JsonObject);
-		assertEquals("ABC", ((JsonObject) jsonData).get("NAME").getAsString());
+		assertEquals("Ada", ((JsonObject) jsonData).get("NAME").getAsString());
 	}
 
 }

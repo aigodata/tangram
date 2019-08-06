@@ -1,4 +1,4 @@
 {
   "select":"select_table",
-  "where":["id=1", "name=ABC"]
+  "where":["id=1", "name=Ada"]
 }

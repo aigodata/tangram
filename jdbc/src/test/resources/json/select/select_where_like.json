@@ -1,4 +1,4 @@
 {
   "select":"select_table",
-  "where":"name%=%b%"
+  "where":"name%=A%"
 }

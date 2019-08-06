@@ -3,14 +3,15 @@ package com.github.mengxianun.jdbc;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.h2.tools.RunScript;
 
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.DefaultTranslator;
-import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -23,18 +24,18 @@ public class TestSupport {
 	public static final String DB_URL = "jdbc:h2:~/test";
 	public static final String DB_USERNAME = "test";
 	public static final String DB_PASSWORD = "123456";
-	public static final String DATABASE_INIT_SCRIPT = "test.sql";
+	public static final String DATABASE_INIT_SCRIPT = "init.sql";
 	
 	private static final String TEST_CONFIG_FILE = "test.json";
 	public static final DefaultTranslator translator;
 
 	static {
-		// Initialize test database
+		// Initialize test data source
 		String scriptPath = TestSupport.class.getClassLoader().getResource(DATABASE_INIT_SCRIPT).toString();
 		try {
 			RunScript.execute(DB_URL, DB_USERNAME, DB_PASSWORD, scriptPath, Charset.defaultCharset(), false);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LOG.log(Level.SEVERE, "Script run failed", e);
 		}
 		// Create Translator
 		translator = new DefaultTranslator(TEST_CONFIG_FILE);
@@ -45,9 +46,9 @@ public class TestSupport {
 	String readJson(String jsonFile) {
 		URL url = Resources.getResource(jsonFile);
 		try {
-			return Resources.toString(url, Charsets.UTF_8);
+			return Resources.toString(url, StandardCharsets.UTF_8);
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOG.warning(e.getMessage());
 			return "";
 		}
 	}

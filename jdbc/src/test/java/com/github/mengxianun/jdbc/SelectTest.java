@@ -159,10 +159,10 @@ public class SelectTest extends TestSupport {
 		assertEquals(2, data.size());
 		JsonObject firstElement = data.get(0).getAsJsonObject();
 		String firstElementName = firstElement.get("NAME").getAsString();
-		assertEquals("bcd", firstElementName);
+		assertEquals("Brenda", firstElementName);
 		JsonObject lastElement = data.get(data.size() - 1).getAsJsonObject();
 		String lastElementName = lastElement.get("NAME").getAsString();
-		assertEquals("cde", lastElementName);
+		assertEquals("Anne", lastElementName);
 	}
 
 	@Test
