@@ -1,0 +1,4 @@
+{
+  "select":"test",
+  "where":"id!=2,4,5"
+}

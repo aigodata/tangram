@@ -1,0 +1,9 @@
+{
+    // 数据源
+    "datasources": {
+        "ds": {
+            "type":"elasticsearch",
+            "url": "http://localhost:9200"
+        }
+    }
+}

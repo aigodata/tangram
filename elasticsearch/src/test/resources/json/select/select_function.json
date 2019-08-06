@@ -1,0 +1,4 @@
+{
+  "select":"test",
+  "fields":["id", "length(name)", "length(name) as len"]
+}

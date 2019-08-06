@@ -1,0 +1,8 @@
+{
+  "select":"test",
+  "where":[
+    "id>1",
+    ["age=30",{"or":"age=45"}],
+    {"or":["id=4", "name=Anne"]}
+  ]
+}

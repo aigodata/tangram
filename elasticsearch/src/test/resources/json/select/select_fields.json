@@ -1,0 +1,4 @@
+{
+  "select":"test",
+  "fields":["id", "name"]
+}

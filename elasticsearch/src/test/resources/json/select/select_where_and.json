@@ -1,0 +1,4 @@
+{
+  "select":"test",
+  "where":["id=1", "name=Ada"]
+}

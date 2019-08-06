@@ -1,0 +1,4 @@
+{
+  "select":"test",
+  "fields":["max(id) as max_id", "min(id) as min_id", "count(*) count"]
+}
