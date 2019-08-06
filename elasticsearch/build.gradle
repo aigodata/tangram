@@ -1,10 +1,5 @@
 dependencies {
   implementation project(':core')
   implementation project(':jdbc')
-  implementation 'commons-dbutils:commons-dbutils:1.7'
-  // implementation 'org.elasticsearch:elasticsearch:6.2.4'
-  implementation 'org.elasticsearch.client:transport:6.2.4'
-  implementation 'org.nlpcn:elasticsearch-sql:6.2.4.0'
-  // implementation 'org.elasticsearch.plugin:transport-netty4-client:6.2.4'
-  // implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.2.4'
+  implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.2'
 }
