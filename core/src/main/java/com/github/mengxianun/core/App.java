@@ -11,6 +11,8 @@ import org.apache.commons.jexl3.JexlEngine;
 import org.apache.commons.jexl3.JexlExpression;
 import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.text.RandomStringGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.config.ColumnConfig;
@@ -37,6 +39,7 @@ import com.google.inject.Stage;
  */
 public final class App {
 
+	private static final Logger logger = LoggerFactory.getLogger(App.class);
 	private static Injector injector = Guice.createInjector(Stage.PRODUCTION, new AppModule());
 
 	private static final Map<String, DataContext> dataContexts = new LinkedHashMap<>();
@@ -61,8 +64,9 @@ public final class App {
 		return dataContexts.containsKey(name);
 	}
 
-	public static DataContext addDataContext(String name, DataContext dataContext) {
-		return dataContexts.put(name, dataContext);
+	public static void addDataContext(String name, DataContext dataContext) {
+		dataContexts.put(name, dataContext);
+		logger.info("Add new DataContext [{}]", name);
 	}
 
 	public static DataContext getDefaultDataContext() {
