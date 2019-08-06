@@ -80,11 +80,7 @@ public class SQLBuilder {
 	}
 
 	public void toSql() {
-		if (action.isDetail() || action.isSelect()) {
-			// Detail 只查询一条数据
-			if (action.isDetail()) {
-				action.setLimitItem(new LimitItem(dialect.offset(), dialect.offset() + 1));
-			}
+		if (action.isQuery()) {
 			toSelect();
 		} else if (action.isInsert()) {
 			toInsert();
