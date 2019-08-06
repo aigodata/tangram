@@ -1,60 +1,67 @@
 package com.github.mengxianun.elasticsearch;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
 
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.SQLBuilder;
+import com.github.mengxianun.core.item.LimitItem;
+import com.github.mengxianun.core.item.TableItem;
+import com.github.mengxianun.core.schema.Column;
+import com.github.mengxianun.core.schema.Table;
+import com.google.common.base.Strings;
 
-/**
- * Elasticsearch SQL 框架 SQL 语句不支持占位符方式, 所以这里将 SQL 改成拼接方式
- * 
- * @author mengxiangyun
- *
- */
 public class ElasticsearchSQLBuilder extends SQLBuilder {
 
 	public ElasticsearchSQLBuilder(Action action) {
 		super(action);
+		if (action.isJoin()) {
+			throw new UnsupportedOperationException("Elasticsearch join operation is not supported");
+		}
+	}
+
+	@Override
+	public String toLimit() {
+		if (joinLimit) {
+			return "";
+		}
+		LimitItem limitItem = action.getLimitItem();
+		if (limitItem == null) {
+			return "";
+		}
+		limitString = LIMIT + "?";
+		params.add(limitItem.getLimit());
+		// Elasticsearch SQL (6.8.2) 暂不支持 OFFSET
+		return limitString;
 	}
 
 	@Override
 	public String countSql() {
-		StringBuilder countBuilder = new StringBuilder();
-		// 去掉 limit 部分的SQL
-		String notLimitSql = sql.split(SQLBuilder.PREFIX_LIMIT)[0];
-		countBuilder.append(PREFIX_SELECT).append(COUNT).append(ALIAS_KEY).append("count")
-				.append(PREFIX_FROM).append(notLimitSql.split(PREFIX_FROM, 2)[1]);
-		return countBuilder.toString();
-	}
-
-	// @Override
-	// public List<Object> countParams() {
-	// return Collections.emptyList();
-	// }
-
-	@Override
-	public String getSql() {
-		int cols = params.size();
-		Object[] values = new Object[cols];
-		for (int i = 0; i < cols; i++) {
-			Object value = params.get(i);
-			if (value instanceof Date) {
-				values[i] = "'" + value + "'";
-			} else if (value instanceof String) {
-				values[i] = "'" + value + "'";
-			} else if (value instanceof Boolean) {
-				values[i] = (Boolean) value ? 1 : 0;
-			} else {
-				values[i] = value;
+		// 主表列
+		StringBuilder columnsBuilder = new StringBuilder();
+		TableItem mainTableItem = action.getTableItems().get(0);
+		Table mainTable = mainTableItem.getTable();
+		String tablePrefix = Strings.isNullOrEmpty(mainTableItem.getAlias()) ? mainTable.getName()
+				: mainTableItem.getAlias();
+		boolean comma = false;
+		for (Column column : mainTable.getColumns()) {
+			if (column.getType().isJson()) { // 跳过 JSON 类型, 无法与 Distinct 一起使用
+				continue;
 			}
+			if (comma) {
+				columnsBuilder.append(", ");
+			}
+			if (dialect.tableAliasEnabled()) {
+				columnsBuilder.append(tablePrefix).append(".");
+			}
+			columnsBuilder.append(column.getName());
+			comma = true;
 		}
-		return String.format(sql.replaceAll("\\?", "%s"), values);
-	}
 
-	@Override
-	public List<Object> getParams() {
-		return Collections.emptyList();
+		StringBuilder countBuilder = new StringBuilder();
+		// 原始SQL
+		// 1. 只查询主表的列
+		// 2. 去掉 LIMIT 条件
+		countBuilder.append(PREFIX_SELECT).append(COUNT).append(ALIAS_KEY).append("count").append(" ")
+				.append(tableString).append(whereString).append(groupString);
+		return countBuilder.toString();
 	}
 
 }
