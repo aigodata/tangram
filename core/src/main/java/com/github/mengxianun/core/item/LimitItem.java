@@ -24,6 +24,7 @@ public class LimitItem extends Item {
 
 	public void setOffset(long offset) {
 		this.offset = offset;
+		this.start = offset;
 	}
 
 	public long getLimit() {
@@ -40,6 +41,7 @@ public class LimitItem extends Item {
 
 	public void setStart(long start) {
 		this.start = start;
+		this.offset = start;
 	}
 
 	public long getEnd() {
