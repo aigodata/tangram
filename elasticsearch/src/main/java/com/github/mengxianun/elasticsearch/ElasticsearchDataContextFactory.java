@@ -1,17 +1,14 @@
 package com.github.mengxianun.elasticsearch;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.sql.DataSource;
 
 import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.alibaba.druid.pool.ElasticSearchDruidDataSourceFactory;
 import com.github.mengxianun.core.DataContextFactory;
 import com.github.mengxianun.elasticsearch.attributes.ElasticsearchDatasourceAttributes;
 import com.google.auto.service.AutoService;
@@ -20,6 +17,8 @@ import com.google.gson.JsonObject;
 @AutoService(DataContextFactory.class)
 public class ElasticsearchDataContextFactory implements DataContextFactory {
 
+	private static final Logger logger = LoggerFactory.getLogger(ElasticsearchDataContextFactory.class);
+
 	@Override
 	public String getType() {
 		return "elasticsearch";
@@ -27,34 +26,22 @@ public class ElasticsearchDataContextFactory implements DataContextFactory {
 
 	@Override
 	public ElasticsearchDataContext create(JsonObject dataSourceJsonObject) {
-		String url = dataSourceJsonObject.get(ElasticsearchDatasourceAttributes.URL).getAsString();
-		int httpPort = dataSourceJsonObject.has(ElasticsearchDatasourceAttributes.HTTP_PORT)
-				? dataSourceJsonObject.get(ElasticsearchDatasourceAttributes.HTTP_PORT).getAsInt()
-				: ElasticsearchDatasourceAttributes.DEFAULT_HTTP_PORT;
-		List<HttpHost> httpHosts = createElasticsearchHttpHost(url, httpPort);
-		RestClient client = RestClient.builder(httpHosts.toArray(new HttpHost[] {})).build();
-
-		Properties properties = new Properties();
-		properties.put(ElasticsearchDatasourceAttributes.URL, url);
-		DataSource dataSource = null;
-		try {
-			dataSource = ElasticSearchDruidDataSourceFactory.createDataSource(properties);
-		} catch (Exception e) {
-			throw new ElasticsearchDataException("Failed to create data source");
-		}
-		return new ElasticsearchDataContext(dataSource, client);
+		String multiUrl = dataSourceJsonObject.get(ElasticsearchDatasourceAttributes.URL).getAsString();
+		List<HttpHost> httpHosts = createHttpHost(multiUrl);
+		return new ElasticsearchDataContext(httpHosts.stream().toArray(HttpHost[]::new));
 	}
 
-	private List<HttpHost> createElasticsearchHttpHost(String url, int httpPort) {
+	private List<HttpHost> createHttpHost(String multiUrl) {
 		List<HttpHost> httpHosts = new ArrayList<>();
-		String pattern = "\\d{1,3}(?:\\.\\d{1,3}){3}(?::\\d{1,5})?";
-		Pattern compiledPattern = Pattern.compile(pattern);
-		Matcher matcher = compiledPattern.matcher(url);
-		while (matcher.find()) {
-			String[] ipPort = matcher.group().split(":");
-			String ip = ipPort[0];
-			HttpHost httpHost = new HttpHost(ip, httpPort);
-			httpHosts.add(httpHost);
+		String[] urls = multiUrl.split(",");
+		for (String urlString : urls) {
+			URL url;
+			try {
+				url = new URL(urlString);
+				httpHosts.add(new HttpHost(url.getHost(), url.getPort()));
+			} catch (MalformedURLException e) {
+				logger.error("URL parsing failed", e);
+			}
 		}
 		return httpHosts;
 	}
