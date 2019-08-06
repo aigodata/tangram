@@ -3,8 +3,6 @@ package com.github.mengxianun.core.schema;
 
 public interface ColumnType {
 
-	public Integer getType();
-
 	public String getName();
 
 	public boolean isBoolean();
@@ -14,6 +12,8 @@ public interface ColumnType {
 	public boolean isNumber();
 
 	public boolean isInteger();
+
+	public boolean isLong();
 
 	public boolean isDouble();
 
