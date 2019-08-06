@@ -27,10 +27,10 @@ import com.github.mengxianun.core.data.update.DefaultUpdateSummary;
 import com.github.mengxianun.core.data.update.InsertSummary;
 import com.github.mengxianun.core.data.update.UpdateSummary;
 import com.github.mengxianun.core.dialect.DefaultDialect;
+import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.DefaultColumn;
-import com.github.mengxianun.core.schema.DefaultColumnType;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Schema;
@@ -39,6 +39,7 @@ import com.github.mengxianun.jdbc.dialect.H2Dialect;
 import com.github.mengxianun.jdbc.dialect.JdbcDialect;
 import com.github.mengxianun.jdbc.dialect.MySQLDialect;
 import com.github.mengxianun.jdbc.dialect.PostgreSQLDialect;
+import com.github.mengxianun.jdbc.schema.JdbcColumnType;
 import com.google.common.base.Strings;
 
 public class JdbcDataContext extends AbstractDataContext {
@@ -175,7 +176,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			String columnRemarks = columnsResultSet.getString(12);
 
 			DefaultTable table = (DefaultTable) metadata.getTable(schemaPattern, columnTable);
-			ColumnType columnType = new DefaultColumnType(Integer.parseInt(columnDataType), columnTypeName);
+			ColumnType columnType = new JdbcColumnType(Integer.parseInt(columnDataType), columnTypeName);
 			table.addColumn(
 					new DefaultColumn(table, columnType, columnName, columnNullable, columnRemarks, columnSize));
 		}
@@ -313,7 +314,7 @@ public class JdbcDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	public DataResult executeNative(String statement) {
+	public DataResult executeNative(Operation operation, String resource, String statement) {
 		return executeSql(statement);
 	}
 
