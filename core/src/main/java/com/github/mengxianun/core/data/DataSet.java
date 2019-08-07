@@ -6,6 +6,8 @@ public interface DataSet {
 
 	public Row getRow();
 
+	public List<Row> getRows();
+
 	public List<Row> toRows();
 
 	public List<Object[]> toObjectArrays();

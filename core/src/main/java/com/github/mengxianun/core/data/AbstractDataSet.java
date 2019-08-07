@@ -17,10 +17,15 @@ public abstract class AbstractDataSet implements DataSet {
 
 	@Override
 	public Row getRow() {
+		return getRows().get(index++);
+	}
+
+	@Override
+	public List<Row> getRows() {
 		if (rows == null) {
 			rows = toRows();
 		}
-		return rows.get(index++);
+		return rows;
 	}
 
 	@Override
