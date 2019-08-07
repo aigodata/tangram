@@ -1,0 +1,8 @@
+{
+  "insert":"insert_table",
+  "values":{
+    "name":"ABC",
+    "birth":"$now",
+    "create_time":"$now"
+  }
+}
