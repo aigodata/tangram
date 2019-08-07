@@ -8,8 +8,10 @@ public interface DataSetHeader {
 
 	public List<ColumnItem> getColumnItems();
 
+	public int size();
+
 	public ColumnItem getColumnItem(int index);
 
-	public int size();
+	public int indexOf(String columnNameOrAlias);
 
 }
