@@ -160,6 +160,21 @@ public class SelectTest extends TestSupport {
 	}
 
 	@Test
+	void testGroupLimit() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_group_limit.json");
+		JsonObject result = (JsonObject) dataResultSet.getJsonData();
+		assertTrue(result.has(ResultAttributes.TOTAL));
+		long total = result.get(ResultAttributes.TOTAL).getAsLong();
+		assertEquals(6, total);
+		JsonArray data = result.get(ResultAttributes.DATA).getAsJsonArray();
+		assertEquals(1, data.size());
+		JsonObject firstObject = data.get(0).getAsJsonObject();
+		assertTrue(firstObject.has("age"));
+		long age = firstObject.get("age").getAsLong();
+		assertEquals(30, age);
+	}
+
+	@Test
 	void testAlias() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_alias.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
