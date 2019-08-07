@@ -17,6 +17,17 @@ public class ElasticsearchSQLBuilder extends SQLBuilder {
 		}
 	}
 
+	public void toSelectWithoutLimit() {
+		StringBuilder sqlBuilder = new StringBuilder();
+		sqlBuilder.append(toColumns());
+		sqlBuilder.append(toSelectTables());
+		sqlBuilder.append(toJoins());
+		sqlBuilder.append(toWhere());
+		sqlBuilder.append(toGroups());
+		sqlBuilder.append(toOrders());
+		sql = sqlBuilder.toString();
+	}
+
 	@Override
 	public String toLimit() {
 		if (joinLimit) {
