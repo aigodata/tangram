@@ -25,4 +25,8 @@ public class InsertSummary implements UpdateSummary {
 		return contents;
 	}
 
+	public List<Map<String, Object>> getContents() {
+		return contents;
+	}
+
 }
