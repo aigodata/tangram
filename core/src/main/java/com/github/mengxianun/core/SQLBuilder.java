@@ -630,7 +630,21 @@ public class SQLBuilder {
 		String tablePrefix = Strings.isNullOrEmpty(mainTableItem.getAlias()) ? mainTable.getName()
 				: mainTableItem.getAlias();
 		boolean comma = false;
-		for (Column column : mainTable.getColumns()) {
+
+		List<Column> columns;
+		if (action.isGroup()) {
+			columns = new ArrayList<>();
+			List<GroupItem> groupItems = action.getGroupItems();
+			for (GroupItem groupItem : groupItems) {
+				Column column = groupItem.getColumnItem().getColumn();
+				if (column != null) {
+					columns.add(column);
+				}
+			}
+		} else {
+			columns = mainTable.getColumns();
+		}
+		for (Column column : columns) {
 			if (column.getType().isJson()) { // 跳过 JSON 类型, 无法与 Distinct 一起使用
 				continue;
 			}

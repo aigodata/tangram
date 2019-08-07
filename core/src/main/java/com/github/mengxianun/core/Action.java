@@ -235,6 +235,10 @@ public class Action {
 		return !joinItems.isEmpty();
 	}
 
+	public boolean isGroup() {
+		return !groupItems.isEmpty();
+	}
+
 	public boolean isLimit() {
 		return limitItem != null;
 	}
