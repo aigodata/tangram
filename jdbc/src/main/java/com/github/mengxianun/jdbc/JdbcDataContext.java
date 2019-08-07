@@ -35,6 +35,7 @@ import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.TableType;
+import com.github.mengxianun.jdbc.data.JdbcDataSet;
 import com.github.mengxianun.jdbc.dialect.H2Dialect;
 import com.github.mengxianun.jdbc.dialect.JdbcDialect;
 import com.github.mengxianun.jdbc.dialect.MySQLDialect;

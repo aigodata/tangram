@@ -66,7 +66,7 @@ public final class App {
 
 	public static void addDataContext(String name, DataContext dataContext) {
 		dataContexts.put(name, dataContext);
-		logger.info("Add new DataContext [{}]", name);
+		logger.info("Add new {} [{}]", dataContext.getClass().getSimpleName(), name);
 	}
 
 	public static DataContext getDefaultDataContext() {

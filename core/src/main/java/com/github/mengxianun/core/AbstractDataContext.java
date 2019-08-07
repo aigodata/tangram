@@ -150,7 +150,7 @@ public abstract class AbstractDataContext implements DataContext {
 		return resultSet;
 	}
 
-	private Object query(Action action) {
+	protected Object query(Action action) {
 		DataSet dataSet = select(action.getSql(), action.getParams().toArray());
 		Object result = render(dataSet.toRows(), action);
 		return processQuery(result, action);
@@ -163,7 +163,7 @@ public abstract class AbstractDataContext implements DataContext {
 		return result;
 	}
 
-	private Object render(List<Row> rows, Action action) {
+	protected Object render(List<Row> rows, Action action) {
 		JsonArray jsonArrayData = new JsonRenderer(action).render(rows);
 		JsonElement jsonData = jsonArrayData;
 		if (action.isDetail()) {
@@ -193,11 +193,18 @@ public abstract class AbstractDataContext implements DataContext {
 		LimitItem limitItem = action.getLimitItem();
 		long start = limitItem.getStart();
 		long end = limitItem.getEnd();
+		long count = count(action);
+		return pageResult(start, end, count, result);
+	}
 
+	protected long count(Action action) {
 		Action countAction = action.count();
 		DataSet countDataSet = select(countAction.getSql(), countAction.getParams().toArray());
 		Row row = countDataSet.getRow();
-		long count = new Double(row.getValue(0).toString()).longValue();
+		return new Double(row.getValue(0).toString()).longValue();
+	}
+
+	protected Map<String, Object> pageResult(long start, long end, long count, Object result) {
 		Map<String, Object> pageResult = new LinkedHashMap<>();
 		pageResult.put(ResultAttributes.START, start);
 		pageResult.put(ResultAttributes.END, end);

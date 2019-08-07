@@ -1,4 +1,4 @@
-package com.github.mengxianun.jdbc;
+package com.github.mengxianun.jdbc.data;
 
 import java.util.List;
 import java.util.Map;

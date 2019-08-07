@@ -1,4 +1,4 @@
-package com.github.mengxianun.elasticsearch;
+package com.github.mengxianun.elasticsearch.data;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,7 @@
 package com.github.mengxianun.core.data;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class AbstractDataSet implements DataSet {
 	
@@ -20,6 +21,11 @@ public abstract class AbstractDataSet implements DataSet {
 			rows = toRows();
 		}
 		return rows.get(index++);
+	}
+
+	@Override
+	public List<Object[]> toObjectArrays() {
+		return toRows().stream().map(Row::getValues).collect(Collectors.toList());
 	}
 
 	@Override
