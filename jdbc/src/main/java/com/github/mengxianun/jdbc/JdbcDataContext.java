@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.util.JdbcUtils;
 import com.github.mengxianun.core.AbstractDataContext;
 import com.github.mengxianun.core.Atom;
 import com.github.mengxianun.core.Dialect;
@@ -104,7 +105,8 @@ public class JdbcDataContext extends AbstractDataContext {
 
 		// 如果是 DruidDataSource, 使用原生的连接获取数据库源信息. 因为DruidDataSource 不支持获取 Schema 信息.
 		try (final Connection connection = dataSource instanceof DruidDataSource
-				? DriverManager.getConnection(((DruidDataSource) dataSource).getUrl(), ((DruidDataSource) dataSource).getUsername(), ((DruidDataSource) dataSource).getPassword())
+				? getDriverConnection(((DruidDataSource) dataSource).getUrl(),
+						((DruidDataSource) dataSource).getUsername(), ((DruidDataSource) dataSource).getPassword())
 				: getConnection()) {
 			catalogTemp = connection.getCatalog();
 			defaultSchemaTemp = connection.getSchema();
@@ -134,6 +136,7 @@ public class JdbcDataContext extends AbstractDataContext {
 		identifierQuoteString = identifierQuoteStringTemp;
 
 		logger.info("Database product name: {}", databaseProductName);
+		logger.info("Database product version: {}", databaseProductVersion);
 		dialect = createDialect(databaseProductName);
 
 		initMetadata();
@@ -234,6 +237,12 @@ public class JdbcDataContext extends AbstractDataContext {
 			}
 		}
 		return dialectTemp;
+	}
+
+	public Connection getDriverConnection(String url, String username, String password) throws SQLException {
+		JdbcUtils.createDriver(JdbcUtils.getDriverClassName(url));
+		return DriverManager.getConnection(url, username, password);
+
 	}
 
 	public void startTransaction() throws SQLException {
