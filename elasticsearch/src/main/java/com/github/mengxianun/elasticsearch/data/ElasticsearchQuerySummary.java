@@ -4,25 +4,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
-import com.github.mengxianun.core.data.AbstractDataSet;
-import com.github.mengxianun.core.data.DataSetHeader;
+import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.data.DefaultRow;
 import com.github.mengxianun.core.data.Row;
+import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-public class ElasticsearchDataSet extends AbstractDataSet {
+public class ElasticsearchQuerySummary extends QuerySummary {
 
 	private final String resultString;
 
-	public ElasticsearchDataSet(String resultString) {
+	public ElasticsearchQuerySummary(String resultString) {
 		this(null, resultString);
 	}
 
-	public ElasticsearchDataSet(DataSetHeader header, String resultString) {
-		super(header, resultString);
+	public ElasticsearchQuerySummary(Action action, String resultString) {
+		super(action, resultString);
 		this.resultString = resultString;
 	}
 
@@ -34,6 +34,7 @@ public class ElasticsearchDataSet extends AbstractDataSet {
 
 		// hits
 		JsonObject hits = response.getAsJsonObject("hits");
+		total = hits.get("total").getAsLong();
 		JsonArray items = hits.getAsJsonArray("hits");
 		if (items.size() > 0) {
 			items.forEach(e -> rows.add(new DefaultRow(header, parseHit(e.getAsJsonObject()))));

@@ -23,21 +23,20 @@ import com.github.mengxianun.core.Atom;
 import com.github.mengxianun.core.ResultStatus;
 import com.github.mengxianun.core.SQLBuilder;
 import com.github.mengxianun.core.SQLParser;
-import com.github.mengxianun.core.data.DataSet;
-import com.github.mengxianun.core.data.DefaultDataSetHeader;
-import com.github.mengxianun.core.data.update.UpdateSummary;
+import com.github.mengxianun.core.data.Summary;
+import com.github.mengxianun.core.data.summary.InsertSummary;
+import com.github.mengxianun.core.data.summary.QuerySummary;
+import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.request.Operation;
-import com.github.mengxianun.core.resutset.DataResult;
-import com.github.mengxianun.core.resutset.DefaultDataResult;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableType;
-import com.github.mengxianun.elasticsearch.data.ElasticsearchDataSet;
-import com.github.mengxianun.elasticsearch.data.ElasticsearchSQLDataSet;
+import com.github.mengxianun.elasticsearch.data.ElasticsearchQuerySummary;
+import com.github.mengxianun.elasticsearch.data.ElasticsearchSQLQuerySummary;
 import com.github.mengxianun.elasticsearch.dialect.ElasticsearchDialect;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchColumnType;
 import com.google.common.collect.Lists;
@@ -124,16 +123,11 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	protected Object query(Action action) {
+	protected QuerySummary select(Action action) {
 		// 说明: 6.8.2 以及之前的版本, SQL分页只支持 LIMIT, 不支持 OFFSET
-		// 所有在这里, 不分页的查询通过 Elasticsearch SQL 的方式实现
-		// 分页查询通过将 SQL translate, 再进行查询
-		if (!action.isLimit()) {
-			return super.query(action);
-		}
+		// 所有在这里, 分页查询通过将 SQL translate, 再进行查询
 
 		Gson gson = new Gson();
-		// translate
 
 		// Build query
 		ElasticsearchSQLBuilder sqlBuilder = new ElasticsearchSQLBuilder(action);
@@ -141,18 +135,25 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		String sql = sqlBuilder.getSql();
 		Object[] params = sqlBuilder.getParams().toArray();
 		String fullSql = fill(sql, params);
+		// translate
 		String nativeQueryString = translateSQL(fullSql);
 		JsonObject query = gson.fromJson(nativeQueryString, JsonObject.class);
 
-		// aggregations/limit
-		LimitItem limitItem = action.getLimitItem();
-		long from = limitItem.getStart();
-		long size = limitItem.getLimit();
+		// aggregations
 		if (action.isGroup()) {
-			processAggrQuery(query, from, size);
-		} else {
-			query.addProperty(LIMIT_FROM, from);
-			query.addProperty(LIMIT_SIZE, size);
+			processAggrQuery(query);
+		}
+		// limit
+		if (action.isLimit()) {
+			LimitItem limitItem = action.getLimitItem();
+			long from = limitItem.getStart();
+			long size = limitItem.getLimit();
+			if (action.isGroup()) {
+				processAggrLimit(query, from, size);
+			} else {
+				query.addProperty(LIMIT_FROM, from);
+				query.addProperty(LIMIT_SIZE, size);
+			}
 		}
 		// Request
 		TableItem tableItem = action.getTableItems().get(0);
@@ -161,20 +162,37 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		String endpoint = REQUEST_ENDPOINT_ROOT + index + REQUEST_ENDPOINT_SEARCH;
 		String statement = query.toString();
 		String resultString = request(REQUEST_METHOD_GET, endpoint, statement);
-		// Response
-		JsonObject response = gson.fromJson(resultString, JsonObject.class);
-		JsonObject hits = response.getAsJsonObject("hits");
-		long total = hits.get("total").getAsLong();
-		ElasticsearchDataSet dataSet = new ElasticsearchDataSet(new DefaultDataSetHeader(action.getColumnItems()),
-				resultString);
-		Object result = render(dataSet.toRows(), action);
-		if (action.isLimit()) {
-			result = pageResult(limitItem.getStart(), limitItem.getEnd(), total, result);
-		}
-		return result;
+
+		return new ElasticsearchQuerySummary(action, resultString);
 	}
 
-	private void processAggrQuery(JsonObject query, long from, long size) {
+	@Override
+	protected InsertSummary insert(Action action) {
+		return insert(fill(action.getSql(), action.getParams().toArray()));
+	}
+
+	@Override
+	protected UpdateSummary update(Action action) {
+		return update(fill(action.getSql(), action.getParams().toArray()));
+	}
+
+	@Override
+	protected QuerySummary select(String sql) {
+		String resultString = runSQL(sql);
+		return new ElasticsearchSQLQuerySummary(resultString);
+	}
+
+	@Override
+	protected InsertSummary insert(String sql) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	protected UpdateSummary update(String sql) {
+		throw new UnsupportedOperationException();
+	}
+
+	private void processAggrQuery(JsonObject query) {
 		JsonObject aggrObject = query.getAsJsonObject("aggregations");
 		JsonObject groupbyObject = aggrObject.getAsJsonObject("groupby");
 		JsonArray sources = groupbyObject.getAsJsonObject("composite").getAsJsonArray("sources");
@@ -195,6 +213,11 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		});
 		autoNameSources.forEach(sources::remove);
 		newNameSources.forEach(sources::add);
+	}
+
+	private void processAggrLimit(JsonObject query, long from, long size) {
+		JsonObject aggrObject = query.getAsJsonObject("aggregations");
+		JsonObject groupbyObject = aggrObject.getAsJsonObject("groupby");
 		// 添加聚合分页 Bucket Sort
 		JsonObject bucketSortObject = new JsonObject();
 		bucketSortObject.addProperty("from", from);
@@ -206,22 +229,6 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		JsonObject aggsObject = new JsonObject();
 		aggsObject.add("bucket_truncate", bucketTruncateObject);
 		groupbyObject.add("aggs", aggsObject);
-	}
-
-	@Override
-	protected DataSet select(String sql, Object... params) {
-		String resultString = runSQL(sql, params);
-		return new ElasticsearchSQLDataSet(resultString);
-	}
-
-	@Override
-	protected UpdateSummary insert(String sql, Object... params) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	protected UpdateSummary update(String sql, Object... params) {
-		throw new UnsupportedOperationException();
 	}
 
 	private String fill(String sql, Object... params) {
@@ -246,12 +253,12 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	public DataResult executeNative(Operation operation, String resource, String statement) {
+	public Summary executeNative(Operation operation, String resource, String statement) {
 		if (operation != Operation.SELECT) {
 			throw new UnsupportedOperationException();
 		}
 		String resultString = request(REQUEST_METHOD_GET, resource, statement);
-		return new DefaultDataResult(resultString);
+		return new ElasticsearchQuerySummary(resultString);
 	}
 
 	private String request(String method, String endpoint) {

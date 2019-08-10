@@ -20,23 +20,23 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
 import com.github.mengxianun.core.AbstractDataContext;
+import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.Atom;
 import com.github.mengxianun.core.Dialect;
 import com.github.mengxianun.core.ResultStatus;
-import com.github.mengxianun.core.data.DataSet;
-import com.github.mengxianun.core.data.update.DefaultUpdateSummary;
-import com.github.mengxianun.core.data.update.InsertSummary;
-import com.github.mengxianun.core.data.update.UpdateSummary;
+import com.github.mengxianun.core.data.Summary;
+import com.github.mengxianun.core.data.summary.InsertSummary;
+import com.github.mengxianun.core.data.summary.QuerySummary;
+import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.dialect.DefaultDialect;
 import com.github.mengxianun.core.request.Operation;
-import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.TableType;
-import com.github.mengxianun.jdbc.data.JdbcDataSet;
+import com.github.mengxianun.jdbc.data.JdbcQuerySummary;
 import com.github.mengxianun.jdbc.dialect.H2Dialect;
 import com.github.mengxianun.jdbc.dialect.JdbcDialect;
 import com.github.mengxianun.jdbc.dialect.MySQLDialect;
@@ -327,15 +327,43 @@ public class JdbcDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	public DataResult executeNative(Operation operation, String resource, String statement) {
+	public Summary executeNative(Operation operation, String resource, String statement) {
 		return executeSql(statement);
 	}
 
 	@Override
-	protected DataSet select(String sql, Object... params) {
+	protected QuerySummary select(Action action) {
+		return new JdbcQuerySummary(action, select(action.getSql(), action.getParams().toArray()));
+	}
+
+	@Override
+	protected InsertSummary insert(Action action) {
+		return new InsertSummary(action, insert(action.getSql(), action.getParams().toArray()));
+	}
+
+	@Override
+	protected UpdateSummary update(Action action) {
+		return new UpdateSummary(action, update(action.getSql(), action.getParams().toArray()));
+	}
+
+	@Override
+	protected QuerySummary select(String sql) {
+		return new JdbcQuerySummary(null, select(sql, new Object[0]));
+	}
+
+	@Override
+	protected InsertSummary insert(String sql) {
+		return new InsertSummary(null, insert(sql, new Object[0]));
+	}
+
+	@Override
+	protected UpdateSummary update(String sql) {
+		return new UpdateSummary(null, update(sql, new Object[0]));
+	}
+
+	protected List<Object[]> select(String sql, Object... params) {
 		try {
-			List<Object[]> values = runner.query(sql, new ArrayListHandler(), params);
-			return new JdbcDataSet(null, values);
+			return runner.query(sql, new ArrayListHandler(), params);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
@@ -347,11 +375,9 @@ public class JdbcDataContext extends AbstractDataContext {
 		}
 	}
 
-	@Override
-	protected UpdateSummary insert(String sql, Object... params) {
+	protected List<Map<String, Object>> insert(String sql, Object... params) {
 		try {
-			List<Map<String, Object>> insertContents = runner.insert(sql, new MapListHandler(), params);
-			return new InsertSummary(insertContents);
+			return runner.insert(sql, new MapListHandler(), params);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
@@ -363,11 +389,9 @@ public class JdbcDataContext extends AbstractDataContext {
 		}
 	}
 
-	@Override
-	protected UpdateSummary update(String sql, Object... params) {
+	protected int update(String sql, Object... params) {
 		try {
-			int updateCount = runner.update(sql, params);
-			return new DefaultUpdateSummary(updateCount);
+			return runner.update(sql, params);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();

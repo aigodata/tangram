@@ -282,7 +282,8 @@ public abstract class AbstractTranslator implements Translator {
 		if (!App.hasDataContext(sourceName)) {
 			throw new JsonDataException(ResultStatus.DATASOURCE_NOT_EXIST.fill(sourceName));
 		}
-		App.setCurrentDataContext(sourceName);
+		DataContext dataContext = App.getDataContext(sourceName);
+		App.setCurrentDataContext(dataContext);
 
 		// Stopwatch
 		Stopwatch stopwatch = Stopwatch.createStarted();
@@ -291,7 +292,7 @@ public abstract class AbstractTranslator implements Translator {
 		Action action = parser.parse();
 		action.build();
 
-		DataResultSet dataResultSet = execute(action);
+		DataResultSet dataResultSet = execute(dataContext, action);
 
 		// Done
 		Duration duration = stopwatch.stop().elapsed();
@@ -304,7 +305,7 @@ public abstract class AbstractTranslator implements Translator {
 		return dataResultSet;
 	}
 
-	protected abstract DataResultSet execute(Action action);
+	protected abstract DataResultSet execute(DataContext dataContext, Action action);
 
 	/**
 	 * 释放资源

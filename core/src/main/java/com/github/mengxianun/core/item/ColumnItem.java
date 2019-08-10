@@ -1,6 +1,7 @@
 package com.github.mengxianun.core.item;
 
 import com.github.mengxianun.core.schema.Column;
+import com.google.common.base.Strings;
 
 public class ColumnItem extends Item {
 
@@ -44,6 +45,16 @@ public class ColumnItem extends Item {
 		this.expression = expression;
 		this.alias = alias;
 		this.customAlias = customAlias;
+	}
+
+	public String getKey() {
+		if (Strings.isNullOrEmpty(alias)) {
+			return alias;
+		} else if (column != null) {
+			return column.getName();
+		} else {
+			return expression;
+		}
 	}
 
 	public Column getColumn() {

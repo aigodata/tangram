@@ -4,8 +4,9 @@ import java.util.List;
 import java.util.Set;
 
 import com.github.mengxianun.core.config.AssociationType;
+import com.github.mengxianun.core.data.Summary;
+import com.github.mengxianun.core.data.summary.MultiSummary;
 import com.github.mengxianun.core.request.Operation;
-import com.github.mengxianun.core.resutset.DataResult;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
@@ -13,13 +14,13 @@ import com.github.mengxianun.core.schema.Table;
 
 public interface DataContext {
 
-	public DataResult execute(Action action);
+	public Summary execute(Action action);
 
-	public List<DataResult> execute(Action... actions);
+	public MultiSummary execute(Action... actions);
 
-	public DataResult executeSql(String sql, Object... params);
+	public Summary executeSql(String sql);
 
-	public DataResult executeNative(Operation operation, String resource, String statement);
+	public Summary executeNative(Operation operation, String resource, String statement);
 
 	public List<Schema> getSchemas();
 

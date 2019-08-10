@@ -5,29 +5,33 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.config.AssociationType;
-import com.github.mengxianun.core.config.ResultAttributes;
-import com.github.mengxianun.core.data.DataSet;
 import com.github.mengxianun.core.data.Row;
-import com.github.mengxianun.core.data.update.UpdateSummary;
+import com.github.mengxianun.core.data.Summary;
+import com.github.mengxianun.core.data.summary.BasicSummary;
+import com.github.mengxianun.core.data.summary.FinalSummary;
+import com.github.mengxianun.core.data.summary.InsertSummary;
+import com.github.mengxianun.core.data.summary.MultiSummary;
+import com.github.mengxianun.core.data.summary.PageSummary;
+import com.github.mengxianun.core.data.summary.QuerySummary;
+import com.github.mengxianun.core.data.summary.UpdateSummary;
+import com.github.mengxianun.core.item.FilterItem;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.render.JsonRenderer;
 import com.github.mengxianun.core.request.Operation;
-import com.github.mengxianun.core.resutset.DataResult;
-import com.github.mengxianun.core.resutset.DefaultDataResult;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
@@ -39,7 +43,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -66,57 +69,89 @@ public abstract class AbstractDataContext implements DataContext {
 	protected abstract void initMetadata();
 
 	@Override
-	public DataResult execute(Action action) {
-		DataResult resultSet = null;
+	public Summary execute(Action action) {
+		Summary summary = null;
 		if (action.isStruct()) {
-			resultSet = executeStruct(action);
+			summary = executeStruct(action);
 		} else if (action.isStructs()) {
-			resultSet = executeStructs(action);
+			summary = executeStructs(action);
 		} else if (action.isTransaction()) {
-			resultSet = executeTransaction(action);
+			summary = executeTransaction(action);
 		} else if (action.isNative()) {
 			Operation operation = action.getOperation();
 			String resource = action.getTableItems().get(0).getExpression();
 			String nativeContent = action.getNativeContent();
-			resultSet = executeNative(operation, resource, nativeContent);
+			summary = executeNative(operation, resource, nativeContent);
 		} else if (action.isCRUD()) {
-			resultSet = executeCRUD(action);
+			summary = executeCRUD(action);
 		} else {
 			throw new UnsupportedOperationException(action.getOperation().name());
 		}
-		return resultSet;
+		return summary;
 	}
 
 	@Override
-	public List<DataResult> execute(Action... actions) {
-		List<DataResult> multiResults = new ArrayList<>();
+	public MultiSummary execute(Action... actions) {
+		List<Summary> summaries = new ArrayList<>();
 		trans(new Atom() {
 
 			@Override
 			public void run() {
 				for (Action action : actions) {
-					multiResults.add(executeCRUD(action));
+					summaries.add(executeCRUD(action));
 				}
 
 			}
 		});
-		return multiResults;
+		return new MultiSummary(summaries);
 	}
 
 	protected abstract void trans(Atom... atoms);
 
-	private DataResult executeStruct(Action action) {
+	private void parsePlaceholder(Action action, Summary summary) {
+		if (action.isQuery()) {
+			List<FilterItem> filterItems = action.getFilterItems();
+			for (FilterItem filterItem : filterItems) {
+				Object value = filterItem.getValue();
+				if (!(value instanceof String) || value.toString().equals("")) {
+					continue;
+				}
+				String valueString = value.toString();
+				// $n.column
+				String patternString = "^[$]\\d+\\..+";
+				Pattern pattern = Pattern.compile(patternString);
+				Matcher matcher = pattern.matcher(valueString);
+				if (matcher.matches()) {
+
+					String[] numAndColumn = matcher.group().split("\\.");
+					int num = Integer.parseInt(numAndColumn[0].substring(1));
+					String column = numAndColumn[1];
+
+					//					DataResult dataResult = multiResults.get(num);
+					//					if (dataResult.getDataSet() != null) {
+					//						dataResult.getDataSet().getRow().getValue(column);
+					//					} else if (dataResult.getUpdateSummary() != null) {
+					//						dataResult
+					//					}
+
+				}
+
+			}
+		}
+	}
+
+	private Summary executeStruct(Action action) {
 		TableItem tableItem = action.getTableItems().get(0);
 		Table table = tableItem.getTable();
-		return new DefaultDataResult(table.getInfo());
+		return new BasicSummary(table.getInfo());
 	}
 
-	private DataResult executeStructs(Action action) {
+	private Summary executeStructs(Action action) {
 		Schema schema = App.currentDataContext().getDefaultSchema();
-		return new DefaultDataResult(schema.getInfo());
+		return new BasicSummary(schema.getInfo());
 	}
 
-	private DataResult executeTransaction(Action action) {
+	private MultiSummary executeTransaction(Action action) {
 		JsonObject jsonData = action.getRequestData();
 		JsonArray transactionArray = jsonData.getAsJsonArray(Operation.TRANSACTION.name().toLowerCase());
 		List<Action> actions = new ArrayList<>();
@@ -127,125 +162,81 @@ public abstract class AbstractDataContext implements DataContext {
 			innerAction.build();
 			actions.add(innerAction);
 		}
-		List<DataResult> dataResults = execute(actions.toArray(new Action[] {}));
-		List<Object> multiResult = dataResults.stream().map(DataResult::getData).collect(Collectors.toList());
-		return new DefaultDataResult(multiResult);
+		return execute(actions.toArray(new Action[] {}));
 	}
 
-	protected DataResult executeCRUD(Action action) {
-		DataResult resultSet = null;
-		String sql = action.getSql();
-		Object[] params = action.getParams().toArray();
+	protected Summary executeCRUD(Action action) {
+		logger.debug("SQL: {}", action.getSql());
+		logger.debug("Params: {}", action.getParams().toArray());
 
-		logger.debug("SQL: {}", sql);
-		logger.debug("Params: {}", params);
-
+		Summary summary = null;
 		if (action.isQuery()) {
-			resultSet = new DefaultDataResult(query(action));
+			summary = query(action);
 		} else if (action.isInsert()) {
-			resultSet = new DefaultDataResult(insert(action));
-		} else if (action.isUpdate() || action.isDelete()) {
-			resultSet = new DefaultDataResult(update(action));
-		}
-		return resultSet;
-	}
-
-	protected Object query(Action action) {
-		DataSet dataSet = select(action.getSql(), action.getParams().toArray());
-		Object result = render(dataSet.toRows(), action);
-		return processQuery(result, action);
-	}
-
-	private Object processQuery(Object result, Action action) {
-		if (action.isLimit()) {
-			result = wrapPageResult(result, action);
-		}
-		return result;
-	}
-
-	protected Object render(List<Row> rows, Action action) {
-		JsonArray jsonArrayData = new JsonRenderer(action).render(rows);
-		JsonElement jsonData = jsonArrayData;
-		if (action.isDetail()) {
-			if (jsonArrayData.size() > 0) {
-				jsonData = jsonArrayData.get(0);
-			} else {
-				jsonData = new JsonObject();
-			}
-		}
-		return getNativeObject(jsonData);
-	}
-
-	private Object getNativeObject(JsonElement jsonData) {
-		if (jsonData.isJsonArray()) {
-			Type dataType = new TypeToken<List<Map<String, Object>>>() {}.getType();
-			return new Gson().fromJson(jsonData, dataType);
-		} else if (jsonData.isJsonObject()) {
-			Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
-			return new Gson().fromJson(jsonData, dataType);
+			summary = insert(action);
 		} else {
-			Type dataType = new TypeToken<Object>() {}.getType();
-			return new Gson().fromJson(jsonData, dataType);
+			summary = update(action);
 		}
+		return summary;
 	}
 
-	private Map<String, Object> wrapPageResult(Object result, Action action) {
-		LimitItem limitItem = action.getLimitItem();
-		long start = limitItem.getStart();
-		long end = limitItem.getEnd();
-		long count = count(action);
-		return pageResult(start, end, count, result);
+	protected QuerySummary query(Action action) {
+		QuerySummary querySummary = select(action);
+		// Render
+		JsonArray jsonData = new JsonRenderer(action).render(querySummary.toRows());
+		// Convert json to native type
+		Type dataType = new TypeToken<List<Map<String, Object>>>() {}.getType();
+		List<Map<String, Object>> values = new Gson().fromJson(jsonData, dataType);
+		if (action.isLimit()) {
+			LimitItem limitItem = action.getLimitItem();
+			long start = limitItem.getStart();
+			long end = limitItem.getEnd();
+			long total = querySummary.getTotal();
+			if (total == -1) {
+				total = count(action);
+			}
+			return new PageSummary(action, start, end, total, values);
+		}
+		Object result = values;
+		if (action.isDetail()) {
+			result = values.isEmpty() ? Collections.emptyMap() : values.get(0);
+		}
+		return new FinalSummary(action, result);
 	}
 
 	protected long count(Action action) {
 		Action countAction = action.count();
-		DataSet countDataSet = select(countAction.getSql(), countAction.getParams().toArray());
-		Row row = countDataSet.getRow();
+		QuerySummary countSummary = select(countAction);
+		Row row = countSummary.toRows().get(0);
 		return new Double(row.getValue(0).toString()).longValue();
 	}
 
-	protected Map<String, Object> pageResult(long start, long end, long count, Object result) {
-		Map<String, Object> pageResult = new LinkedHashMap<>();
-		pageResult.put(ResultAttributes.START, start);
-		pageResult.put(ResultAttributes.END, end);
-		pageResult.put(ResultAttributes.TOTAL, count);
-		pageResult.put(ResultAttributes.DATA, result);
-		return pageResult;
-	}
-
 	@Override
-	public DataResult executeSql(String sql, Object... params) {
-		logger.debug("SQL: {}", sql);
-		logger.debug("Params: {}", params);
+	public Summary executeSql(String sql) {
+		logger.debug("Execute SQL: {}", sql);
 
 		sql = sql.trim();
 		if (sql.toUpperCase().startsWith("SELECT")) {
-			return new DefaultDataResult(select(sql, params));
+			return select(sql);
 		} else if (sql.toUpperCase().startsWith("INSERT")) {
-			return new DefaultDataResult(insert(sql, params));
+			return insert(sql);
 		} else if (sql.toUpperCase().startsWith("UPDATE") || sql.toUpperCase().startsWith("DELETE")) {
-			return new DefaultDataResult(update(sql, params));
+			return update(sql);
 		}
 		throw new UnsupportedOperationException();
 	}
 
-	protected DataSet select(Action action) {
-		return select(action.getSql(), action.getParams().toArray());
-	}
+	protected abstract QuerySummary select(Action action);
 
-	protected UpdateSummary insert(Action action) {
-		return insert(action.getSql(), action.getParams().toArray());
-	}
+	protected abstract InsertSummary insert(Action action);
 
-	protected UpdateSummary update(Action action) {
-		return update(action.getSql(), action.getParams().toArray());
-	}
+	protected abstract UpdateSummary update(Action action);
 
-	protected abstract DataSet select(String sql, Object... params);
+	protected abstract QuerySummary select(String sql);
 
-	protected abstract UpdateSummary insert(String sql, Object... params);
+	protected abstract InsertSummary insert(String sql);
 
-	protected abstract UpdateSummary update(String sql, Object... params);
+	protected abstract UpdateSummary update(String sql);
 
 	@Override
 	public List<Schema> getSchemas() {

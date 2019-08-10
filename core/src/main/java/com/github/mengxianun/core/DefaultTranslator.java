@@ -3,7 +3,7 @@ package com.github.mengxianun.core;
 import java.net.URL;
 
 import com.github.mengxianun.core.config.GlobalConfig;
-import com.github.mengxianun.core.resutset.DataResult;
+import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.resutset.DefaultDataResultSet;
 
 public class DefaultTranslator extends AbstractTranslator {
@@ -21,19 +21,9 @@ public class DefaultTranslator extends AbstractTranslator {
 	}
 
 	@Override
-	protected DataResultSet execute(Action action) {
-		Object result = null;
-		DataResult dataResult = App.currentDataContext().execute(action);
-
-		if (dataResult.isQuery()) {
-			result = dataResult.getDataSet();
-		} else if (dataResult.isUpdate()) {
-			result = dataResult.getUpdateSummary().getSummary();
-		} else {
-			result = dataResult.getData();
-		}
-
-		return new DefaultDataResultSet(result);
+	protected DataResultSet execute(DataContext dataContext, Action action) {
+		Summary summary = dataContext.execute(action);
+		return new DefaultDataResultSet(summary.getData());
 	}
 
 }
