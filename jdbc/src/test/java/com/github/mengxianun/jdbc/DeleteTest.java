@@ -19,8 +19,8 @@ public class DeleteTest extends TestSupport {
 	void testDeleteTable() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "delete.json");
 		JsonObject result = (JsonObject) dataResultSet.getJsonData();
-		assertTrue(result.has(ResultAttributes.COUNT.toString().toLowerCase()));
-		int count = result.getAsJsonPrimitive(ResultAttributes.COUNT.toString().toLowerCase()).getAsInt();
+		assertTrue(result.has(ResultAttributes.COUNT.toLowerCase()));
+		int count = result.getAsJsonPrimitive(ResultAttributes.COUNT.toLowerCase()).getAsInt();
 		assertEquals(1, count);
 	}
 
