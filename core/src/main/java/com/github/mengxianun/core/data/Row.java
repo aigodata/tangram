@@ -11,7 +11,7 @@ public interface Row {
 
 	public Object getValue(Column column);
 
-	public Object getValue(String column);
+	public Object getValue(String columnName);
 
 	public Object getValue(int index);
 

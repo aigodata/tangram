@@ -19,7 +19,12 @@ public class DefaultRow extends AbstractRow {
 
 	@Override
 	public Object getValue(Column column) {
-		return values[indexOf(new ColumnItem(column))];
+		return values[indexOf(column)];
+	}
+
+	@Override
+	public Object getValue(String columnName) {
+		return values[indexOf(columnName)];
 	}
 
 	@Override
