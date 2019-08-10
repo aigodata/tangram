@@ -265,6 +265,11 @@ public class Action {
 		sqlBuilder.toSql();
 	}
 
+	public void reBuild() {
+		sqlBuilder.clear();
+		sqlBuilder.toSql();
+	}
+
 	public String getSql() {
 		return sqlBuilder.getSql();
 	}
