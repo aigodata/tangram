@@ -37,4 +37,14 @@ public class TransactionTest extends TestSupport {
 		assertThrows(DataException.class, () -> run(JSON_PARENT_PATH + "transaction34.json"));
 	}
 
+	@Test
+	void testTransactionPlaceholder() {
+		run(JSON_PARENT_PATH + "transaction_placeholder.json");
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty("detail", "transaction_placeholder_b");
+		DataResultSet dataResultSet = runJson(jsonObject.toString());
+		JsonObject result = (JsonObject) dataResultSet.getJsonData();
+		assertEquals(1, result.get("A_ID").getAsLong());
+	}
+
 }

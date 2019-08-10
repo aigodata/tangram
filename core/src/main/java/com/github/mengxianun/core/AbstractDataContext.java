@@ -13,23 +13,24 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.config.AssociationType;
+import com.github.mengxianun.core.config.ResultAttributes;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.data.summary.BasicSummary;
-import com.github.mengxianun.core.data.summary.FinalSummary;
 import com.github.mengxianun.core.data.summary.InsertSummary;
 import com.github.mengxianun.core.data.summary.MultiSummary;
-import com.github.mengxianun.core.data.summary.PageSummary;
 import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.github.mengxianun.core.data.summary.UpdateSummary;
-import com.github.mengxianun.core.item.FilterItem;
-import com.github.mengxianun.core.item.LimitItem;
+import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.item.TableItem;
+import com.github.mengxianun.core.item.ValuesItem;
 import com.github.mengxianun.core.render.JsonRenderer;
 import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.schema.Column;
@@ -98,6 +99,10 @@ public abstract class AbstractDataContext implements DataContext {
 			@Override
 			public void run() {
 				for (Action action : actions) {
+					boolean parsed = parsePlaceholder(action, summaries);
+					if (parsed) {
+						action.reBuild();
+					}
 					summaries.add(executeCRUD(action));
 				}
 
@@ -108,36 +113,67 @@ public abstract class AbstractDataContext implements DataContext {
 
 	protected abstract void trans(Atom... atoms);
 
-	private void parsePlaceholder(Action action, Summary summary) {
-		if (action.isQuery()) {
-			List<FilterItem> filterItems = action.getFilterItems();
-			for (FilterItem filterItem : filterItems) {
-				Object value = filterItem.getValue();
-				if (!(value instanceof String) || value.toString().equals("")) {
-					continue;
-				}
-				String valueString = value.toString();
-				// $n.column
-				String patternString = "^[$]\\d+\\..+";
-				Pattern pattern = Pattern.compile(patternString);
-				Matcher matcher = pattern.matcher(valueString);
-				if (matcher.matches()) {
+	private boolean parsePlaceholder(Action action, List<Summary> summaries) {
+		boolean parsed = false;
+		List<? extends ValuesItem> valuesItems = Stream.of(action.getFilterItems(), action.getValueItems())
+				.flatMap(List::stream).collect(Collectors.toList());
+		for (ValuesItem valuesItem : valuesItems) {
+			Object value = valuesItem.getValue();
+			if (!(value instanceof String) || value.toString().equals("")) {
+				continue;
+			}
+			String valueString = value.toString();
+			// $n.column
+			String patternString = "^[$]\\d+\\..+";
+			Pattern pattern = Pattern.compile(patternString);
+			Matcher matcher = pattern.matcher(valueString);
+			if (matcher.matches()) {
+				parsed = true;
+				String[] numAndColumn = matcher.group().split("\\.");
+				int num = Integer.parseInt(numAndColumn[0].substring(1)) - 1;
+				String columnName = numAndColumn[1];
+				Summary preSummary = summaries.get(num);
 
-					String[] numAndColumn = matcher.group().split("\\.");
-					int num = Integer.parseInt(numAndColumn[0].substring(1));
-					String column = numAndColumn[1];
-
-					//					DataResult dataResult = multiResults.get(num);
-					//					if (dataResult.getDataSet() != null) {
-					//						dataResult.getDataSet().getRow().getValue(column);
-					//					} else if (dataResult.getUpdateSummary() != null) {
-					//						dataResult
-					//					}
-
-				}
-
+				Object parseValue = parsePlaceholder(preSummary, columnName);
+				valuesItem.setValue(parseValue);
 			}
 		}
+		return parsed;
+	}
+
+	private Object parsePlaceholder(Summary summary, String columnName) {
+		boolean parsed = false;
+		Object parseValue = null;
+		if (summary instanceof QuerySummary) {
+			QuerySummary querySummary = (QuerySummary) summary;
+			List<Map<String, Object>> values = querySummary.getValues();
+			// 暂时只获取第一条
+			Map<String, Object> rowData = values.get(0);
+			if (rowData.containsKey(columnName)) {
+				parsed = true;
+				parseValue = rowData.get(columnName);
+			}
+
+		} else if (summary instanceof InsertSummary) {
+			InsertSummary insertSummary = (InsertSummary) summary;
+			List<Map<String, Object>> values = insertSummary.getValues();
+			// 暂时只获取第一条
+			Map<String, Object> rowData = values.get(0);
+			if (rowData.containsKey(columnName)) {
+				parsed = true;
+				parseValue = rowData.get(columnName);
+			}
+		} else if (summary instanceof UpdateSummary) {
+			UpdateSummary updateSummary = (UpdateSummary) summary;
+			if (ResultAttributes.COUNT.equals(columnName)) {
+				parsed = true;
+				parseValue = updateSummary.getUpdateCount();
+			}
+		}
+		if (!parsed) {
+			throw new DataException("Placeholder [%s] parse failed", columnName);
+		}
+		return parseValue;
 	}
 
 	private Summary executeStruct(Action action) {
@@ -187,21 +223,12 @@ public abstract class AbstractDataContext implements DataContext {
 		// Convert json to native type
 		Type dataType = new TypeToken<List<Map<String, Object>>>() {}.getType();
 		List<Map<String, Object>> values = new Gson().fromJson(jsonData, dataType);
-		if (action.isLimit()) {
-			LimitItem limitItem = action.getLimitItem();
-			long start = limitItem.getStart();
-			long end = limitItem.getEnd();
-			long total = querySummary.getTotal();
-			if (total == -1) {
-				total = count(action);
-			}
-			return new PageSummary(action, start, end, total, values);
+		querySummary.setValues(values);
+		if (action.isLimit() && querySummary.getTotal() == -1) {
+			long total = count(action);
+			querySummary.setTotal(total);
 		}
-		Object result = values;
-		if (action.isDetail()) {
-			result = values.isEmpty() ? Collections.emptyMap() : values.get(0);
-		}
-		return new FinalSummary(action, result);
+		return querySummary;
 	}
 
 	protected long count(Action action) {
@@ -400,7 +427,7 @@ public abstract class AbstractDataContext implements DataContext {
 			} else if (associationType == AssociationType.MANY_TO_ONE
 					&& (lastAssociationType == AssociationType.ONE_TO_MANY
 							|| lastAssociationType == AssociationType.MANY_TO_MANY)) {
-					associationType = AssociationType.MANY_TO_MANY;
+				associationType = AssociationType.MANY_TO_MANY;
 			}
 		}
 		return associationType;

@@ -1,0 +1,17 @@
+{
+  "transaction":[
+    {
+      "insert":"transaction_placeholder_a",
+      "values":{
+        "name":"t1"
+      }
+    },
+    {
+      "insert":"transaction_placeholder_b",
+      "values":{
+        "name":"t2",
+        "a_id":"$1.id"
+      }
+    }
+  ]
+}
