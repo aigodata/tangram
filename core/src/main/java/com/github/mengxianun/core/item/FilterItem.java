@@ -6,13 +6,11 @@ import java.util.List;
 import com.github.mengxianun.core.request.Connector;
 import com.github.mengxianun.core.request.Operator;
 
-public class FilterItem extends Item {
+public class FilterItem extends ValuesItem {
 
 	private static final long serialVersionUID = 1L;
 	// 条件列
 	private ColumnItem columnItem;
-	// 条件值
-	private Object value;
 	// 连接符, AND/OR
 	private Connector connector;
 	// 运算符
@@ -21,6 +19,7 @@ public class FilterItem extends Item {
 	private List<FilterItem> subFilterItems;
 
 	public FilterItem() {
+		super(null);
 		this.connector = Connector.AND;
 		this.subFilterItems = new ArrayList<>();
 	}
@@ -43,14 +42,6 @@ public class FilterItem extends Item {
 
 	public void setColumnItem(ColumnItem columnItem) {
 		this.columnItem = columnItem;
-	}
-
-	public Object getValue() {
-		return value;
-	}
-
-	public void setValue(Object value) {
-		this.value = value;
 	}
 
 	public Connector getConnector() {
