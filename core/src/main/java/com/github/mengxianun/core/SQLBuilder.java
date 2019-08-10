@@ -681,6 +681,23 @@ public class SQLBuilder {
 		return whereParams;
 	}
 
+	public void clear() {
+		sql = null;
+		params.clear();;
+		whereParams.clear();
+		joinLimit = false;
+		joinLimitFilterItems.clear();;
+
+		columnString = "";
+		tableString = "";
+		joinString = "";
+		whereString = "";
+		groupString = "";
+		orderString = "";
+		limitString = "";
+		valueString = "";
+	}
+
 	public String getSql() {
 		return sql;
 	}
