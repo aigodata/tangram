@@ -16,6 +16,10 @@ public class InsertSummary extends AbstractSummary {
 		this.values = values;
 	}
 
+	public List<Map<String, Object>> getValues() {
+		return values;
+	}
+
 	@Override
 	public Object getData() {
 		if (values.isEmpty()) {

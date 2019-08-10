@@ -14,6 +14,10 @@ public class UpdateSummary extends AbstractSummary {
 		this.updateCount = updateCount;
 	}
 
+	public int getUpdateCount() {
+		return updateCount;
+	}
+
 	@Override
 	public Object getData() {
 		return ImmutableMap.of(ResultAttributes.COUNT, updateCount);
