@@ -5,7 +5,7 @@ import com.github.mengxianun.core.Action;
 public abstract class AbstractSummary implements Summary {
 
 	protected final Action action;
-	protected final Object data;
+	protected Object data;
 
 	public AbstractSummary(Action action, Object data) {
 		this.action = action;
