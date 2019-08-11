@@ -1,0 +1,10 @@
+{
+  "native":{
+    "endpoint":"/test/_search",
+    "body":{
+      "query" : {
+          "term" : { "id" : 1 }
+      }
+    }
+  }
+}
