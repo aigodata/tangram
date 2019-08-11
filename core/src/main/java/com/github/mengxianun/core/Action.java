@@ -31,6 +31,7 @@ public class Action {
 	private List<ValueItem> valueItems;
 	private ResultType resultType;
 	private Template template;
+	private String nativeSQL;
 	private String nativeContent;
 	private SQLBuilder sqlBuilder;
 	private boolean distinct;
@@ -85,8 +86,8 @@ public class Action {
 			return;
 		}
 		for (ColumnItem existColumnItem : columnItems) {
-			if (existColumnItem.getColumn() == columnItem.getColumn() && (existColumnItem.getAlias() != null
-					&& existColumnItem.getAlias().equals(columnItem.getAlias()))
+			if (existColumnItem.getColumn() == columnItem.getColumn()
+					&& (existColumnItem.getAlias() != null && existColumnItem.getAlias().equals(columnItem.getAlias()))
 					&& (existColumnItem.getExpression() != null
 							&& existColumnItem.getExpression().equals(columnItem.getExpression()))) {
 				return;
@@ -217,6 +218,10 @@ public class Action {
 
 	public boolean isStructs() {
 		return operation != null && operation == Operation.STRUCTS;
+	}
+
+	public boolean isSQL() {
+		return operation != null && operation == Operation.SQL;
 	}
 
 	public boolean isNative() {
@@ -380,6 +385,14 @@ public class Action {
 
 	public void setTemplate(Template template) {
 		this.template = template;
+	}
+
+	public String getNativeSQL() {
+		return nativeSQL;
+	}
+
+	public void setNativeSQL(String nativeSQL) {
+		this.nativeSQL = nativeSQL;
 	}
 
 	public String getNativeContent() {

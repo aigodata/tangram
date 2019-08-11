@@ -145,10 +145,15 @@ public class JsonParser {
 		// -------------
 		action.setDataContext(App.currentDataContext());
 
-		if (isTransaction()) {
+		if (isTransaction() || isStructs()) {
 			return action;
 		}
-		if (isStructs()) {
+		if (isSQL()) {
+			parseSQL();
+			return action;
+		}
+		if (isNative()) {
+			parseNative();
 			return action;
 		}
 		parseTables();
@@ -167,9 +172,6 @@ public class JsonParser {
 			break;
 		case DELETE:
 			parseDelete();
-			break;
-		case NATIVE:
-			parseNative();
 			break;
 
 		default:
@@ -1114,11 +1116,19 @@ public class JsonParser {
 		return createColumnItem(columnString);
 	}
 
+	public void parseSQL() {
+		if (!validAttribute(RequestKeyword.SQL.lowerName())) {
+			return;
+		}
+		String sql = jsonData.get(RequestKeyword.SQL.lowerName()).getAsString();
+		action.setNativeSQL(sql);
+	}
+
 	public void parseNative() {
 		if (!validAttribute(RequestKeyword.NATIVE.lowerName())) {
 			return;
 		}
-		String nativeContent = jsonData.get(RequestKeyword.NATIVE.lowerName()).getAsString();
+		String nativeContent = jsonData.get(RequestKeyword.NATIVE.lowerName()).toString();
 		action.setNativeContent(nativeContent);
 	}
 
@@ -1186,6 +1196,10 @@ public class JsonParser {
 
 	public boolean isStructs() {
 		return operation != null && (operation == Operation.STRUCTS);
+	}
+
+	public boolean isSQL() {
+		return operation != null && operation == Operation.SQL;
 	}
 
 	public boolean isNative() {

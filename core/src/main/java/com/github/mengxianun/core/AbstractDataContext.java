@@ -78,11 +78,10 @@ public abstract class AbstractDataContext implements DataContext {
 			summary = executeStructs(action);
 		} else if (action.isTransaction()) {
 			summary = executeTransaction(action);
+		} else if (action.isSQL()) {
+			return executeSql(action.getNativeSQL());
 		} else if (action.isNative()) {
-			Operation operation = action.getOperation();
-			String resource = action.getTableItems().get(0).getExpression();
-			String nativeContent = action.getNativeContent();
-			summary = executeNative(operation, resource, nativeContent);
+			summary = executeNative(action.getNativeContent());
 		} else if (action.isCRUD()) {
 			summary = executeCRUD(action);
 		} else {

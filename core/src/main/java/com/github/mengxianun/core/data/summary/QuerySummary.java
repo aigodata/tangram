@@ -20,15 +20,18 @@ public abstract class QuerySummary extends AbstractSummary {
 	private int index;
 
 	protected long total;
-	private List<Map<String, Object>> values;
+	protected List<Map<String, Object>> values;
 
-	public QuerySummary(Action action, Object data) {
-		this(action, data, -1);
+	public QuerySummary(Action action, List<Map<String, Object>> values) {
+		this(action, values, -1);
 	}
 
-	public QuerySummary(Action action, Object data, long total) {
-		super(action, data);
-		this.header = new DefaultDataSetHeader(action.getColumnItems());
+	public QuerySummary(Action action, List<Map<String, Object>> values, long total) {
+		super(action, values);
+		if (action != null) {
+			this.header = new DefaultDataSetHeader(action.getColumnItems());
+		}
+		this.values = values;
 		this.total = total;
 	}
 
@@ -54,6 +57,9 @@ public abstract class QuerySummary extends AbstractSummary {
 	}
 
 	public List<Map<String, Object>> getValues() {
+		if (values == null) {
+			values = toValues();
+		}
 		return values;
 	}
 
@@ -61,9 +67,14 @@ public abstract class QuerySummary extends AbstractSummary {
 		this.values = values;
 	}
 
+	public abstract List<Map<String, Object>> toValues();
+
 	@Override
 	public Object getData() {
-		Object data = values;
+		Object data = getValues();
+		if (action == null) {
+			return values;
+		}
 		if (action.isDetail()) {
 			data = values.isEmpty() ? Collections.emptyMap() : values.get(0);
 		}

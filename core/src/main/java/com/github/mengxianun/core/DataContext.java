@@ -6,7 +6,6 @@ import java.util.Set;
 import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.data.summary.MultiSummary;
-import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
@@ -20,7 +19,7 @@ public interface DataContext {
 
 	public Summary executeSql(String sql);
 
-	public Summary executeNative(Operation operation, String resource, String statement);
+	public Summary executeNative(String statement);
 
 	public List<Schema> getSchemas();
 

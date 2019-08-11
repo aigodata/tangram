@@ -24,12 +24,12 @@ import com.github.mengxianun.core.ResultStatus;
 import com.github.mengxianun.core.SQLBuilder;
 import com.github.mengxianun.core.SQLParser;
 import com.github.mengxianun.core.data.Summary;
+import com.github.mengxianun.core.data.summary.BasicSummary;
 import com.github.mengxianun.core.data.summary.InsertSummary;
 import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.TableItem;
-import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
@@ -253,12 +253,12 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	public Summary executeNative(Operation operation, String resource, String statement) {
-		if (operation != Operation.SELECT) {
-			throw new UnsupportedOperationException();
-		}
-		String resultString = request(REQUEST_METHOD_GET, resource, statement);
-		return new ElasticsearchQuerySummary(resultString);
+	public Summary executeNative(String statement) {
+		JsonObject nativeObject = new Gson().fromJson(statement, JsonObject.class);
+		String endpoint = nativeObject.get("endpoint").getAsString();
+		JsonObject bodyObject = nativeObject.getAsJsonObject("body");
+		String resultString = request(REQUEST_METHOD_GET, endpoint, bodyObject.toString());
+		return new BasicSummary(new Gson().fromJson(resultString, JsonObject.class));
 	}
 
 	private String request(String method, String endpoint) {
