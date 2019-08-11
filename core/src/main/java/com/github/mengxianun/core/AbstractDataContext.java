@@ -183,7 +183,7 @@ public abstract class AbstractDataContext implements DataContext {
 	}
 
 	private Summary executeStructs(Action action) {
-		Schema schema = App.currentDataContext().getDefaultSchema();
+		Schema schema = action.getDataContext().getDefaultSchema();
 		return new BasicSummary(schema.getInfo());
 	}
 

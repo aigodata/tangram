@@ -67,11 +67,11 @@ public class JsonParser {
 	// 保留
 	//	private Map<Column, ColumnItem> tempColumnItems = new LinkedHashMap<>();
 
-	public JsonParser(String json) {
+	public JsonParser(final String json) {
 		this(new com.google.gson.JsonParser().parse(json).getAsJsonObject());
 	}
 
-	public JsonParser(JsonObject jsonData) {
+	public JsonParser(final JsonObject jsonData) {
 		this.jsonData = jsonData;
 		action.setRequestData(jsonData);
 		parseOperation();
