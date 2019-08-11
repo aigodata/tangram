@@ -18,6 +18,8 @@ public interface Column extends Name {
 
 	public Column getRelationColumn();
 
+	public JsonObject getInfo();
+
 	public JsonObject getConfig();
 
 	default void setConfig(JsonObject config) {

@@ -1,6 +1,7 @@
 package com.github.mengxianun.core.schema;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -110,7 +111,7 @@ public class DefaultTable implements Table {
 
 	@Override
 	public List<Column> getPrimaryKeys() {
-		return null;
+		return Collections.emptyList();
 	}
 
 	@Override
@@ -125,17 +126,10 @@ public class DefaultTable implements Table {
 		}
 		info = new JsonObject();
 		info.addProperty("name", name);
+		info.addProperty("type", type.name());
 		info.addProperty("remarks", remarks);
 		JsonArray columnsInfo = new JsonArray();
-		for (Column column : columns) {
-			String columnName = column.getName();
-			String columnType = column.getType().getName();
-
-			JsonObject columnInfo = new JsonObject();
-			columnInfo.addProperty("name", columnName);
-			columnInfo.addProperty("type", columnType);
-			columnsInfo.add(columnInfo);
-		}
+		columns.forEach(e -> columnsInfo.add(e.getInfo()));
 		info.add("columns", columnsInfo);
 		return info;
 	}
