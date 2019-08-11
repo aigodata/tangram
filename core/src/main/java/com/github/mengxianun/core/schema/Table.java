@@ -26,7 +26,6 @@ public interface Table extends Name {
 
 	public JsonObject getConfig();
 
-	default void setConfig(JsonObject config) {
-	}
+	default void setConfig(JsonObject config) {}
 
 }
