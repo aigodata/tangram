@@ -32,7 +32,6 @@ import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.exception.JsonDataException;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Table;
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.io.Resources;
@@ -198,7 +197,7 @@ public abstract class AbstractTranslator implements Translator {
 		String fileName = path.getFileName().toString();
 		String tableName = fileName.substring(0, fileName.lastIndexOf("."));
 		try {
-			String content = Resources.toString(path.toUri().toURL(), Charsets.UTF_8);
+			String content = Resources.toString(path.toUri().toURL(), StandardCharsets.UTF_8);
 			JsonElement jsonElement = new JsonParser().parse(content);
 			JsonObject tableConfig = jsonElement.getAsJsonObject();
 			Table table = dataContext.getTable(tableName);
