@@ -94,7 +94,8 @@ public class DefaultSchema implements Schema {
 			return info;
 		}
 		info = new JsonObject();
-		info.addProperty("name", name);
+		info.addProperty("catalog", catalog);
+		info.addProperty("schema", name);
 		JsonArray tablesInfo = new JsonArray();
 		tables.stream().forEach(e -> tablesInfo.add(e.getInfo()));
 		info.add("tables", tablesInfo);
