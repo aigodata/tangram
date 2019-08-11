@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.ArrayListHandler;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.slf4j.Logger;
@@ -29,13 +30,13 @@ import com.github.mengxianun.core.data.summary.InsertSummary;
 import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.dialect.DefaultDialect;
-import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.TableType;
+import com.github.mengxianun.jdbc.data.JdbcMapQuerySummary;
 import com.github.mengxianun.jdbc.data.JdbcQuerySummary;
 import com.github.mengxianun.jdbc.dialect.H2Dialect;
 import com.github.mengxianun.jdbc.dialect.JdbcDialect;
@@ -327,7 +328,7 @@ public class JdbcDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	public Summary executeNative(Operation operation, String resource, String statement) {
+	public Summary executeNative(String statement) {
 		return executeSql(statement);
 	}
 
@@ -348,7 +349,7 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	protected QuerySummary select(String sql) {
-		return new JdbcQuerySummary(null, select(sql, new Object[0]));
+		return new JdbcMapQuerySummary(null, select(sql, new MapListHandler(), new Object[0]));
 	}
 
 	@Override
@@ -362,8 +363,12 @@ public class JdbcDataContext extends AbstractDataContext {
 	}
 
 	protected List<Object[]> select(String sql, Object... params) {
+		return select(sql, new ArrayListHandler(), params);
+	}
+
+	protected <T> T select(String sql, ResultSetHandler<T> rsh, Object... params) {
 		try {
-			return runner.query(sql, new ArrayListHandler(), params);
+			return runner.query(sql, rsh, params);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
