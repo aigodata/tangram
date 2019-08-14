@@ -306,6 +306,14 @@ public class JdbcDataContext extends AbstractDataContext {
 		}
 	}
 
+	public boolean isCloseConnection() {
+		Boolean close = closeConnection.get();
+		if (close == null) {
+			return true;
+		}
+		return close;
+	}
+
 	/**
 	 * 指定一组事务操作
 	 * 
@@ -416,7 +424,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			logger.error(ResultStatus.DATASOURCE_SQL_FAILED.message(), realReasion);
 			throw new JdbcDataException(ResultStatus.DATASOURCE_SQL_FAILED, realReasion.getMessage());
 		} finally {
-			if (closeConnection.get()) {
+			if (isCloseConnection()) {
 				try {
 					close();
 				} catch (SQLException e) {
@@ -438,7 +446,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			logger.error(ResultStatus.DATASOURCE_SQL_FAILED.message(), realReasion);
 			throw new JdbcDataException(ResultStatus.DATASOURCE_SQL_FAILED, realReasion.getMessage());
 		} finally {
-			if (closeConnection.get()) {
+			if (isCloseConnection()) {
 				try {
 					close();
 				} catch (SQLException e) {
