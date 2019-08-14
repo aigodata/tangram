@@ -1,7 +1,6 @@
 package com.github.mengxianun.core.schema;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,6 +14,7 @@ public class DefaultTable implements Table {
 	private Schema schema;
 	private String remarks;
 	private List<Column> columns;
+	private List<Column> primaryKeys;
 
 	private JsonObject info;
 	// 自定义配置i信息
@@ -22,6 +22,7 @@ public class DefaultTable implements Table {
 
 	public DefaultTable() {
 		this.columns = new ArrayList<>();
+		this.primaryKeys = new ArrayList<>();
 	}
 
 	public DefaultTable(String name) {
@@ -111,7 +112,7 @@ public class DefaultTable implements Table {
 
 	@Override
 	public List<Column> getPrimaryKeys() {
-		return Collections.emptyList();
+		return primaryKeys;
 	}
 
 	@Override
@@ -147,6 +148,14 @@ public class DefaultTable implements Table {
 		columns.remove(column);
 	}
 
+	public void addPrimaryKey(Column column) {
+		primaryKeys.add(column);
+	}
+
+	public void addPrimaryKey(String columnName) {
+		primaryKeys.add(getColumnByName(columnName));
+	}
+
 	public void setName(String name) {
 		this.name = name;
 	}
@@ -165,6 +174,10 @@ public class DefaultTable implements Table {
 
 	public void setColumns(List<Column> columns) {
 		this.columns = columns;
+	}
+
+	public void setPrimaryKeys(List<Column> primaryKeys) {
+		this.primaryKeys = primaryKeys;
 	}
 
 	public void setConfig(JsonObject config) {

@@ -30,11 +30,13 @@ import com.github.mengxianun.core.data.summary.InsertSummary;
 import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.dialect.DefaultDialect;
+import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Schema;
+import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableType;
 import com.github.mengxianun.jdbc.data.JdbcMapQuerySummary;
 import com.github.mengxianun.jdbc.data.JdbcQuerySummary;
@@ -190,6 +192,15 @@ public class JdbcDataContext extends AbstractDataContext {
 			table.addColumn(
 					new DefaultColumn(table, columnType, columnName, columnNullable, columnRemarks, columnSize));
 		}
+
+		// primary key
+		for (Table table : schema.getTables()) {
+			ResultSet primaryKeysResultSet = databaseMetaData.getPrimaryKeys(catalog, schemaPattern, table.getName());
+			while (primaryKeysResultSet.next()) {
+				String columnName = primaryKeysResultSet.getString(4);
+				((DefaultTable) table).addPrimaryKey(columnName);
+			}
+		}
 	}
 
 	public Dialect createDialect(String databaseProductName) {
@@ -312,11 +323,12 @@ public class JdbcDataContext extends AbstractDataContext {
 				atom.run();
 			}
 			commit();
-		} catch (SQLException e) {
+		} catch (SQLException ex) {
+			logger.error("Transaction failed.", ex);
 			try {
 				rollback();
-			} catch (SQLException e1) {
-				throw new JdbcDataException("Transaction rollback failed.");
+			} catch (SQLException e) {
+				throw new JdbcDataException("Transaction rollback failed.", e);
 			}
 		} finally {
 			try {
@@ -339,7 +351,19 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	protected InsertSummary insert(Action action) {
-		return new InsertSummary(action, insert(action.getSql(), action.getParams().toArray()));
+		List<Map<String, Object>> insertData = insert(action.getSql(), action.getParams().toArray());
+		if (DATABASE_PRODUCT_MYSQL.equals(databaseProductName)) {
+			List<Column> primaryKeys = action.getPrimaryTable().getPrimaryKeys();
+			if (!primaryKeys.isEmpty()) {
+				Column primaryKey = primaryKeys.get(0);
+				for (Map<String, Object> map : insertData) {
+					if (map.containsKey("GENERATED_KEY")) {
+						map.put(primaryKey.getName(), map.remove("GENERATED_KEY"));
+					}
+				}
+			}
+		}
+		return new InsertSummary(action, insertData);
 	}
 
 	@Override
@@ -382,7 +406,7 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	protected List<Map<String, Object>> insert(String sql, Object... params) {
 		try {
-			return runner.insert(sql, new MapListHandler(), params);
+			return runner.insert(getConnection(), sql, new MapListHandler(), params);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
@@ -391,12 +415,20 @@ public class JdbcDataContext extends AbstractDataContext {
 			}
 			logger.error(ResultStatus.DATASOURCE_SQL_FAILED.message(), realReasion);
 			throw new JdbcDataException(ResultStatus.DATASOURCE_SQL_FAILED, realReasion.getMessage());
+		} finally {
+			if (closeConnection.get()) {
+				try {
+					close();
+				} catch (SQLException e) {
+					logger.error("Connection close failed.", e);
+				}
+			}
 		}
 	}
 
 	protected int update(String sql, Object... params) {
 		try {
-			return runner.update(sql, params);
+			return runner.update(getConnection(), sql, params);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
@@ -405,6 +437,14 @@ public class JdbcDataContext extends AbstractDataContext {
 			}
 			logger.error(ResultStatus.DATASOURCE_SQL_FAILED.message(), realReasion);
 			throw new JdbcDataException(ResultStatus.DATASOURCE_SQL_FAILED, realReasion.getMessage());
+		} finally {
+			if (closeConnection.get()) {
+				try {
+					close();
+				} catch (SQLException e) {
+					logger.error("Connection close failed.", e);
+				}
+			}
 		}
 	}
 
