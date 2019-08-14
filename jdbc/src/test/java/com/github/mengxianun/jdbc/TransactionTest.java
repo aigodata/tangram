@@ -35,6 +35,11 @@ public class TransactionTest extends TestSupport {
 	@Test
 	void testTransaction34() {
 		assertThrows(DataException.class, () -> run(JSON_PARENT_PATH + "transaction34.json"));
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty("detail", "transaction_table_3");
+		DataResultSet dataResultSet = runJson(jsonObject.toString());
+		JsonObject result = (JsonObject) dataResultSet.getJsonData();
+		assertEquals("table3_name", result.get("NAME").getAsString());
 	}
 
 	@Test
