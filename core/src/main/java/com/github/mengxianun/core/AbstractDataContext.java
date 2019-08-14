@@ -309,9 +309,7 @@ public abstract class AbstractDataContext implements DataContext {
 	}
 
 	@Override
-	public void destroy() {
-		// TODO
-	}
+	public void destroy() {}
 
 	@Override
 	public void addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType) {
@@ -337,6 +335,9 @@ public abstract class AbstractDataContext implements DataContext {
 		if (!relationships.contains(relationship)) {
 			relationships.add(relationship);
 		}
+
+		// Refresh the cache
+		relationshipsCache.refresh(new RelationshipKey(primaryTable, foreignTable));
 	}
 
 	@Override

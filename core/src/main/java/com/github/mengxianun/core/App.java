@@ -284,7 +284,20 @@ public final class App {
 
 		public static void addRelationship(Column primaryColumn, Column foreignColumn,
 				AssociationType associationType) {
-			currentDataContext().addRelationship(primaryColumn, foreignColumn, associationType);
+			addRelationship(currentDataContext(), primaryColumn, foreignColumn, associationType);
+		}
+
+		public static void addRelationship(DataContext dataContext, Column primaryColumn, Column foreignColumn,
+				AssociationType associationType) {
+			dataContext.addRelationship(primaryColumn, foreignColumn, associationType);
+		}
+
+		public static void addRelationship(String dataSourceName, String primaryTableName, String primaryColumnName,
+				String foreignTableName, String foreignColumnName, AssociationType associationType) {
+			DataContext dataContext = getDataContext(dataSourceName);
+			Column primaryColumn = dataContext.getColumn(primaryTableName, primaryColumnName);
+			Column foreignColumn = dataContext.getColumn(foreignTableName, foreignColumnName);
+			addRelationship(dataContext, primaryColumn, foreignColumn, associationType);
 		}
 
 		public static Set<Relationship> getRelationships(Table primaryTable, Table foreignTable) {
