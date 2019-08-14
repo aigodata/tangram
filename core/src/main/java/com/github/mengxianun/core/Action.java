@@ -252,6 +252,14 @@ public class Action {
 		return App.Context.columnAliasEnabled();
 	}
 
+	public TableItem getPrimaryTableItem() {
+		return tableItems.get(0);
+	}
+
+	public Table getPrimaryTable() {
+		return getPrimaryTableItem().getTable();
+	}
+
 	public Action count() {
 		Action count = new Action(dataContext, Operation.DETAIL);
 		count.build();
