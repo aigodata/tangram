@@ -18,6 +18,7 @@ import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.config.ColumnConfig;
 import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.config.TableConfig;
+import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
@@ -69,12 +70,29 @@ public final class App {
 		logger.info("Add new {} [{}]", dataContext.getClass().getSimpleName(), name);
 	}
 
+	public static void deleteDataContext(String name) {
+		if (!hasDataContext(name)) {
+			throw new DataException("Data source [%s] does not exist", name);
+		}
+		DataContext dataContext = getDataContext(name);
+		dataContext.destroy();
+		dataContexts.remove(name);
+		logger.info("Remove {} [{}]", dataContext.getClass().getSimpleName(), name);
+	}
+
 	public static DataContext getDefaultDataContext() {
 		return dataContexts.get(getDefaultDataSource());
 	}
 
 	public static String getDefaultDataSource() {
 		return Config.getString(GlobalConfig.DEFAULT_DATASOURCE);
+	}
+
+	public static void setDefaultDataSource(String name) {
+		if (hasDataContext(name)) {
+			Config.set(GlobalConfig.DEFAULT_DATASOURCE, name);
+		}
+		throw new DataException("Data source [%s] does not exist", name);
 	}
 
 	public static void initDefaultDataSource() {
