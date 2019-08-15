@@ -468,6 +468,10 @@ public class JdbcDataContext extends AbstractDataContext {
 		return new JdbcSQLBuilder(action);
 	}
 
+	public DataSource getDataSource() {
+		return dataSource;
+	}
+
 	public TableType[] getTableTypes() {
 		return tableTypes;
 	}
