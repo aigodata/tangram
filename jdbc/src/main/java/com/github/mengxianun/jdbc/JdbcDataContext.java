@@ -25,6 +25,7 @@ import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.Atom;
 import com.github.mengxianun.core.Dialect;
 import com.github.mengxianun.core.ResultStatus;
+import com.github.mengxianun.core.SQLBuilder;
 import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.data.summary.InsertSummary;
 import com.github.mengxianun.core.data.summary.QuerySummary;
@@ -40,6 +41,7 @@ import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableType;
 import com.github.mengxianun.jdbc.data.JdbcMapQuerySummary;
 import com.github.mengxianun.jdbc.data.JdbcQuerySummary;
+import com.github.mengxianun.jdbc.dbutils.processor.JdbcRowProcessor;
 import com.github.mengxianun.jdbc.dialect.H2Dialect;
 import com.github.mengxianun.jdbc.dialect.JdbcDialect;
 import com.github.mengxianun.jdbc.dialect.MySQLDialect;
@@ -381,7 +383,7 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	protected QuerySummary select(String sql) {
-		return new JdbcMapQuerySummary(null, select(sql, new MapListHandler(), new Object[0]));
+		return new JdbcMapQuerySummary(null, select(sql, new MapListHandler(new JdbcRowProcessor()), new Object[0]));
 	}
 
 	@Override
@@ -395,7 +397,7 @@ public class JdbcDataContext extends AbstractDataContext {
 	}
 
 	protected List<Object[]> select(String sql, Object... params) {
-		return select(sql, new ArrayListHandler(), params);
+		return select(sql, new ArrayListHandler(new JdbcRowProcessor()), params);
 	}
 
 	protected <T> T select(String sql, ResultSetHandler<T> rsh, Object... params) {
@@ -414,7 +416,7 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	protected List<Map<String, Object>> insert(String sql, Object... params) {
 		try {
-			return runner.insert(getConnection(), sql, new MapListHandler(), params);
+			return runner.insert(getConnection(), sql, new MapListHandler(new JdbcRowProcessor()), params);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
@@ -459,6 +461,11 @@ public class JdbcDataContext extends AbstractDataContext {
 	@Override
 	public Schema getDefaultSchema() {
 		return getSchema(defaultSchema);
+	}
+
+	@Override
+	public SQLBuilder getSQLBuilder(Action action) {
+		return new JdbcSQLBuilder(action);
 	}
 
 	public TableType[] getTableTypes() {

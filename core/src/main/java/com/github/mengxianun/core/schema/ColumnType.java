@@ -31,4 +31,16 @@ public interface ColumnType {
 
 	public boolean isJson();
 
+	public boolean isArray();
+
+	public boolean isLiteralArray();
+
+	public boolean isBooleanArray();
+
+	public boolean isNumberArray();
+
+	public boolean isIntArray();
+
+	public boolean isDoubleArray();
+
 }

@@ -33,6 +33,7 @@ import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Strings;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -917,11 +918,13 @@ public class JsonParser {
 				Column column = findColumn(columnName);
 				if (column != null) {
 					JsonElement valueElement = values.get(columnName);
-					String value = null;
+					Object value = null;
 					if (valueElement.isJsonNull()) {
 						//
 					} else if (valueElement.isJsonPrimitive()) {
 						value = valueElement.getAsString();
+					} else if (valueElement.isJsonArray()) {
+						value = new Gson().fromJson(valueElement.toString(), Object[].class);
 					} else {
 						value = valueElement.toString();
 					}

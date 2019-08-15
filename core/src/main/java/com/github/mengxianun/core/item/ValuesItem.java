@@ -70,9 +70,15 @@ public class ValuesItem extends Item {
 	private Object getRealValue(ColumnType columnType, Object value) {
 		if (columnType.isLiteral()) {
 			return String.valueOf(value);
-		} else if (columnType.isNumber()) {
+		} else if (columnType.isNumber() || columnType.isNumberArray()) {
 			try {
-				return NumberFormat.getInstance().parse(value.toString());
+				Number number = NumberFormat.getInstance().parse(value.toString());
+
+				// ! Gson 将所有数值类型转成Double类型, 这里将值转换为真实类型
+				if (columnType.isInteger() || columnType.isIntArray()) {
+					number = number.intValue();
+				}
+				return number;
 			} catch (ParseException ignore) {}
 		} else if (columnType.isTimeBased()) {
 			if (columnType.isDate()) {

@@ -470,7 +470,7 @@ public class SQLBuilder {
 			} else {
 				tempValuesBuilder.append("?");
 			}
-			params.add(value);
+			params.add(processColumnValue(column, value));
 			comma = true;
 		}
 		tempColumnsBuilder.append(")");
@@ -502,10 +502,14 @@ public class SQLBuilder {
 			} else {
 				valuesBuilder.append("?");
 			}
-			params.add(value);
+			params.add(processColumnValue(column, value));
 			comma = true;
 		}
 		return valueString = valuesBuilder.toString();
+	}
+
+	public Object processColumnValue(Column column, Object value) {
+		return value;
 	}
 
 	public String toDeleteTable() {

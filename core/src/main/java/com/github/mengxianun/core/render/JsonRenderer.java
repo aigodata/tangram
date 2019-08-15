@@ -17,10 +17,10 @@ import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Table;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 public class JsonRenderer extends AbstractRenderer<JsonElement> {
 
@@ -210,8 +210,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 				record.addProperty(key, render(column, Boolean.parseBoolean(value.toString())));
 			} else if (columnType.isLiteral()) {
 				record.addProperty(key, render(column, value.toString()));
-			} else if (columnType.isJson()) {
-				record.add(key, new JsonParser().parse(value.toString()));
+			} else if (columnType.isJson() || columnType.isArray()) {
+				record.add(key, new Gson().toJsonTree(value));
 			} else {
 				record.addProperty(key, render(column, value.toString()));
 			}

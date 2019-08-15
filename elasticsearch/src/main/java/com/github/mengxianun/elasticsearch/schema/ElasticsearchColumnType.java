@@ -86,4 +86,9 @@ public class ElasticsearchColumnType extends AbstractColumnType {
 		return IP.equals(name);
 	}
 
+	@Override
+	public boolean isArray() {
+		return false;
+	}
+
 }

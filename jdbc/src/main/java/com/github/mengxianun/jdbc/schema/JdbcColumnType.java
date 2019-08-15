@@ -17,6 +17,10 @@ public class JdbcColumnType extends AbstractColumnType {
 		return type;
 	}
 
+	public String getTypeName() {
+		return name.replaceFirst("^_", "");
+	}
+
 	@Override
 	public boolean isBoolean() {
 		return type == Types.BIT || type == Types.BOOLEAN;
@@ -83,6 +87,11 @@ public class JdbcColumnType extends AbstractColumnType {
 	@Override
 	public boolean isJson() {
 		return type == Types.OTHER || "json".equals(name);
+	}
+
+	@Override
+	public boolean isArray() {
+		return type == Types.ARRAY;
 	}
 
 }
