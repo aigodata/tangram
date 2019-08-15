@@ -3,11 +3,13 @@ package com.github.mengxianun.core;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -361,24 +363,26 @@ public abstract class AbstractDataContext implements DataContext {
 			return fRelationships.get(foreignTable);
 		} else {
 			// 循环主表的所有关联表, 然后以关联表为新的主表向下寻找关联, 直到找到最开始要找的关联关系
-			for (Table fTable : fRelationships.keySet()) {
-				Set<Relationship> subRelationships = findSubRelationships(fTable, foreignTable, primaryTable,
-						relationships, new HashSet<>());
-				if (!subRelationships.isEmpty()) { // 找到了关联关系
-					// 添加前两个表的关联关系
-					Set<Relationship> firstRelationships = findRelationships(primaryTable, fTable);
-					relationships.addAll(firstRelationships);
-					// 添加后续的关联关系
-					relationships.addAll(subRelationships);
-					break;
-				}
+			// 查询所有的关联关系, 取最短的
+			Optional<Set<Relationship>> optional = fRelationships.keySet().parallelStream()
+					.map(e -> findSubRelationships(e, foreignTable, primaryTable, new HashSet<>()))
+					.filter(e -> !e.isEmpty()).min(Comparator.comparing(Set::size));
+			if (optional.isPresent()) { // 找到了关联关系
+				Set<Relationship> subRelationships = optional.get();
+				Table fTable = subRelationships.iterator().next().getPrimaryColumn().getTable();
+				// 添加前两个表的关联关系
+				Set<Relationship> firstRelationships = findRelationships(primaryTable, fTable);
+				relationships.addAll(firstRelationships);
+				// 添加后续的关联关系
+				relationships.addAll(subRelationships);
 			}
 		}
 		return relationships;
 	}
 
 	public Set<Relationship> findSubRelationships(Table primaryTable, Table foreignTable, Table originalTable,
-			Set<Relationship> relationships, Set<Table> pastTables) {
+			Set<Table> pastTables) {
+		Set<Relationship> relationships = new LinkedHashSet<>();
 		// 在未找到关联表之前找到了开始主表, 形成了死循环
 		if (originalTable == primaryTable) {
 			return Collections.emptySet();
@@ -397,7 +401,7 @@ public abstract class AbstractDataContext implements DataContext {
 				}
 				pastTables.add(fTable);
 				Set<Relationship> subRelationships = findSubRelationships(fTable, foreignTable, originalTable,
-						relationships, pastTables);
+						pastTables);
 				if (!subRelationships.isEmpty()) { // 找到了关联关系
 					// 添加前两个表的关联关系
 					Set<Relationship> firstRelationships = findRelationships(primaryTable, fTable);
