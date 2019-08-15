@@ -430,7 +430,12 @@ public class JsonParser {
 		if (columnsElement.isJsonObject()) {
 			throw new JsonDataException("fields node cannot be an object");
 		} else if (columnsElement.isJsonArray()) {
-			((JsonArray) columnsElement).forEach(e -> action.addColumnItem(parseColumn(e)));
+			JsonArray columnsArray = ((JsonArray) columnsElement);
+			if (columnsArray.size() == 0) {
+				createAllColumns();
+			} else {
+				((JsonArray) columnsElement).forEach(e -> action.addColumnItem(parseColumn(e)));
+			}
 		} else {
 			action.addColumnItem(parseColumn(columnsElement));
 		}
