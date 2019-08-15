@@ -70,7 +70,7 @@ public final class App {
 	}
 
 	public static DataContext getDefaultDataContext() {
-		return dataContexts.get(GlobalConfig.DEFAULT_DATASOURCE);
+		return dataContexts.get(getDefaultDataSource());
 	}
 
 	public static String getDefaultDataSource() {
