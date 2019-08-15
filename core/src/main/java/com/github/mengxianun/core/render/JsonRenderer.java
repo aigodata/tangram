@@ -95,8 +95,9 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 							directParentTable = parentTable;
 						}
 						// 已经构建了该 join 表的结构, 直接获取
-						if (uniqueRecord.has(parentTable.getName())) {
-							JsonElement parentElement = uniqueRecord.get(parentTable.getName());
+						String tableKey = getTableKey(parentTable);
+						if (uniqueRecord.has(tableKey)) {
+							JsonElement parentElement = uniqueRecord.get(tableKey);
 							if (parentElement.isJsonArray()) {
 								JsonArray parentArray = parentElement.getAsJsonArray();
 								// 获取数组关联表的最新的元素, 即当前正在循环的元素
@@ -160,7 +161,11 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		return uniqueKey.toString();
 	}
 
-	private void addColumnValue(JsonObject record, ColumnItem columnItem, Object value) {
+	private String getTableKey(Table table) {
+		return App.Context.getTableAlias(table);
+	}
+
+	private String getColumnKey(ColumnItem columnItem) {
 		String columnKey = "";
 		Column column = columnItem.getColumn();
 		if (action.columnAliasEnabled() && columnItem.isCustomAlias()) { // 自定义别名
@@ -170,7 +175,12 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		} else {
 			columnKey = App.Context.getColumnAlias(column);
 		}
-		addColumnValue(record, column, columnKey, value);
+		return columnKey;
+	}
+
+	private void addColumnValue(JsonObject record, ColumnItem columnItem, Object value) {
+		String columnKey = getColumnKey(columnItem);
+		addColumnValue(record, columnItem.getColumn(), columnKey, value);
 	}
 
 	private void addColumnValue(JsonObject record, Column column, String key, Object value) {
