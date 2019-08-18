@@ -188,12 +188,12 @@ public class SelectTest extends TestSupport {
 		JsonObject data = result.get(0).getAsJsonObject();
 		assertTrue(data.has("aid"));
 		assertTrue(data.has("A-name"));
-		assertTrue(data.has("bbb"));
-		JsonObject dataB = data.get("bbb").getAsJsonObject();
+		assertTrue(data.has("ID_bbb"));
+		JsonObject dataB = data.get("ID_bbb").getAsJsonObject();
 		assertTrue(dataB.has("bname"));
 		assertTrue(dataB.has("B-Aid"));
-		assertTrue(data.has("TABLE_C"));
-		JsonObject dataC = data.get("TABLE_C").getAsJsonObject();
+		assertTrue(data.has("ID_TABLE_C"));
+		JsonObject dataC = data.get("ID_TABLE_C").getAsJsonObject();
 		assertTrue(dataC.has("ID"));
 		assertTrue(dataC.has("cname"));
 	}

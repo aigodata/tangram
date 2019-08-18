@@ -20,9 +20,9 @@ import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.schema.Column;
-import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
+import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -247,12 +247,12 @@ public final class App {
 		}
 
 		/**
-		 * 获取请求和响应数据中表的别名
+		 * 获取请求和响应数据中表的属性名称
 		 * 
 		 * @param table
 		 * @return Alias
 		 */
-		public static String getTableAlias(Table table) {
+		public static String getTableKey(Table table) {
 			if (table.getConfig().has(TableConfig.ALIAS)) { // 表配置文件配置的表别名
 				return table.getConfig().get(TableConfig.ALIAS).getAsString();
 			} else if (Config.has(GlobalConfig.TABLE_ALIAS_EXPRESSION)) { // 全局配置的表别名
@@ -318,7 +318,7 @@ public final class App {
 			addRelationship(dataContext, primaryColumn, foreignColumn, associationType);
 		}
 
-		public static Set<Relationship> getRelationships(Table primaryTable, Table foreignTable) {
+		public static Set<RelationshipPath> getRelationships(Table primaryTable, Table foreignTable) {
 			return currentDataContext().getRelationships(primaryTable, foreignTable);
 		}
 

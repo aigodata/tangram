@@ -189,7 +189,7 @@ public class SQLBuilder {
 		String tempAliasPrefix = "inner_";
 		tableItem.setAlias(tempAliasPrefix + tableItem.getAlias());
 		for (JoinItem joinItem : action.getJoinItems()) {
-			TableItem joinTableItem = joinItem.getRightColumns().get(0).getTableItem();
+			TableItem joinTableItem = joinItem.getRightColumn().getTableItem();
 			joinTableItem.setAlias(tempAliasPrefix + joinTableItem.getAlias());
 		}
 		List<ColumnItem> innerColumnItems = ActionUtil.createColumnItems(tableItem, false);
@@ -206,7 +206,7 @@ public class SQLBuilder {
 		// 返回原始状态
 		tableItem.setAlias(tableItem.getAlias().replaceFirst(tempAliasPrefix, ""));
 		for (JoinItem joinItem : action.getJoinItems()) {
-			TableItem joinTableItem = joinItem.getRightColumns().get(0).getTableItem();
+			TableItem joinTableItem = joinItem.getRightColumn().getTableItem();
 			joinTableItem.setAlias(joinTableItem.getAlias().replaceFirst(tempAliasPrefix, ""));
 		}
 		action.setColumnItems(originalColumnItems);
@@ -252,42 +252,34 @@ public class SQLBuilder {
 				throw new DataException(String.format("wrong join type [%s]", joinItem.getJoinType()));
 			}
 
-			List<ColumnItem> leftColumns = joinItem.getLeftColumns();
-			List<ColumnItem> rightColumns = joinItem.getRightColumns();
-			for (int i = 0; i < leftColumns.size(); i++) {
-				// join left table
-				ColumnItem leftColumnItem = leftColumns.get(i);
-				TableItem leftTableItem = leftColumnItem.getTableItem();
-				Table leftTable = leftTableItem.getTable();
-				String leftTableAlias = leftTableItem.getAlias();
-				// join right table
-				ColumnItem rightColumnItem = rightColumns.get(i);
-				TableItem rightTableItem = rightColumnItem.getTableItem();
-				Table rightTable = rightTableItem.getTable();
-				String rightTableAlias = rightTableItem.getAlias();
-				if (i == 0) {
-					joinsBuilder.append(spliceTable(rightTable));
-					if (!Strings.isNullOrEmpty(rightTableAlias) && dialect.tableAliasEnabled()) {
-						joinsBuilder.append(ALIAS_KEY).append(rightTableAlias);
-					}
-					joinsBuilder.append(JOIN_ON);
-				} else {
-					joinsBuilder.append(DELIM_AND);
-				}
-				if (!Strings.isNullOrEmpty(leftTableAlias) && dialect.tableAliasEnabled()) {
-					joinsBuilder.append(leftTableAlias);
-				} else {
-					joinsBuilder.append(process(leftTable.getName()));
-				}
-				joinsBuilder.append(".").append(process(leftColumnItem.getColumn().getName()));
-				joinsBuilder.append(" = ");
-				if (!Strings.isNullOrEmpty(rightTableAlias) && dialect.tableAliasEnabled()) {
-					joinsBuilder.append(rightTableAlias);
-				} else {
-					joinsBuilder.append(process(rightTable.getName()));
-				}
-				joinsBuilder.append(".").append(process(rightColumnItem.getColumn().getName()));
+			// join left table
+			ColumnItem leftColumnItem = joinItem.getLeftColumn();
+			TableItem leftTableItem = leftColumnItem.getTableItem();
+			Table leftTable = leftTableItem.getTable();
+			String leftTableAlias = leftTableItem.getAlias();
+			// join right table
+			ColumnItem rightColumnItem = joinItem.getRightColumn();
+			TableItem rightTableItem = rightColumnItem.getTableItem();
+			Table rightTable = rightTableItem.getTable();
+			String rightTableAlias = rightTableItem.getAlias();
+			joinsBuilder.append(spliceTable(rightTable));
+			if (!Strings.isNullOrEmpty(rightTableAlias) && dialect.tableAliasEnabled()) {
+				joinsBuilder.append(ALIAS_KEY).append(rightTableAlias);
 			}
+			joinsBuilder.append(JOIN_ON);
+			if (!Strings.isNullOrEmpty(leftTableAlias) && dialect.tableAliasEnabled()) {
+				joinsBuilder.append(leftTableAlias);
+			} else {
+				joinsBuilder.append(process(leftTable.getName()));
+			}
+			joinsBuilder.append(".").append(process(leftColumnItem.getColumn().getName()));
+			joinsBuilder.append(" = ");
+			if (!Strings.isNullOrEmpty(rightTableAlias) && dialect.tableAliasEnabled()) {
+				joinsBuilder.append(rightTableAlias);
+			} else {
+				joinsBuilder.append(process(rightTable.getName()));
+			}
+			joinsBuilder.append(".").append(process(rightColumnItem.getColumn().getName()));
 
 		}
 		return joinString = joinsBuilder.toString();
@@ -668,16 +660,12 @@ public class SQLBuilder {
 		// 1. 只查询主表的列
 		// 2. 去掉 LIMIT 条件
 		String originalSql = originalBuilder.append(PREFIX_SELECT).append("distinct ").append(mainColumnString)
-				.append(" ")
-				.append(tableString).append(joinString)
-				.append(whereString).append(groupString).toString();
+				.append(" ").append(tableString).append(joinString).append(whereString).append(groupString).toString();
 		originalSql = originalSql.replace(Strings.nullToEmpty(limitString), "");
 		StringBuilder countBuilder = new StringBuilder();
 		StringBuilder countSql = countBuilder.append(PREFIX_SELECT).append(COUNT).append(ALIAS_KEY).append("count")
-				.append(PREFIX_FROM)
-				.append("(")
-				.append(originalSql)
-				.append(")").append(ALIAS_KEY).append("original_table");
+				.append(PREFIX_FROM).append("(").append(originalSql).append(")").append(ALIAS_KEY)
+				.append("original_table");
 		return countSql.toString();
 	}
 

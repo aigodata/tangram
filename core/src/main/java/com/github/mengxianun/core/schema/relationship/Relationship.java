@@ -1,8 +1,9 @@
-package com.github.mengxianun.core.schema;
+package com.github.mengxianun.core.schema.relationship;
 
 import java.util.Objects;
 
 import com.github.mengxianun.core.config.AssociationType;
+import com.github.mengxianun.core.schema.Column;
 
 public class Relationship {
 

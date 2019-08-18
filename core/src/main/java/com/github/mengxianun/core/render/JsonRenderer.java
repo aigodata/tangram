@@ -13,10 +13,11 @@ import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.JoinColumnItem;
 import com.github.mengxianun.core.item.JoinItem;
+import com.github.mengxianun.core.item.JoinTableItem;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
-import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Table;
+import com.github.mengxianun.core.schema.relationship.Relationship;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -68,56 +69,23 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 				Object value = row.getValue(x);
 				if (columnItem instanceof JoinColumnItem) {
 					JoinColumnItem joinColumnItem = (JoinColumnItem) columnItem;
-					Table joinTable = joinColumnItem.getTableItem().getTable();
-					if (existJoinTables.has(joinTable.getName())) {
-						JsonObject joinTableObject = existJoinTables.getAsJsonObject(joinTable.getName());
+					JoinTableItem joinTableItem = (JoinTableItem) joinColumnItem.getTableItem();
+
+					Table joinTable = joinTableItem.getTable();
+
+					String existJoinTableKey = joinTableItem.getRelationships().stream()
+							.map(e -> e.getPrimaryColumn().getName()).collect(Collectors.joining());
+					existJoinTableKey += getTableKey(joinTable);
+
+					if (existJoinTables.has(existJoinTableKey)) {
+						JsonObject joinTableObject = existJoinTables.getAsJsonObject(existJoinTableKey);
 						addColumnValue(joinTableObject, columnItem, value);
 						continue;
 					}
-					/*
-					 * 待优化
-					 */
-					Table mainTable = action.getTableItems().get(0).getTable();
-					// join 表的直接父级表
-					Table directParentTable = mainTable;
-					Set<Relationship> relationships = App.Context.getRelationships(mainTable, joinTable);
-					// 构建join表上层表关系
-					List<Table> parentTables = relationships.stream().map(e -> e.getPrimaryColumn().getTable())
-							.collect(Collectors.toList());
-					// -- 构建 join 表上层结构
-					for (int i = 0; i < parentTables.size() - 1; i++) {
-						// 父级表, 第一个元素是主表, 跳过
-						Table parentTable = parentTables.get(i + 1);
-						// 如果该关联表不是请求中指定的关联表, 不构建关系结构
-						if (!action.getJoinTables().contains(parentTable)) {
-							continue;
-						} else {
-							directParentTable = parentTable;
-						}
-						// 已经构建了该 join 表的结构, 直接获取
-						String tableKey = getTableKey(parentTable);
-						if (uniqueRecord.has(tableKey)) {
-							JsonElement parentElement = uniqueRecord.get(tableKey);
-							if (parentElement.isJsonArray()) {
-								JsonArray parentArray = parentElement.getAsJsonArray();
-								// 获取数组关联表的最新的元素, 即当前正在循环的元素
-								currentTableObject = parentArray.get(parentArray.size() - 1).getAsJsonObject();
-							} else {
-								currentTableObject = parentElement.getAsJsonObject();
-							}
-						} else {
-							AssociationType associationType = App.Context.getAssociationType(parentTables.get(i),
-									parentTables.get(i + 1));
-							currentTableObject = createJoinStructure(currentTableObject, parentTables.get(i + 1),
-									associationType);
-						}
-					}
-					// -- 构建 join 表结构
 
-					AssociationType associationType = App.Context.getAssociationType(directParentTable, joinTable);
-					currentTableObject = createJoinStructure(currentTableObject, joinTable, associationType);
+					currentTableObject = createJoinStructure(currentTableObject, joinTableItem);
 					// 记录出现过的 join 表
-					existJoinTables.add(joinTable.getName(), currentTableObject);
+					existJoinTables.add(existJoinTableKey, currentTableObject);
 
 					addColumnValue(currentTableObject, columnItem, value);
 				} else {
@@ -162,7 +130,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 	}
 
 	private String getTableKey(Table table) {
-		return App.Context.getTableAlias(table);
+		return App.Context.getTableKey(table);
 	}
 
 	private String getColumnKey(ColumnItem columnItem) {
@@ -250,22 +218,46 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		return value;
 	}
 
-	private JsonObject createJoinStructure(JsonObject currentTableObject, Table joinTable,
-			AssociationType associationType) {
-		String tableKey = App.Context.getTableAlias(joinTable);
-		return createJoinStructure(currentTableObject, tableKey, associationType);
+	private JsonObject createJoinStructure(JsonObject currentTableObject, JoinTableItem joinTableItem) {
+
+		Set<Relationship> relationships = joinTableItem.getRelationships();
+
+		for (Relationship relationship : relationships) {
+			Column primaryColumn = relationship.getPrimaryColumn();
+			Column foreignColumn = relationship.getForeignColumn();
+			AssociationType associationType = relationship.getAssociationType();
+			Table foreignTable = foreignColumn.getTable();
+			// 如果该关联表不是请求中指定的关联表, 不构建关系结构
+			if (action.getJoinTables().contains(foreignTable)) {
+				// 关联表节点名称, 主表关联字段名称_关联表名称(或别名, 以别名为主)
+				String foreignTableKey = primaryColumn.getName() + "_" + getTableKey(foreignTable);
+				if (currentTableObject.has(foreignTableKey)) {
+					JsonElement parentElement = currentTableObject.get(foreignTableKey);
+					if (parentElement.isJsonArray()) {
+						JsonArray parentArray = parentElement.getAsJsonArray();
+						currentTableObject = new JsonObject();
+						parentArray.add(currentTableObject);
+					} else {
+						currentTableObject = parentElement.getAsJsonObject();
+					}
+				} else {
+					currentTableObject = createJoinStructure(currentTableObject, foreignTableKey, associationType);
+				}
+			}
+		}
+		return currentTableObject;
 	}
 
-	private JsonObject createJoinStructure(JsonObject currentTableObject, String tableName,
+	private JsonObject createJoinStructure(JsonObject currentTableObject, String tableKey,
 			AssociationType associationType) {
 		switch (associationType) {
 		case ONE_TO_ONE:
 		case MANY_TO_ONE:
-			currentTableObject = createJoinObject(currentTableObject, tableName);
+			currentTableObject = createJoinObject(currentTableObject, tableKey);
 			break;
 		case ONE_TO_MANY:
 		case MANY_TO_MANY:
-			currentTableObject = createJoinArray(currentTableObject, tableName);
+			currentTableObject = createJoinArray(currentTableObject, tableKey);
 			break;
 
 		default:
@@ -274,20 +266,20 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		return currentTableObject;
 	}
 
-	private JsonObject createJoinObject(JsonObject currentTableObject, String tableName) {
-		if (currentTableObject.has(tableName)) {
-			currentTableObject = currentTableObject.getAsJsonObject(tableName);
+	private JsonObject createJoinObject(JsonObject currentTableObject, String tableKey) {
+		if (currentTableObject.has(tableKey)) {
+			currentTableObject = currentTableObject.getAsJsonObject(tableKey);
 		} else {
 			JsonObject tempJsonObject = new JsonObject();
-			currentTableObject.add(tableName, tempJsonObject);
+			currentTableObject.add(tableKey, tempJsonObject);
 			currentTableObject = tempJsonObject;
 		}
 		return currentTableObject;
 	}
 
-	private JsonObject createJoinArray(JsonObject currentTableObject, String tableName) {
-		if (currentTableObject.has(tableName)) {
-			JsonArray tempJsonArray = currentTableObject.getAsJsonArray(tableName);
+	private JsonObject createJoinArray(JsonObject currentTableObject, String tableKey) {
+		if (currentTableObject.has(tableKey)) {
+			JsonArray tempJsonArray = currentTableObject.getAsJsonArray(tableKey);
 			JsonObject tempJsonObject = new JsonObject();
 			tempJsonArray.add(tempJsonObject);
 			currentTableObject = tempJsonObject;
@@ -295,7 +287,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			JsonArray tempJsonArray = new JsonArray();
 			JsonObject tempJsonObject = new JsonObject();
 			tempJsonArray.add(tempJsonObject);
-			currentTableObject.add(tableName, tempJsonArray);
+			currentTableObject.add(tableKey, tempJsonArray);
 			currentTableObject = tempJsonObject;
 		}
 		return currentTableObject;

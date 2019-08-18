@@ -2,17 +2,9 @@ package com.github.mengxianun.core;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -36,13 +28,11 @@ import com.github.mengxianun.core.item.ValuesItem;
 import com.github.mengxianun.core.render.JsonRenderer;
 import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.schema.Column;
-import com.github.mengxianun.core.schema.Relationship;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
-import com.github.mengxianun.core.schema.relationship.RelationshipKey;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.github.mengxianun.core.schema.relationship.Relationship;
+import com.github.mengxianun.core.schema.relationship.RelationshipGraph;
+import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -57,17 +47,7 @@ public abstract class AbstractDataContext implements DataContext {
 
 	protected Dialect dialect;
 	protected SQLBuilder sqlBuilder;
-	// Key 为主表, Value 为 Map 类型, Key为外表, 值为主外表的关联关系
-	Map<Table, Map<Table, Set<Relationship>>> pfRelationships = new HashMap<>();
-	// 表关联关系缓存, Key 为两个表的对象
-	LoadingCache<RelationshipKey, Set<Relationship>> relationshipsCache = CacheBuilder.newBuilder()
-			.maximumSize(1000).expireAfterWrite(60, TimeUnit.MINUTES)
-			.build(new CacheLoader<RelationshipKey, Set<Relationship>>() {
-
-				public Set<Relationship> load(RelationshipKey key) throws Exception {
-					return findRelationships(key.getPrimaryTable(), key.getForeignTable());
-				}
-			});
+	private RelationshipGraph graph = new RelationshipGraph();
 
 	protected abstract void initMetadata();
 
@@ -315,115 +295,24 @@ public abstract class AbstractDataContext implements DataContext {
 
 	@Override
 	public void addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType) {
-		Table primaryTable = primaryColumn.getTable();
-		Table foreignTable = foreignColumn.getTable();
-		//
-		Map<Table, Set<Relationship>> fRelationships = null;
-		if (pfRelationships.containsKey(primaryTable)) {
-			fRelationships = pfRelationships.get(primaryTable);
-		} else {
-			fRelationships = new HashMap<>();
-			pfRelationships.put(primaryTable, fRelationships);
-		}
-		//
-		Set<Relationship> relationships = null;
-		if (fRelationships.containsKey(foreignTable)) {
-			relationships = fRelationships.get(foreignTable);
-		} else {
-			relationships = new LinkedHashSet<>();
-			fRelationships.put(foreignTable, relationships);
-		}
-		Relationship relationship = new Relationship(primaryColumn, foreignColumn, associationType);
-		if (!relationships.contains(relationship)) {
-			relationships.add(relationship);
-		}
-
-		// Refresh the cache
-		relationshipsCache.refresh(new RelationshipKey(primaryTable, foreignTable));
+		graph.addRelationship(primaryColumn, foreignColumn, associationType);
 	}
 
 	@Override
-	public Set<Relationship> getRelationships(Table primaryTable, Table foreignTable) {
-		try {
-			return relationshipsCache.get(new RelationshipKey(primaryTable, foreignTable));
-		} catch (ExecutionException e) {
-			return Collections.emptySet();
-		}
-	}
-
-	public Set<Relationship> findRelationships(Table primaryTable, Table foreignTable) {
-		Set<Relationship> relationships = new LinkedHashSet<>();
-		// 要查找的主表没有关联关系
-		if (!pfRelationships.containsKey(primaryTable)) {
-			return Collections.emptySet();
-		}
-		Map<Table, Set<Relationship>> fRelationships = pfRelationships.get(primaryTable);
-		// 要查找的主表和外表有直接的关联关系
-		if (fRelationships.containsKey(foreignTable)) {
-			return fRelationships.get(foreignTable);
-		} else {
-			// 循环主表的所有关联表, 然后以关联表为新的主表向下寻找关联, 直到找到最开始要找的关联关系
-			// 查询所有的关联关系, 取最短的
-			Optional<Set<Relationship>> optional = fRelationships.keySet().parallelStream()
-					.map(e -> findSubRelationships(e, foreignTable, primaryTable, new HashSet<>()))
-					.filter(e -> !e.isEmpty()).min(Comparator.comparing(Set::size));
-			if (optional.isPresent()) { // 找到了关联关系
-				Set<Relationship> subRelationships = optional.get();
-				Table fTable = subRelationships.iterator().next().getPrimaryColumn().getTable();
-				// 添加前两个表的关联关系
-				Set<Relationship> firstRelationships = findRelationships(primaryTable, fTable);
-				relationships.addAll(firstRelationships);
-				// 添加后续的关联关系
-				relationships.addAll(subRelationships);
-			}
-		}
-		return relationships;
-	}
-
-	public Set<Relationship> findSubRelationships(Table primaryTable, Table foreignTable, Table originalTable,
-			Set<Table> pastTables) {
-		Set<Relationship> relationships = new LinkedHashSet<>();
-		// 在未找到关联表之前找到了开始主表, 形成了死循环
-		if (originalTable == primaryTable) {
-			return Collections.emptySet();
-		}
-		// 找不到主表的关联关系
-		if (!pfRelationships.containsKey(primaryTable)) {
-			return Collections.emptySet();
-		}
-		Map<Table, Set<Relationship>> fRelationships = pfRelationships.get(primaryTable);
-		if (fRelationships.containsKey(foreignTable)) {
-			return fRelationships.get(foreignTable);
-		} else {
-			for (Table fTable : fRelationships.keySet()) {
-				if (pastTables.contains(fTable)) {
-					continue;
-				}
-				pastTables.add(fTable);
-				Set<Relationship> subRelationships = findSubRelationships(fTable, foreignTable, originalTable,
-						pastTables);
-				if (!subRelationships.isEmpty()) { // 找到了关联关系
-					// 添加前两个表的关联关系
-					Set<Relationship> firstRelationships = findRelationships(primaryTable, fTable);
-					relationships.addAll(firstRelationships);
-					// 添加后续的关联关系
-					relationships.addAll(subRelationships);
-				}
-			}
-		}
-		return relationships;
+	public Set<RelationshipPath> getRelationships(Table primaryTable, Table foreignTable) {
+		return graph.getRelationships(primaryTable, foreignTable);
 	}
 
 	@Override
 	public AssociationType getAssociationType(Table primaryTable, Table foreignTable) {
-		Set<Relationship> relationships = getRelationships(primaryTable, foreignTable);
-		Relationship first = Iterables.getFirst(relationships, null);
+		Set<RelationshipPath> relationships = getRelationships(primaryTable, foreignTable);
+		Relationship first = Iterables.getFirst(relationships, null).getFirst();
 		AssociationType associationType = first.getAssociationType();
 		if (associationType == AssociationType.ONE_TO_MANY || associationType == AssociationType.MANY_TO_MANY) {
 			return associationType;
 		}
 		if (relationships.size() > 1) {
-			Relationship last = Iterables.getLast(relationships, null);
+			Relationship last = Iterables.getLast(relationships, null).getFirst();
 			AssociationType lastAssociationType = last.getAssociationType();
 			if (associationType == AssociationType.ONE_TO_ONE && (lastAssociationType == AssociationType.ONE_TO_MANY
 					|| lastAssociationType == AssociationType.MANY_TO_MANY)) {
