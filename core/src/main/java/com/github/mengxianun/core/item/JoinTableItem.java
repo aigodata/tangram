@@ -1,23 +1,22 @@
 package com.github.mengxianun.core.item;
 
-import java.util.Set;
+import java.util.List;
 
 import com.github.mengxianun.core.schema.Table;
-import com.github.mengxianun.core.schema.relationship.Relationship;
 
 public class JoinTableItem extends TableItem {
 
 	private static final long serialVersionUID = 1L;
 
-	private final Set<Relationship> relationships;
+	private final List<RelationshipItem> relationshipItems;
 
-	public JoinTableItem(Table table, String alias, boolean customAlias, Set<Relationship> relationships) {
+	public JoinTableItem(Table table, String alias, boolean customAlias, List<RelationshipItem> relationshipItems) {
 		super(table, alias, customAlias);
-		this.relationships = relationships;
+		this.relationshipItems = relationshipItems;
 	}
 
-	public Set<Relationship> getRelationships() {
-		return relationships;
+	public List<RelationshipItem> getRelationshipItems() {
+		return relationshipItems;
 	}
 
 }

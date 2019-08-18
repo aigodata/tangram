@@ -61,7 +61,7 @@ public class TestSupport {
 		DataResultSet dataResultSet = translator.translate(json);
 		LOG.info("-----------------Json-----------------");
 		LOG.info(json);
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
 		LOG.info("-----------------Result-----------------");
 		LOG.info(gson.toJson(dataResultSet));
 		return dataResultSet;

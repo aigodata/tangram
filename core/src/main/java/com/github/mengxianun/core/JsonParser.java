@@ -3,7 +3,6 @@ package com.github.mengxianun.core;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,6 +23,7 @@ import com.github.mengxianun.core.item.JoinItem;
 import com.github.mengxianun.core.item.JoinTableItem;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
+import com.github.mengxianun.core.item.RelationshipItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
 import com.github.mengxianun.core.request.AdditionalKeywords;
@@ -351,16 +351,19 @@ public class JsonParser {
 		// 注: 这里是路径复用, 不是关系复用
 		// Key 为关系路径, Value 为关系路径最后一个表的 TableItem
 		Map<RelationshipPath, TableItem> existRelationshipPaths = new HashMap<>();
+		Map<RelationshipPath, List<RelationshipItem>> existRelationshipItems = new HashMap<>();
 		for (RelationshipPath relationshipPath : relationshipPaths) {
 			Set<Relationship> currentRelationships = new LinkedHashSet<>();
 			// 上级 TableItem, 记录此值, 保证在多表多字段关联时, join操作正确的表
 			// 例: 当前循环的关联路径为 A-B-C, 当循环到A-B的时候, 上级TableItem为A, 当循环到B-C的时候, 上级TableItem为B
 			Table firstTable = relationshipPath.getFirst().getPrimaryColumn().getTable();
 			TableItem preTableItem = getTableItem(firstTable);
+
+			List<RelationshipItem> currentRelationshipItems = new ArrayList<>();
+
 			// 当前循环中的关联关系
-			Iterator<Relationship> iterator = relationshipPath.getRelationships().iterator();
-			while (iterator.hasNext()) {
-				Relationship relationship = iterator.next();
+			Set<Relationship> relationships = relationshipPath.getRelationships();
+			for (Relationship relationship : relationships) {
 				currentRelationships.add(relationship);
 
 				Column primaryColumn = relationship.getPrimaryColumn();
@@ -387,16 +390,25 @@ public class JsonParser {
 				RelationshipPath existRelationshipPath = new RelationshipPath(currentFixedRelationships);
 				if (existRelationshipPaths.containsKey(existRelationshipPath)) {
 					preTableItem = existRelationshipPaths.get(existRelationshipPath);
+					currentRelationshipItems = existRelationshipItems.get(existRelationshipPath);
 				} else {
+					List<RelationshipItem> currentFixedRelationshipItems = new ArrayList<>(currentRelationshipItems);
+
 					JoinTableItem foreignTableItem = new JoinTableItem(foreignTable,
-							App.Action.getTableAlias(foreignTable), false, currentFixedRelationships);
+							App.Action.getTableAlias(foreignTable), false, currentFixedRelationshipItems);
 					tempRelationTableItems.put(foreignTable, foreignTableItem.getAlias(), foreignTableItem);
 					ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, foreignTableItem);
 
 					action.addJoinItem(new JoinItem(primaryColumnItem, foreignColumnItem, joinType));
 
 					existRelationshipPaths.put(existRelationshipPath, foreignTableItem);
+
+					currentFixedRelationshipItems
+							.add(new RelationshipItem(preTableItem, foreignTableItem, relationship));
+
+					existRelationshipItems.put(existRelationshipPath, currentFixedRelationshipItems);
 				}
+
 			}
 		}
 	}

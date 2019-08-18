@@ -1,9 +1,10 @@
 package com.github.mengxianun.core.render;
 
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.App;
@@ -12,8 +13,9 @@ import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.JoinColumnItem;
-import com.github.mengxianun.core.item.JoinItem;
 import com.github.mengxianun.core.item.JoinTableItem;
+import com.github.mengxianun.core.item.RelationshipItem;
+import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.Table;
@@ -55,48 +57,81 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 	}
 
 	private JsonObject render(JsonObject uniqueRecord, Row row) {
-		List<JoinItem> joinItems = action.getJoinItems();
-		// 构建关联信息
-		if (!joinItems.isEmpty() && action.getGroupItems().isEmpty()) {
-			// 出现过的 join 表的对象, 用于 join 表的列再次获取已经创建的 join 表对象
-			JsonObject existJoinTables = new JsonObject();
-			List<ColumnItem> columnItems = action.getColumnItems();
-			// 当前循环列的表数据对象
-			JsonObject currentTableObject;
-			for (int x = 0; x < columnItems.size(); x++) {
-				ColumnItem columnItem = columnItems.get(x);
-				currentTableObject = uniqueRecord;
-				Object value = row.getValue(x);
-				if (columnItem instanceof JoinColumnItem) {
-					JoinColumnItem joinColumnItem = (JoinColumnItem) columnItem;
-					JoinTableItem joinTableItem = (JoinTableItem) joinColumnItem.getTableItem();
+		List<ColumnItem> columnItems = action.getColumnItems();
 
-					Table joinTable = joinTableItem.getTable();
-
-					String existJoinTableKey = joinTableItem.getRelationships().stream()
-							.map(e -> e.getPrimaryColumn().getName()).collect(Collectors.joining());
-					existJoinTableKey += getTableKey(joinTable);
-
-					if (existJoinTables.has(existJoinTableKey)) {
-						JsonObject joinTableObject = existJoinTables.getAsJsonObject(existJoinTableKey);
-						addColumnValue(joinTableObject, columnItem, value);
-						continue;
-					}
-
-					currentTableObject = createJoinStructure(currentTableObject, joinTableItem);
-					// 记录出现过的 join 表
-					existJoinTables.add(existJoinTableKey, currentTableObject);
-
-					addColumnValue(currentTableObject, columnItem, value);
-				} else {
-					addColumnValue(currentTableObject, columnItem, value);
-				}
+		// 每个表的数据
+		Map<TableItem, JsonObject> existTableItems = new LinkedHashMap<>();
+		// 获取每个表的数据
+		for (int x = 0; x < columnItems.size(); x++) {
+			ColumnItem columnItem = columnItems.get(x);
+			TableItem tableItem = columnItem.getTableItem();
+			JsonObject tableObject;
+			if (existTableItems.containsKey(tableItem)) {
+				tableObject = existTableItems.get(tableItem);
+			} else {
+				tableObject = new JsonObject();
+				existTableItems.put(tableItem, tableObject);
 			}
-		} else {
-			List<ColumnItem> columnItems = action.getColumnItems();
-			for (int i = 0; i < columnItems.size(); i++) {
-				ColumnItem columnItem = columnItems.get(i);
-				addColumnValue(uniqueRecord, columnItem, row.getValue(i));
+			Object value = row.getValue(x);
+			addColumnValue(tableObject, columnItem, value);
+		}
+		// 循环所有表, 构建数据结构
+		for (Entry<TableItem, JsonObject> entry : existTableItems.entrySet()) {
+			JsonObject currentTableObject = uniqueRecord;
+			TableItem tableItem = entry.getKey();
+			JsonObject tableObject = entry.getValue();
+			if (tableItem instanceof JoinTableItem) {
+				JoinTableItem joinTableItem = (JoinTableItem) tableItem;
+				List<RelationshipItem> relationshipItems = joinTableItem.getRelationshipItems();
+				for (RelationshipItem relationshipItem : relationshipItems) {
+					TableItem rightTableItem = relationshipItem.getRightTableItem();
+					Relationship relationship = relationshipItem.getRelationship();
+					Column primaryColumn = relationship.getPrimaryColumn();
+					Column foreignColumn = relationship.getForeignColumn();
+					AssociationType associationType = relationship.getAssociationType();
+					Table foreignTable = foreignColumn.getTable();
+					// 如果该关联表不是请求中指定的关联表, 不构建关系结构
+					// 只构建请求中指定的关联表
+					if (action.getJoinTables().contains(foreignTable)) {
+						// 关联表节点名称, 主表关联字段名称_关联表名称(或别名, 以别名为主)
+						String foreignTableKey = primaryColumn.getName() + "_" + getTableKey(foreignTable);
+						if (currentTableObject.has(foreignTableKey)) {
+							JsonElement parentElement = currentTableObject.get(foreignTableKey);
+							if (parentElement.isJsonArray()) {
+								JsonArray parentArray = parentElement.getAsJsonArray();
+								// 去重
+								if (!parentArray.contains(tableObject)) {
+									parentArray.add(tableObject);
+								}
+							} else {
+								currentTableObject = parentElement.getAsJsonObject();
+							}
+						} else {
+							// 如果主表关联字段值为null, 说明主表该列的值没有关联的外表数据
+							if (currentTableObject.get(primaryColumn.getName()).isJsonNull()) {
+								break;
+							}
+							JsonObject joinTableObject = existTableItems.get(rightTableItem);
+							if (associationType == AssociationType.ONE_TO_ONE
+									|| associationType == AssociationType.MANY_TO_ONE) {
+								currentTableObject.add(foreignTableKey, joinTableObject);
+							} else {
+								JsonArray joinTableArray = new JsonArray();
+								joinTableArray.add(joinTableObject);
+								currentTableObject.add(foreignTableKey, joinTableArray);
+							}
+							currentTableObject = joinTableObject;
+						}
+					}
+				}
+			} else {
+				for (Entry<String, JsonElement> tableEntry : tableObject.entrySet()) {
+					String columnName = tableEntry.getKey();
+					JsonElement columnValue = tableEntry.getValue();
+					if (!uniqueRecord.has(columnName)) {
+						uniqueRecord.add(columnName, columnValue);
+					}
+				}
 			}
 		}
 		return uniqueRecord;
@@ -216,81 +251,6 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			return value;
 		}
 		return value;
-	}
-
-	private JsonObject createJoinStructure(JsonObject currentTableObject, JoinTableItem joinTableItem) {
-
-		Set<Relationship> relationships = joinTableItem.getRelationships();
-
-		for (Relationship relationship : relationships) {
-			Column primaryColumn = relationship.getPrimaryColumn();
-			Column foreignColumn = relationship.getForeignColumn();
-			AssociationType associationType = relationship.getAssociationType();
-			Table foreignTable = foreignColumn.getTable();
-			// 如果该关联表不是请求中指定的关联表, 不构建关系结构
-			if (action.getJoinTables().contains(foreignTable)) {
-				// 关联表节点名称, 主表关联字段名称_关联表名称(或别名, 以别名为主)
-				String foreignTableKey = primaryColumn.getName() + "_" + getTableKey(foreignTable);
-				if (currentTableObject.has(foreignTableKey)) {
-					JsonElement parentElement = currentTableObject.get(foreignTableKey);
-					if (parentElement.isJsonArray()) {
-						JsonArray parentArray = parentElement.getAsJsonArray();
-						currentTableObject = new JsonObject();
-						parentArray.add(currentTableObject);
-					} else {
-						currentTableObject = parentElement.getAsJsonObject();
-					}
-				} else {
-					currentTableObject = createJoinStructure(currentTableObject, foreignTableKey, associationType);
-				}
-			}
-		}
-		return currentTableObject;
-	}
-
-	private JsonObject createJoinStructure(JsonObject currentTableObject, String tableKey,
-			AssociationType associationType) {
-		switch (associationType) {
-		case ONE_TO_ONE:
-		case MANY_TO_ONE:
-			currentTableObject = createJoinObject(currentTableObject, tableKey);
-			break;
-		case ONE_TO_MANY:
-		case MANY_TO_MANY:
-			currentTableObject = createJoinArray(currentTableObject, tableKey);
-			break;
-
-		default:
-			break;
-		}
-		return currentTableObject;
-	}
-
-	private JsonObject createJoinObject(JsonObject currentTableObject, String tableKey) {
-		if (currentTableObject.has(tableKey)) {
-			currentTableObject = currentTableObject.getAsJsonObject(tableKey);
-		} else {
-			JsonObject tempJsonObject = new JsonObject();
-			currentTableObject.add(tableKey, tempJsonObject);
-			currentTableObject = tempJsonObject;
-		}
-		return currentTableObject;
-	}
-
-	private JsonObject createJoinArray(JsonObject currentTableObject, String tableKey) {
-		if (currentTableObject.has(tableKey)) {
-			JsonArray tempJsonArray = currentTableObject.getAsJsonArray(tableKey);
-			JsonObject tempJsonObject = new JsonObject();
-			tempJsonArray.add(tempJsonObject);
-			currentTableObject = tempJsonObject;
-		} else {
-			JsonArray tempJsonArray = new JsonArray();
-			JsonObject tempJsonObject = new JsonObject();
-			tempJsonArray.add(tempJsonObject);
-			currentTableObject.add(tableKey, tempJsonArray);
-			currentTableObject = tempJsonObject;
-		}
-		return currentTableObject;
 	}
 
 }

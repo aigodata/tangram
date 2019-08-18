@@ -3,6 +3,7 @@ package com.github.mengxianun.core.resutset;
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.ResultStatus;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
 public abstract class AbstractDataResultSet implements DataResultSet {
@@ -35,7 +36,8 @@ public abstract class AbstractDataResultSet implements DataResultSet {
 
 	@Override
 	public JsonElement getJsonData() {
-		return new Gson().toJsonTree(getData());
+		Gson gson = new GsonBuilder().serializeNulls().create();
+		return gson.toJsonTree(getData());
 	}
 
 	@Override
