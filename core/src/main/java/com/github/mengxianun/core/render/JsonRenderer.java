@@ -121,12 +121,11 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			Table foreignTable = foreignColumn.getTable();
 
 			String primaryColumnAlias = App.Context.getColumnAlias(primaryColumn);
-			String foreignColumnAlias = App.Context.getColumnAlias(foreignColumn);
 			// 如果该关联表不是请求中指定的关联表, 不构建关系结构
 			// 只构建请求中指定的关联表
 			if (action.getJoinTables().contains(foreignTable)) {
 				// 关联表节点名称, 主表字段_关联表字段(或别名, 以别名为主)
-				String foreignTableKey = primaryColumnAlias + "_" + foreignColumnAlias;
+				String foreignTableKey = primaryColumnAlias + "_" + getTableKey(foreignTable);
 				if (currentTableObject.has(foreignTableKey)) {
 					JsonElement parentElement = currentTableObject.get(foreignTableKey);
 					if (parentElement.isJsonArray()) {
@@ -254,16 +253,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		} else {
 			ColumnType columnType = column.getType();
 			if (columnType.isNumber()) {
-				Number number = null;
-				Double doubleValue = new Double(value.toString());
-				if (columnType.isInteger()) {
-					number = doubleValue.intValue();
-				} else if (columnType.isLong()) {
-					number = doubleValue.longValue();
-				} else if (columnType.isDouble()) {
-					// It's already a double
-				}
-				record.addProperty(key, render(column, number));
+				record.addProperty(key, render(column, (Number) value));
 			} else if (columnType.isBoolean()) {
 				record.addProperty(key, render(column, Boolean.parseBoolean(value.toString())));
 			} else if (columnType.isLiteral()) {
