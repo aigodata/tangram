@@ -24,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 public class JsonRenderer extends AbstractRenderer<JsonElement> {
 
@@ -282,7 +283,13 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		} else {
 			ColumnType columnType = column.getType();
 			if (columnType.isNumber()) {
-				record.addProperty(key, render(column, (Number) value));
+				Number number = null;
+				if (value instanceof JsonPrimitive) {
+					number = ((JsonPrimitive) value).getAsNumber();
+				} else {
+					number = (Number) value;
+				}
+				record.addProperty(key, render(column, number));
 			} else if (columnType.isBoolean()) {
 				record.addProperty(key, render(column, Boolean.parseBoolean(value.toString())));
 			} else if (columnType.isLiteral()) {
