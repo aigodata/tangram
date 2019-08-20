@@ -2,25 +2,11 @@
   "columns":{
     "id":{},
     "name":{},
-    "table_2_id":{
-      "association": {
-        "target_table": "join_table_2",
-        "target_column": "id",
-        "type":"1_1"
-      }
-    },
-    "another_table_2_id":{
-      "association": {
-        "target_table": "join_table_2",
-        "target_column": "id",
-        "type":"1_1"
-      }
-    },
     "table_3_id":{
       "association": {
         "target_table": "join_table_3",
         "target_column": "id",
-        "type":"1_N"
+        "type":"n_1"
       }
     },
     "another_table_3_id":{

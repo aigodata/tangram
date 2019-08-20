@@ -23,10 +23,9 @@ public class JoinTest extends TestSupport {
 	@Test
 	void testJoin() throws JSONException {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "join.json");
-		String requestJson = readJson(JSON_PARENT_PATH + "join.json");
-		String resultJson = dataResultSet.getJsonData().toString();
-		JSONCompareResult compareJSON = JSONCompare.compareJSON(requestJson, resultJson, JSONCompareMode.LENIENT);
-		System.out.println(compareJSON.getMessage());
+		String result = dataResultSet.getJsonData().toString();
+		String excepted = readJson(JSON_PARENT_PATH + "join_result.json");
+		JSONCompareResult compareJSON = JSONCompare.compareJSON(result, excepted, JSONCompareMode.LENIENT);
 		assertTrue(!compareJSON.failed());
 	}
 

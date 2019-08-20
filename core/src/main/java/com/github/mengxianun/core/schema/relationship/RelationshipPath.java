@@ -67,6 +67,10 @@ public class RelationshipPath {
 		return relationships;
 	}
 
+	public int size() {
+		return relationships.size();
+	}
+
 	@Override
 	public int hashCode() {
 		return relationships.stream().mapToInt(Relationship::hashCode).sum();

@@ -1,87 +1,117 @@
-[
-    {
+[{
+    "ID": 1.0,
+    "NAME": "table1_name1",
+    "TABLE_2_ID": 1.0,
+    "ANOTHER_TABLE_2_ID": 2.0,
+    "TABLE_3_ID": 3.0,
+    "ANOTHER_TABLE_3_ID": 2.0,
+    "TABLE_2_ID_ID": {
       "ID": 1.0,
-      "NAME": "table1_name1",
-      "TABLE_2_ID": 1.0,
-      "ANOTHER_TABLE_2_ID": 2.0,
-      "TABLE_2_ID_JOIN_TABLE_2": {
-        "ID": 1.0,
-        "NAME": "table2_name1",
-        "ID_JOIN_TABLE_3": [
-          {
-            "ID": 1.0,
-            "NAME": "table3_name1",
-            "TABLE_2_ID": 1.0
-          },
-          {
-            "ID": 2.0,
-            "NAME": "table3_name2",
-            "TABLE_2_ID": 1.0
-          }
-        ]
-      },
-      "ANOTHER_TABLE_2_ID_JOIN_TABLE_2": {
+      "NAME": "table2_name1",
+      "TABLE_3_ID": 2.0,
+      "TABLE_3_ID_ID": [{
         "ID": 2.0,
-        "NAME": "table2_name2",
-        "ID_JOIN_TABLE_3": [
-          {
-            "ID": 3.0,
-            "NAME": "table3_name3",
-            "TABLE_2_ID": 2.0
-          }
-        ]
-      }
+        "NAME": "table3_name2",
+        "TABLE_2_ID": 2.0
+      }]
     },
-    {
+    "ANOTHER_TABLE_2_ID_ID": {
       "ID": 2.0,
-      "NAME": "table1_name2",
-      "TABLE_2_ID": 2.0,
-      "ANOTHER_TABLE_2_ID": 1.0,
-      "TABLE_2_ID_JOIN_TABLE_2": {
-        "ID": 2.0,
-        "NAME": "table2_name2",
-        "ID_JOIN_TABLE_3": [
-          {
-            "ID": 3.0,
-            "NAME": "table3_name3",
-            "TABLE_2_ID": 2.0
-          }
-        ]
-      },
-      "ANOTHER_TABLE_2_ID_JOIN_TABLE_2": {
-        "ID": 1.0,
-        "NAME": "table2_name1",
-        "ID_JOIN_TABLE_3": [
-          {
-            "ID": 1.0,
-            "NAME": "table3_name1",
-            "TABLE_2_ID": 2.0
-          },
-          {
-            "ID": 2.0,
-            "NAME": "table3_name2",
-            "TABLE_2_ID": 2.0
-          }
-        ]
-      }
+      "NAME": "table2_name2",
+      "TABLE_3_ID": null,
+      "ID_TABLE_2_ID": [{
+          "ID": 2.0,
+          "NAME": "table3_name2",
+          "TABLE_2_ID": 2.0
+        },
+        {
+          "ID": 3.0,
+          "NAME": "table3_name3",
+          "TABLE_2_ID": 2.0
+        }
+      ]
     },
-    {
+    "TABLE_3_ID_ID": [{
       "ID": 3.0,
-      "NAME": "table1_name3",
-      "TABLE_2_ID": 3.0,
-      "TABLE_2_ID_JOIN_TABLE_2": {
-        "ID": 3.0,
-        "NAME": "table2_name3",
-        "ID_JOIN_TABLE_3": [
-          {
-            "ID": 4.0,
-            "NAME": "table3_name4",
-            "TABLE_2_ID": 3.0
-          }
-        ]
-      },
-      "ANOTHER_TABLE_2_ID_JOIN_TABLE_2": {
-        "ID_JOIN_TABLE_3": [{}]
-      }
+      "NAME": "table3_name3",
+      "TABLE_2_ID": 2.0
+    }],
+    "ANOTHER_TABLE_3_ID_ID": {
+      "ID": 2.0,
+      "NAME": "table3_name2",
+      "TABLE_2_ID": 2.0
     }
-  ]
+  },
+  {
+    "ID": 2.0,
+    "NAME": "table1_name2",
+    "TABLE_2_ID": 2.0,
+    "ANOTHER_TABLE_2_ID": 1.0,
+    "TABLE_3_ID": null,
+    "ANOTHER_TABLE_3_ID": 1.0,
+    "TABLE_2_ID_ID": {
+      "ID": 2.0,
+      "NAME": "table2_name2",
+      "TABLE_3_ID": null,
+      "ID_TABLE_2_ID": [{
+          "ID": 2.0,
+          "NAME": "table3_name2",
+          "TABLE_2_ID": 2.0
+        },
+        {
+          "ID": 3.0,
+          "NAME": "table3_name3",
+          "TABLE_2_ID": 2.0
+        }
+      ]
+    },
+    "ANOTHER_TABLE_2_ID_ID": {
+      "ID": 1.0,
+      "NAME": "table2_name1",
+      "TABLE_3_ID": 2.0,
+      "TABLE_3_ID_ID": [{
+        "ID": 2.0,
+        "NAME": "table3_name2",
+        "TABLE_2_ID": 2.0
+      }]
+    },
+    "ANOTHER_TABLE_3_ID_ID": {
+      "ID": 1.0,
+      "NAME": "table3_name1",
+      "TABLE_2_ID": 3.0
+    }
+  },
+  {
+    "ID": 3.0,
+    "NAME": "table1_name3",
+    "TABLE_2_ID": 3.0,
+    "ANOTHER_TABLE_2_ID": null,
+    "TABLE_3_ID": 1.0,
+    "ANOTHER_TABLE_3_ID": 4.0,
+    "TABLE_2_ID_ID": {
+      "ID": 3.0,
+      "NAME": "table2_name3",
+      "TABLE_3_ID": 3.0,
+      "TABLE_3_ID_ID": [{
+        "ID": 3.0,
+        "NAME": "table3_name3",
+        "TABLE_2_ID": 2.0
+      }],
+      "ID_TABLE_2_ID": [{
+        "ID": 1.0,
+        "NAME": "table3_name1",
+        "TABLE_2_ID": 3.0
+      }]
+    },
+    "TABLE_3_ID_ID": [{
+      "ID": 1.0,
+      "NAME": "table3_name1",
+      "TABLE_2_ID": 3.0
+    }],
+    "ANOTHER_TABLE_3_ID_ID": {
+      "ID": 4.0,
+      "NAME": "table3_name4",
+      "TABLE_2_ID": null
+    }
+  }
+]

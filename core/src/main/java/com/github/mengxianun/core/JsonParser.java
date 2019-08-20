@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.exception.JsonDataException;
 import com.github.mengxianun.core.item.ColumnItem;
@@ -70,10 +70,10 @@ public class JsonParser {
 	private Map<Table, TableItem> tempTableItems = new LinkedHashMap<>();
 	// Join表的TableItems
 	private Map<Table, TableItem> tempJoinTableItems = new LinkedHashMap<>();
-	// 关联表的TableItems
-	// 查询为 Select A, Join C, 实际关系为A-B-C, 所以这里存储的是B, C
-	//	private Map<Table, TableItem> tempRelationTableItems = new LinkedHashMap<>();
+	// 关联表的TableItems, row 为 Table, column 为 表别名
 	private HashBasedTable<Table, String, TableItem> tempRelationTableItems = HashBasedTable.create();
+	// Join表的 join type
+	private Map<Table, JoinType> tempJoinTypes = new HashMap<>();
 	// 保留
 	//	private Map<Column, ColumnItem> tempColumnItems = new LinkedHashMap<>();
 
@@ -307,6 +307,9 @@ public class JsonParser {
 			JsonObject joinObject = joinElement.getAsJsonObject();
 			String joinTypeString = joinObject.keySet().iterator().next();
 			JoinType joinType = JoinType.from(joinTypeString);
+			if (joinType == null) {
+				throw new DataException("Unsupported join type[%s]", joinTypeString);
+			}
 			String joinTableName = joinObject.getAsJsonPrimitive(joinTypeString).getAsString();
 			return parseJoin(joinTableName, joinType);
 		} else {
@@ -321,6 +324,9 @@ public class JsonParser {
 		if (joinTable == null) {
 			throw new DataException(ResultStatus.DATASOURCE_TABLE_NOT_EXIST, joinTableName);
 		}
+		// 记录 join 表 join type
+		tempJoinTypes.put(joinTable, joinType);
+
 		TableItem joinTableItem = new TableItem(joinTable, App.Action.getTableAlias(joinTable), false);
 		// 保存临时 Item
 		tempJoinTableItems.put(joinTable, joinTableItem);
@@ -328,13 +334,96 @@ public class JsonParser {
 	}
 
 	/**
-	 * 找到主表与 join 表的关系
+	 * 构建 Join
 	 * 
 	 * @param joinElements
 	 */
 	public void buildJoin(List<JoinElement> joinElements) {
-		TableItem tableItem = action.getTableItems().get(0);
-		Table table = tableItem.getTable();
+		// 获取所有关系路径
+		Set<RelationshipPath> relationshipPaths = getRelationshipPaths(joinElements);
+
+		// 已经存在关联关系路径, 用户后续循环复用, 避免关联表多次Join
+		// 注: 这里是路径复用, 不是关系复用
+		// Key 为关系路径, Value 为关系路径Item
+		Map<RelationshipPath, List<RelationshipItem>> existRelationshipItems = new HashMap<>();
+		for (RelationshipPath relationshipPath : relationshipPaths) {
+			// 上级 TableItem, 记录此值, 保证在多表多字段关联时, join操作正确的表
+			// 例: 当前循环的关联路径为 A-B-C, 当循环到A-B的时候, 上级TableItem为A, 当循环到B-C的时候, 上级TableItem为B
+			Table firstTable = relationshipPath.getFirst().getPrimaryColumn().getTable();
+			TableItem preTableItem = getTableItem(firstTable);
+
+			// 当前循环中的关联关系
+			Set<Relationship> currentRelationships = new LinkedHashSet<>();
+			List<RelationshipItem> currentRelationshipItems = new ArrayList<>();
+
+			for (Relationship relationship : relationshipPath.getRelationships()) {
+				currentRelationships.add(relationship);
+
+				// 当前循环的关联关系, 不可改变
+				Set<Relationship> currentFixedRelationships = new LinkedHashSet<>(currentRelationships);
+				List<RelationshipItem> currentFixedRelationshipItems = new ArrayList<>(currentRelationshipItems);
+
+				RelationshipPath existRelationshipPath = new RelationshipPath(currentFixedRelationships);
+				if (existRelationshipItems.containsKey(existRelationshipPath)) {
+					currentRelationshipItems = existRelationshipItems.get(existRelationshipPath);
+				} else {
+					if (!currentRelationshipItems.isEmpty()) {
+						// 在已存在的关联关系中的取最后一个, 为当前循环的左表TableItem
+						preTableItem = currentRelationshipItems.get(currentRelationshipItems.size() - 1)
+								.getRightTableItem();
+					}
+					Column primaryColumn = relationship.getPrimaryColumn();
+					Column foreignColumn = relationship.getForeignColumn();
+					Table foreignTable = foreignColumn.getTable();
+
+					JoinTableItem foreignTableItem = new JoinTableItem(foreignTable,
+							App.Action.getTableAlias(foreignTable), false, currentFixedRelationshipItems);
+					tempRelationTableItems.put(foreignTable, foreignTableItem.getAlias(), foreignTableItem);
+
+					ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, preTableItem);
+					ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, foreignTableItem);
+					JoinType joinType = tempJoinTypes.get(foreignColumn.getTable());
+
+					action.addJoinItem(new JoinItem(primaryColumnItem, foreignColumnItem, joinType));
+					// 添加关联关系最后一个Item
+					RelationshipItem relationshipItem = new RelationshipItem(preTableItem, foreignTableItem,
+							relationship);
+					currentFixedRelationshipItems.add(relationshipItem);
+					// 记录添加的关联关系Item
+					existRelationshipItems.put(existRelationshipPath, currentFixedRelationshipItems);
+
+					currentRelationshipItems = new ArrayList<>(currentRelationshipItems);
+					currentRelationshipItems.add(relationshipItem);
+				}
+			}
+		}
+	}
+
+	/**
+	 * 以主表开始, 以join表请求的顺序为准, 查找请求的所有表的关联关系路径.
+	 * <code>
+	 * {
+	 *   "select": "A",
+	 *   "join":["B", "C"]
+	 * }
+	 * </code>
+	 * <p>
+	 * 上述请求中的关联关系为
+	 * </p>
+	 * <li>A-B
+	 * <li>A-C
+	 * <li>A-B-C
+	 * 
+	 * @param joinElements
+	 * @return
+	 */
+	private Set<RelationshipPath> getRelationshipPaths(List<JoinElement> joinElements) {
+		Table table = action.getPrimaryTable();
+		// 计算请求table的顺序, 在之后的获取关联关系中, 需要比较请求table的顺序
+		AtomicInteger index = new AtomicInteger();
+		Map<Table, Integer> tableOrder = new HashMap<>();
+		joinElements.forEach(e -> tableOrder.put(e.getJoinTableItem().getTable(), index.getAndIncrement()));
+
 		// 查找关联关系
 		Set<RelationshipPath> relationshipPaths = new LinkedHashSet<>();
 		for (JoinElement joinElement : joinElements) {
@@ -345,122 +434,47 @@ public class JsonParser {
 				throw new DataException(String.format("Association relation for the join table [%s] was not found",
 						joinTable.getName()));
 			}
-			relationshipPaths.addAll(tempRelationshipPaths);
-		}
-		// 已经存在关联关系路径, 用户后续循环复用, 避免关联表多次Join
-		// 注: 这里是路径复用, 不是关系复用
-		// Key 为关系路径, Value 为关系路径最后一个表的 TableItem
-		Map<RelationshipPath, TableItem> existRelationshipPaths = new HashMap<>();
-		Map<RelationshipPath, List<RelationshipItem>> existRelationshipItems = new HashMap<>();
-		for (RelationshipPath relationshipPath : relationshipPaths) {
-			Set<Relationship> currentRelationships = new LinkedHashSet<>();
-			// 上级 TableItem, 记录此值, 保证在多表多字段关联时, join操作正确的表
-			// 例: 当前循环的关联路径为 A-B-C, 当循环到A-B的时候, 上级TableItem为A, 当循环到B-C的时候, 上级TableItem为B
-			Table firstTable = relationshipPath.getFirst().getPrimaryColumn().getTable();
-			TableItem preTableItem = getTableItem(firstTable);
-
-			List<RelationshipItem> currentRelationshipItems = new ArrayList<>();
-
-			// 当前循环中的关联关系
-			Set<Relationship> relationships = relationshipPath.getRelationships();
-			for (Relationship relationship : relationships) {
-				currentRelationships.add(relationship);
-
-				Column primaryColumn = relationship.getPrimaryColumn();
-				Column foreignColumn = relationship.getForeignColumn();
-
-				JoinType joinType = null;
-				for (JoinElement joinElement : joinElements) {
-					if (joinElement.getJoinTableItem().getTable() == foreignColumn.getTable()) {
-						joinType = joinElement.getJoinType();
+			// 取与请求的顺序一致的关联关系
+			// 如请求的join表为[B, C], 则关联关系只能是B-C, 不能是C-B, 否则会造成多层join
+			Set<RelationshipPath> newRelationshipPaths = new LinkedHashSet<>();
+			for (RelationshipPath relationshipPath : tempRelationshipPaths) {
+				boolean order = true;
+				Set<Relationship> relationships = relationshipPath.getRelationships();
+				for (Relationship relationship : relationships) {
+					Table primaryTable = relationship.getPrimaryColumn().getTable();
+					Table foreignTable = relationship.getForeignColumn().getTable();
+					Integer preIndex = tableOrder.containsKey(primaryTable) ? tableOrder.get(primaryTable) : -1;
+					Integer nextIndex = tableOrder.get(foreignTable);
+					if (preIndex > nextIndex) {
+						order = false;
 						break;
 					}
 				}
-				if (joinType == null) {
-					joinType = JoinType.LEFT;
+				if (order) {
+					newRelationshipPaths.add(relationshipPath);
 				}
-
-				//				ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, getTableItem(primaryColumn.getTable()));
-				ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, preTableItem);
-
-				Table foreignTable = foreignColumn.getTable();
-				// 当前循环的关联关系, 不可改变
-				LinkedHashSet<Relationship> currentFixedRelationships = new LinkedHashSet<>(currentRelationships);
-
-				RelationshipPath existRelationshipPath = new RelationshipPath(currentFixedRelationships);
-				if (existRelationshipPaths.containsKey(existRelationshipPath)) {
-					preTableItem = existRelationshipPaths.get(existRelationshipPath);
-					currentRelationshipItems = existRelationshipItems.get(existRelationshipPath);
-				} else {
-					List<RelationshipItem> currentFixedRelationshipItems = new ArrayList<>(currentRelationshipItems);
-
-					JoinTableItem foreignTableItem = new JoinTableItem(foreignTable,
-							App.Action.getTableAlias(foreignTable), false, currentFixedRelationshipItems);
-					tempRelationTableItems.put(foreignTable, foreignTableItem.getAlias(), foreignTableItem);
-					ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, foreignTableItem);
-
-					action.addJoinItem(new JoinItem(primaryColumnItem, foreignColumnItem, joinType));
-
-					existRelationshipPaths.put(existRelationshipPath, foreignTableItem);
-
-					currentFixedRelationshipItems
-							.add(new RelationshipItem(preTableItem, foreignTableItem, relationship));
-
-					existRelationshipItems.put(existRelationshipPath, currentFixedRelationshipItems);
-				}
-
 			}
+			relationshipPaths.addAll(newRelationshipPaths);
 		}
+		return relationshipPaths;
 	}
 
-	public class JoinElement {
-		Column joinColumn;
+	class JoinElement {
+
 		TableItem joinTableItem;
 		JoinType joinType;
-		AssociationType associationType;
-		// 主表名称集合. 如 JoinElement 的 joinTableItem 为 C, 请求中的 join 的关联关系为 A join B join C,
-		// 那么 tables 为 { A, B}
-		List<String> tables = new ArrayList<>();
 
 		public JoinElement(TableItem joinTableItem, JoinType joinType) {
 			this.joinTableItem = joinTableItem;
 			this.joinType = joinType;
 		}
 
-		public void addTable(String table) {
-			tables.add(table);
-		}
-
 		public TableItem getJoinTableItem() {
 			return joinTableItem;
 		}
 
-		public void setJoinTableItem(TableItem joinTableItem) {
-			this.joinTableItem = joinTableItem;
-		}
-
 		public JoinType getJoinType() {
 			return joinType;
-		}
-
-		public void setJoinType(JoinType joinType) {
-			this.joinType = joinType;
-		}
-
-		public AssociationType getAssociationType() {
-			return associationType;
-		}
-
-		public void setAssociationType(AssociationType associationType) {
-			this.associationType = associationType;
-		}
-
-		public List<String> getTables() {
-			return tables;
-		}
-
-		public void setTables(List<String> tables) {
-			this.tables = tables;
 		}
 
 	}

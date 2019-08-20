@@ -3,8 +3,12 @@ package com.github.mengxianun.jdbc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.json.JSONException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.JSONCompare;
+import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.skyscreamer.jsonassert.JSONCompareResult;
 
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.config.ResultAttributes;
@@ -181,21 +185,12 @@ public class SelectTest extends TestSupport {
 	}
 
 	@Test
-	void testAlias() {
+	void testAlias() throws JSONException {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_alias.json");
-		JsonArray result = (JsonArray) dataResultSet.getJsonData();
-		assertTrue(result.size() > 0);
-		JsonObject data = result.get(0).getAsJsonObject();
-		assertTrue(data.has("aid"));
-		assertTrue(data.has("A-name"));
-		assertTrue(data.has("ID_bbb"));
-		JsonObject dataB = data.get("ID_bbb").getAsJsonObject();
-		assertTrue(dataB.has("bname"));
-		assertTrue(dataB.has("B-Aid"));
-		assertTrue(data.has("ID_TABLE_C"));
-		JsonObject dataC = data.get("ID_TABLE_C").getAsJsonObject();
-		assertTrue(dataC.has("ID"));
-		assertTrue(dataC.has("cname"));
+		String result = dataResultSet.getJsonData().toString();
+		String excepted = readJson(JSON_PARENT_PATH + "select_alias_result.json");
+		JSONCompareResult compareJSON = JSONCompare.compareJSON(result, excepted, JSONCompareMode.LENIENT);
+		assertTrue(!compareJSON.failed());
 	}
 
 }

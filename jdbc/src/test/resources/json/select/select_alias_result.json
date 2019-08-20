@@ -1,0 +1,14 @@
+[{
+  "aid": 1.0,
+  "A-name": "A",
+  "aid_B-Aid": {
+    "ID": 1.0,
+    "bname": "B",
+    "B-Aid": 1.0
+  },
+  "aid_A_ID": {
+    "ID": 1.0,
+    "cname": "B",
+    "A_ID": 1.0
+  }
+}]

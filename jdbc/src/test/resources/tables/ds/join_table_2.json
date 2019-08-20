@@ -1,6 +1,13 @@
 {
   "columns": {
     "id":{},
-    "name":{}
+    "name":{},
+    "table_3_id":{
+      "association": {
+        "target_table": "join_table_3",
+        "target_column": "id",
+        "type":"1_N"
+      }
+    }
   }
 }
