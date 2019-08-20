@@ -66,7 +66,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 				continue;
 			}
 			if (tableItem instanceof JoinTableItem) {
-				buildJoinTableValues(uniqueRecord, tableObject, tableItemValues, (JoinTableItem) tableItem);
+				buildJoinTableValues(uniqueRecord, tableItemValues, (JoinTableItem) tableItem);
 			} else {
 				buildMainTableValues(uniqueRecord, tableObject);
 			}
@@ -110,15 +110,22 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		}
 	}
 
-	private void buildJoinTableValues(JsonObject currentTableObject, JsonObject tableObject,
-			Map<TableItem, JsonObject> tableItemValues, JoinTableItem joinTableItem) {
-		for (RelationshipItem relationshipItem : joinTableItem.getRelationshipItems()) {
+	private void buildJoinTableValues(JsonObject currentTableObject, Map<TableItem, JsonObject> tableItemValues,
+			JoinTableItem joinTableItem) {
+		// 父级关联表字段, 在请求非直接关联表的查询的时候用到
+		// 如存在关联关系 A-B-C, 请求 "select":"A", "join":["C"]
+		Column topColumn = null;
+		List<RelationshipItem> relationshipItems = joinTableItem.getRelationshipItems();
+		for (int i = 0; i < relationshipItems.size(); i++) {
+			RelationshipItem relationshipItem = relationshipItems.get(i);
 			TableItem rightTableItem = relationshipItem.getRightTableItem();
 			Relationship relationship = relationshipItem.getRelationship();
 			Column primaryColumn = relationship.getPrimaryColumn();
 			Column foreignColumn = relationship.getForeignColumn();
 			AssociationType associationType = relationship.getAssociationType();
 			Table foreignTable = foreignColumn.getTable();
+
+			JsonObject tableObject = tableItemValues.get(rightTableItem);
 
 			String primaryColumnAlias = App.Context.getColumnAlias(primaryColumn);
 			// 如果该关联表不是请求中指定的关联表, 不构建关系结构
@@ -130,30 +137,52 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 					JsonElement parentElement = currentTableObject.get(foreignTableKey);
 					if (parentElement.isJsonArray()) {
 						JsonArray parentArray = parentElement.getAsJsonArray();
-						// 去重
-						if (!parentArray.contains(tableObject)) {
-							parentArray.add(tableObject);
+						if (i == relationshipItems.size() - 1) { // 最后
+							// 去重
+							if (!parentArray.contains(tableObject)) {
+								parentArray.add(tableObject);
+							}
+						} else {
+							currentTableObject = parentArray.get(parentArray.size() - 1).getAsJsonObject();
 						}
-						currentTableObject = tableObject.deepCopy();
 					} else {
 						currentTableObject = parentElement.getAsJsonObject();
 					}
 				} else {
-					// 如果主表关联字段值为null, 说明主表该列的值没有关联的外表数据
-					if (currentTableObject.get(primaryColumnAlias).isJsonNull()) {
+					if (!currentTableObject.has(primaryColumnAlias) && topColumn != null) { // 不包含外表列, 即非直接关联情况
+						primaryColumnAlias = App.Context.getColumnAlias(topColumn);
+						foreignTableKey = primaryColumnAlias + "_" + getTableKey(foreignTable);
+						AssociationType indirectAssociationType = App.Context.getAssociationType(topColumn.getTable(),
+								foreignTable);
+						buildJoinTableObject(currentTableObject, indirectAssociationType, foreignTableKey, tableObject);
+						currentTableObject = tableObject;
+					} else if (currentTableObject.get(primaryColumnAlias).isJsonNull()) {
+						// 如果主表关联字段值为null, 说明主表该列的值没有关联的外表数据
 						break;
-					}
-					JsonObject joinTableObject = tableItemValues.get(rightTableItem);
-					if (associationType == AssociationType.ONE_TO_ONE
-							|| associationType == AssociationType.MANY_TO_ONE) {
-						currentTableObject.add(foreignTableKey, joinTableObject);
 					} else {
-						JsonArray joinTableArray = new JsonArray();
-						joinTableArray.add(joinTableObject);
-						currentTableObject.add(foreignTableKey, joinTableArray);
+						buildJoinTableObject(currentTableObject, associationType, foreignTableKey, tableObject);
+						currentTableObject = tableObject;
 					}
-					currentTableObject = joinTableObject;
 				}
+				topColumn = null;
+			} else {
+				topColumn = primaryColumn;
+			}
+		}
+	}
+
+	private void buildJoinTableObject(JsonObject currentTableObject, AssociationType associationType,
+			String foreignTableKey, JsonObject tableObject) {
+		if (associationType == AssociationType.ONE_TO_ONE || associationType == AssociationType.MANY_TO_ONE) {
+			currentTableObject.add(foreignTableKey, tableObject);
+		} else {
+			if (currentTableObject.has(foreignTableKey)) {
+				JsonArray joinTableArray = currentTableObject.getAsJsonArray(foreignTableKey);
+				joinTableArray.add(tableObject);
+			} else {
+				JsonArray joinTableArray = new JsonArray();
+				joinTableArray.add(tableObject);
+				currentTableObject.add(foreignTableKey, joinTableArray);
 			}
 		}
 	}

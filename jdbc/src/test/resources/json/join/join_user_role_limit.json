@@ -1,0 +1,5 @@
+{
+  "select":"user",
+  "join":["role"],
+  "limit":[0, 1]
+}

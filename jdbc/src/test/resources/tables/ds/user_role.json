@@ -1,0 +1,18 @@
+{
+  "columns":{
+    "user_id":{
+      "association": {
+        "target_table": "user",
+        "target_column": "id",
+        "type":"n_1"
+      }
+    },
+    "role_id":{
+      "association": {
+        "target_table": "role",
+        "target_column": "id",
+        "type":"n_1"
+      }
+    }
+  }
+}

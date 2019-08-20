@@ -382,7 +382,9 @@ public class JsonParser {
 
 					ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, preTableItem);
 					ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, foreignTableItem);
-					JoinType joinType = tempJoinTypes.get(foreignColumn.getTable());
+					JoinType joinType = tempJoinTypes.containsKey(foreignColumn.getTable())
+							? tempJoinTypes.get(foreignColumn.getTable())
+							: JoinType.LEFT;
 
 					action.addJoinItem(new JoinItem(primaryColumnItem, foreignColumnItem, joinType));
 					// 添加关联关系最后一个Item
@@ -436,7 +438,6 @@ public class JsonParser {
 			}
 			// 取与请求的顺序一致的关联关系
 			// 如请求的join表为[B, C], 则关联关系只能是B-C, 不能是C-B, 否则会造成多层join
-			Set<RelationshipPath> newRelationshipPaths = new LinkedHashSet<>();
 			for (RelationshipPath relationshipPath : tempRelationshipPaths) {
 				boolean order = true;
 				Set<Relationship> relationships = relationshipPath.getRelationships();
@@ -444,17 +445,16 @@ public class JsonParser {
 					Table primaryTable = relationship.getPrimaryColumn().getTable();
 					Table foreignTable = relationship.getForeignColumn().getTable();
 					Integer preIndex = tableOrder.containsKey(primaryTable) ? tableOrder.get(primaryTable) : -1;
-					Integer nextIndex = tableOrder.get(foreignTable);
+					Integer nextIndex = tableOrder.containsKey(foreignTable) ? tableOrder.get(foreignTable) : -1;
 					if (preIndex > nextIndex) {
 						order = false;
 						break;
 					}
 				}
 				if (order) {
-					newRelationshipPaths.add(relationshipPath);
+					relationshipPaths.add(relationshipPath);
 				}
 			}
-			relationshipPaths.addAll(newRelationshipPaths);
 		}
 		return relationshipPaths;
 	}

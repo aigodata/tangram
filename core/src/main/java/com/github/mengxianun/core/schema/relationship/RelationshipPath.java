@@ -59,6 +59,64 @@ public class RelationshipPath {
 		return tables.contains(table);
 	}
 
+	/**
+	 * 是否包含路径, 开始位置相同. 例
+	 * <li>A-B-C 包含A-B
+	 * <li>A-B 包含 A-B
+	 * <li>A-B 不包含A-B-C
+	 * 
+	 * @param relationshipPath
+	 * @return
+	 */
+	public boolean contains(RelationshipPath relationshipPath) {
+		if (relationshipPath == null) {
+			return false;
+		}
+		if (this == relationshipPath) {
+			return true;
+		}
+		if (size() < relationshipPath.size()) {
+			return false;
+		}
+		Iterator<Relationship> iterator = relationships.iterator();
+		Iterator<Relationship> otherIterator = relationshipPath.getRelationships().iterator();
+		while (otherIterator.hasNext()) {
+			if (!iterator.next().equals(otherIterator.next())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * 是否属于路径, 即被包含, 开始位置相同. 例
+	 * <li>A-B 属于 A-B-C
+	 * <li>A-B 属于 A-B
+	 * <li>A-B-C 不属于 A-B
+	 * 
+	 * @param relationshipPath
+	 * @return
+	 */
+	public boolean belong(RelationshipPath relationshipPath) {
+		if (relationshipPath == null) {
+			return false;
+		}
+		if (this == relationshipPath) {
+			return true;
+		}
+		if (size() > relationshipPath.size()) {
+			return false;
+		}
+		Iterator<Relationship> iterator = relationships.iterator();
+		Iterator<Relationship> otherIterator = relationshipPath.getRelationships().iterator();
+		while (iterator.hasNext()) {
+			if (!iterator.next().equals(otherIterator.next())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public Relationship getFirst() {
 		return relationships.iterator().next();
 	}
