@@ -1209,7 +1209,8 @@ public class JsonParser {
 		if (!validAttribute(RequestKeyword.NATIVE.lowerName())) {
 			return;
 		}
-		String nativeContent = jsonData.get(RequestKeyword.NATIVE.lowerName()).toString();
+		JsonElement nativeElement = jsonData.get(RequestKeyword.NATIVE.lowerName());
+		String nativeContent = nativeElement.isJsonPrimitive() ? nativeElement.getAsString() : nativeElement.toString();
 		action.setNativeContent(nativeContent);
 	}
 
