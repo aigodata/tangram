@@ -260,23 +260,26 @@ public class JdbcDataContext extends AbstractDataContext {
 	}
 
 	public void startTransaction() throws SQLException {
-		Connection conn = threadLocalConnection.get();
-		if (conn == null) {
-			conn = getConnection();
-		}
-		threadLocalConnection.set(conn);
+		Connection conn = getThreadConnection();
 		conn.setAutoCommit(false);
 		closeConnection.set(false);
 		logger.debug("Start new transaction.");
 	}
 
-	public Connection getConnection() throws SQLException {
+	public Connection getThreadConnection() throws SQLException {
 		Connection conn = threadLocalConnection.get();
 		if (conn == null) {
-			return dataSource.getConnection();
-		} else {
-			return conn;
+			conn = dataSource.getConnection();
+			threadLocalConnection.set(conn);
 		}
+		return conn;
+	}
+
+	public Connection getConnection() throws SQLException {
+		if (dataSource == null) {
+			throw new SQLException("DataSource is null");
+		}
+		return dataSource.getConnection();
 	}
 
 	public void commit() throws SQLException {
@@ -416,7 +419,7 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	protected List<Map<String, Object>> insert(String sql, Object... params) {
 		try {
-			return runner.insert(getConnection(), sql, new MapListHandler(new JdbcRowProcessor()), params);
+			return runner.insert(getThreadConnection(), sql, new MapListHandler(new JdbcRowProcessor()), params);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
@@ -438,7 +441,7 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	protected int update(String sql, Object... params) {
 		try {
-			return runner.update(getConnection(), sql, params);
+			return runner.update(getThreadConnection(), sql, params);
 		} catch (SQLException e) {
 			Throwable realReasion = e;
 			SQLException nextException = e.getNextException();
