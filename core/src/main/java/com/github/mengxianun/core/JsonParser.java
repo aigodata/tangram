@@ -149,6 +149,66 @@ public class JsonParser {
 		return source;
 	}
 
+	public static String[] parsePrimarySourceTable(final String json) {
+		JsonParser jsonParser = new JsonParser(json);
+		JsonObject jsonData = jsonParser.getJsonData();
+		String operationAttribute = jsonParser.getOperationAttribute();
+		
+		String source = null;
+		String table = null;
+		String alias = null;
+		// 如果为事务操作, 则所有操作必须是同一个数据源
+		if (jsonParser.isTransaction()) {
+			JsonArray transactionArray = jsonData.getAsJsonArray(operationAttribute);
+			return parsePrimarySourceTable(transactionArray.get(0).getAsJsonObject().toString());
+		} else if (jsonParser.isStructs()) {
+			source = jsonData.get(operationAttribute).getAsString();
+		} else if (jsonParser.isStruct()) {
+			table = jsonData.get(operationAttribute).getAsString();
+		} else {
+			JsonElement tablesElement = jsonData.get(operationAttribute);
+			if (!tablesElement.isJsonObject() && !tablesElement.isJsonArray()) {
+				String tableString = tablesElement.getAsString().trim();
+				if (tableString.contains(AdditionalKeywords.ALIAS_KEY.value())) {
+					String[] tablePart = tableString.split(AdditionalKeywords.ALIAS_KEY.value());
+					tableString = tablePart[0];
+					alias = tablePart[1];
+				} else if (tableString.contains(" ")) {
+					String[] tablePart = tableString.split("\\s+");
+					if (tablePart.length == 2) {
+						String wordRegex = "^(?![0-9]*$)[a-zA-Z0-9_$]+$";
+						if (tablePart[0].matches(wordRegex) && tablePart[1].matches(wordRegex)) {
+							tableString = tablePart[0];
+							alias = tablePart[1];
+						}
+					}
+				}
+				if (tableString.contains(".")) {
+					String[] sourceTable = tableString.split("\\.");
+					source = sourceTable[0];
+					table = sourceTable[1];
+				} else {
+					source = App.getDefaultDataSource();
+					table = tableString;
+				}
+			}
+		}
+		// 0 source, 1 table, 2alias
+		return new String[] { source, table, alias };
+	}
+
+	public static String parsePrimarySource(final String json) {
+		return parsePrimarySourceTable(json)[0];
+	}
+
+	public static String parsePrimaryTable(final String json) {
+		return parsePrimarySourceTable(json)[1];
+	}
+
+	public static Operation parsePrimaryOperation(final String json) {
+		return new JsonParser(json).getOperation();
+	}
+
 	public Action parse() {
 		// -------------
 		// Optimize
@@ -218,10 +278,19 @@ public class JsonParser {
 	}
 
 	/**
-	 * 解析 table 节点, 可以是数组或字符串
+	 * parse primary table node
 	 */
 	public void parseTables() {
-		JsonElement tablesElement = jsonData.get(operationAttribute);
+		parseTables(jsonData.get(operationAttribute));
+	}
+
+	/**
+	 * Parse primary table node.
+	 * It could be an array or a string, but not object
+	 * 
+	 * @param tablesElement
+	 */
+	public void parseTables(JsonElement tablesElement) {
 		if (tablesElement.isJsonObject()) {
 			throw new JsonDataException("table node cannot be an object");
 		} else if (tablesElement.isJsonArray()) {
@@ -233,7 +302,7 @@ public class JsonParser {
 	}
 
 	/**
-	 * 解析 table 元素
+	 * Parse primary table node.
 	 * 
 	 * @param tableElement
 	 * @return
@@ -1298,6 +1367,10 @@ public class JsonParser {
 
 	public Operation getOperation() {
 		return operation;
+	}
+
+	public String getOperationAttribute() {
+		return operationAttribute;
 	}
 
 	public Action getAction() {
