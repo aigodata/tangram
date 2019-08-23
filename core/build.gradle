@@ -1,5 +1,5 @@
 dependencies {
-  // implementation 'org.apache.metamodel:MetaModel-core:5.1.0'
   implementation 'com.opencsv:opencsv:4.2'
   implementation 'org.apache.commons:commons-jexl3:3.1'
+  implementation 'com.joestelmach:natty:0.13'
 }
