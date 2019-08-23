@@ -1,15 +1,15 @@
 package com.github.mengxianun.core.item;
 
-import java.sql.Timestamp;
 import java.text.NumberFormat;
 import java.text.ParseException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.Date;
 
 import com.github.mengxianun.core.Keyword;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
+import com.joestelmach.natty.Parser;
 
 /**
  * Value operation
@@ -20,6 +20,8 @@ import com.github.mengxianun.core.schema.ColumnType;
 public class ValuesItem extends Item {
 
 	private static final long serialVersionUID = 1L;
+
+	private Parser parser = new Parser();
 	protected Object value;
 
 	public ValuesItem(Object value) {
@@ -81,13 +83,8 @@ public class ValuesItem extends Item {
 				return number;
 			} catch (ParseException ignore) {}
 		} else if (columnType.isTimeBased()) {
-			if (columnType.isDate()) {
-				return LocalDate.parse(value.toString());
-			} else if (columnType.isTime()) {
-				return LocalTime.parse(value.toString());
-			} else if (columnType.isTimestamp()) {
-				return Timestamp.valueOf(value.toString());
-			}
+			Date date = parser.parse(value.toString()).get(0).getDates().get(0);
+			return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 		} else if (columnType.isBoolean()) {
 			return Boolean.parseBoolean(value.toString());
 		}
