@@ -1,6 +1,7 @@
 package com.github.mengxianun.core.schema.relationship;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,7 +24,7 @@ public final class RelationshipGraph {
 			.create();
 
 	private final LoadingCache<RelationshipKey, Set<RelationshipPath>> relationshipsCache = CacheBuilder.newBuilder()
-			.maximumSize(1000).expireAfterWrite(60, TimeUnit.MINUTES)
+			.maximumSize(1000).expireAfterAccess(7, TimeUnit.DAYS)
 			.build(new CacheLoader<RelationshipKey, Set<RelationshipPath>>() {
 
 				public Set<RelationshipPath> load(RelationshipKey key) throws Exception {
@@ -56,10 +57,45 @@ public final class RelationshipGraph {
 		}
 		ships.add(relationship);
 		relationships.put(primaryTable, foreignTable, ships);
-		// 清空缓存
-		relationshipsCache.cleanUp();
-
 		return true;
+	}
+
+	public boolean hasRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType) {
+		Table primaryTable = primaryColumn.getTable();
+		Table foreignTable = foreignColumn.getTable();
+		if (relationships.contains(primaryTable, foreignTable)) {
+			Set<Relationship> ships = relationships.get(primaryTable, foreignTable);
+			Relationship relationship = new Relationship(primaryColumn, foreignColumn, associationType);
+			if (ships.contains(relationship)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean deleteRelationship(Column primaryColumn, Column foreignColumn) {
+		boolean result = false;
+		Relationship relationship = new Relationship(primaryColumn, foreignColumn);
+		Table primaryTable = primaryColumn.getTable();
+		Table foreignTable = foreignColumn.getTable();
+		if (relationships.contains(primaryTable, foreignTable)) {
+			Set<Relationship> ships = relationships.get(primaryTable, foreignTable);
+			Iterator<Relationship> iterator = ships.iterator();
+			while (iterator.hasNext()) {
+				Relationship ship = iterator.next();
+				if (ship.equals(relationship)) {
+					ships.remove(ship);
+					result = true;
+					break;
+				}
+			}
+		}
+		return result;
+	}
+
+	public boolean deleteRelationship(Table primaryTable, Table foreignTable) {
+		return relationships.remove(primaryTable, foreignTable) != null
+				|| relationships.remove(foreignTable, primaryTable) != null;
 	}
 
 	public Set<RelationshipPath> getRelationships(Table primaryTable, Table foreignTable) {
@@ -90,6 +126,11 @@ public final class RelationshipGraph {
 				findAllPaths(temp, paths, node, targetTable);
 			}
 		}
+	}
+
+	public void cleanRelationship() {
+		// 清空缓存
+		relationshipsCache.invalidateAll();
 	}
 
 }
