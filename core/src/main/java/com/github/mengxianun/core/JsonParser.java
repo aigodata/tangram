@@ -502,7 +502,8 @@ public class JsonParser {
 			// 1. 主表关联 join 表 (数据表配置文件中的配置)
 			Set<RelationshipPath> tempRelationshipPaths = App.Context.getRelationships(table, joinTable);
 			if (tempRelationshipPaths.isEmpty()) {
-				throw new DataException(String.format("Association relation for the join table [%s] was not found",
+				throw new DataException(String.format("Association relation not found for the table [%s] and [%s]",
+						table.getName(),
 						joinTable.getName()));
 			}
 			// 取与请求的顺序一致的关联关系
