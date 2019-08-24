@@ -66,7 +66,7 @@ public class RelationshipPath {
 	 * <li>A-B 不包含A-B-C
 	 * 
 	 * @param relationshipPath
-	 * @return
+	 * @return is contains
 	 */
 	public boolean contains(RelationshipPath relationshipPath) {
 		if (relationshipPath == null) {
@@ -95,7 +95,7 @@ public class RelationshipPath {
 	 * <li>A-B-C 不属于 A-B
 	 * 
 	 * @param relationshipPath
-	 * @return
+	 * @return is belong
 	 */
 	public boolean belong(RelationshipPath relationshipPath) {
 		if (relationshipPath == null) {
