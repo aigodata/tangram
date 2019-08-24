@@ -294,8 +294,29 @@ public abstract class AbstractDataContext implements DataContext {
 	public void destroy() {}
 
 	@Override
-	public void addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType) {
-		graph.addRelationship(primaryColumn, foreignColumn, associationType);
+	public boolean addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType) {
+		boolean result = graph.addRelationship(primaryColumn, foreignColumn, associationType);
+		// 添加反向关系
+		boolean reverseResult = graph.addRelationship(foreignColumn, primaryColumn, associationType);
+		return result || reverseResult;
+	}
+
+	@Override
+	public boolean deleteRelationship(Column primaryColumn, Column foreignColumn) {
+		boolean result = graph.deleteRelationship(primaryColumn, foreignColumn);
+		// 删除反向关系
+		boolean reverseResult = graph.deleteRelationship(foreignColumn, primaryColumn);
+		return result || reverseResult;
+	}
+
+	@Override
+	public boolean deleteRelationship(Table primaryTable, Table foreignTable) {
+		return graph.deleteRelationship(primaryTable, foreignTable);
+	}
+
+	@Override
+	public void cleanRelationshipCache() {
+		graph.cleanRelationship();
 	}
 
 	@Override

@@ -48,7 +48,13 @@ public interface DataContext {
 
 	public void destroy();
 
-	public void addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType);
+	public boolean addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType);
+
+	public boolean deleteRelationship(Column primaryColumn, Column foreignColumn);
+
+	public boolean deleteRelationship(Table primaryTable, Table foreignTable);
+
+	public void cleanRelationshipCache();
 
 	/**
 	 * 获取2个表的关联关系, 包含所有可能的路径

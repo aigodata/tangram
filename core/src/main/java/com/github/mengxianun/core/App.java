@@ -300,14 +300,14 @@ public final class App {
 			currentDataContext().destroy();
 		}
 
-		public static void addRelationship(Column primaryColumn, Column foreignColumn,
+		public static boolean addRelationship(Column primaryColumn, Column foreignColumn,
 				AssociationType associationType) {
-			addRelationship(currentDataContext(), primaryColumn, foreignColumn, associationType);
+			return addRelationship(currentDataContext(), primaryColumn, foreignColumn, associationType);
 		}
 
-		public static void addRelationship(DataContext dataContext, Column primaryColumn, Column foreignColumn,
+		public static boolean addRelationship(DataContext dataContext, Column primaryColumn, Column foreignColumn,
 				AssociationType associationType) {
-			dataContext.addRelationship(primaryColumn, foreignColumn, associationType);
+			return dataContext.addRelationship(primaryColumn, foreignColumn, associationType);
 		}
 
 		public static void addRelationship(String dataSourceName, String primaryTableName, String primaryColumnName,
@@ -315,7 +315,31 @@ public final class App {
 			DataContext dataContext = getDataContext(dataSourceName);
 			Column primaryColumn = dataContext.getColumn(primaryTableName, primaryColumnName);
 			Column foreignColumn = dataContext.getColumn(foreignTableName, foreignColumnName);
-			addRelationship(dataContext, primaryColumn, foreignColumn, associationType);
+			boolean result = addRelationship(dataContext, primaryColumn, foreignColumn, associationType);
+			if (result) {
+				dataContext.cleanRelationshipCache();
+			}
+		}
+
+		public static void deleteRelationship(String dataSourceName, String primaryTableName, String primaryColumnName,
+				String foreignTableName, String foreignColumnName) {
+			DataContext dataContext = getDataContext(dataSourceName);
+			Column primaryColumn = dataContext.getColumn(primaryTableName, primaryColumnName);
+			Column foreignColumn = dataContext.getColumn(foreignTableName, foreignColumnName);
+			boolean result = dataContext.deleteRelationship(primaryColumn, foreignColumn);
+			if (result) {
+				dataContext.cleanRelationshipCache();
+			}
+		}
+
+		public static void deleteRelationship(String dataSourceName, String primaryTableName, String foreignTableName) {
+			DataContext dataContext = getDataContext(dataSourceName);
+			Table primaryTable = dataContext.getTable(primaryTableName);
+			Table foreignTable = dataContext.getTable(foreignTableName);
+			boolean result = dataContext.deleteRelationship(primaryTable, foreignTable);
+			if (result) {
+				dataContext.cleanRelationshipCache();
+			}
 		}
 
 		public static Set<RelationshipPath> getRelationships(Table primaryTable, Table foreignTable) {
