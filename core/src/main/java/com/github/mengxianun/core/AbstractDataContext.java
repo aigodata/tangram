@@ -184,7 +184,7 @@ public abstract class AbstractDataContext implements DataContext {
 
 	protected Summary executeCRUD(Action action) {
 		logger.debug("SQL: {}", action.getSql());
-		logger.debug("Params: {}", action.getParams().toArray());
+		logger.debug("Params: {}", action.getParams());
 
 		Summary summary = null;
 		if (action.isQuery()) {
@@ -297,7 +297,7 @@ public abstract class AbstractDataContext implements DataContext {
 	public boolean addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType) {
 		boolean result = graph.addRelationship(primaryColumn, foreignColumn, associationType);
 		// 添加反向关系
-		boolean reverseResult = graph.addRelationship(foreignColumn, primaryColumn, associationType);
+		boolean reverseResult = graph.addRelationship(foreignColumn, primaryColumn, associationType.reverse());
 		return result || reverseResult;
 	}
 

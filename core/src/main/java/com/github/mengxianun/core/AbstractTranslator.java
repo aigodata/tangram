@@ -228,10 +228,8 @@ public abstract class AbstractTranslator implements Translator {
 													.getAsString())
 											: AssociationType.ONE_TO_ONE;
 							Column targetColumn = dataContext.getColumn(targetTableName, targetColumnName);
-							// 添加主表对外表的关联
+							// 添加主外表的关联
 							dataContext.addRelationship(column, targetColumn, associationType);
-							// 添加外表对主表的关联
-							dataContext.addRelationship(targetColumn, column, associationType.reverse());
 						}
 					}
 				}
