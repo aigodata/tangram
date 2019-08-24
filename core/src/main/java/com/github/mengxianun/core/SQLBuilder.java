@@ -363,6 +363,10 @@ public class SQLBuilder {
 			params.addAll(betweenValueList);
 			whereParams.addAll(betweenValueList);
 			break;
+		case NULL:
+		case NOT_NULL:
+			filterBuilder.append(operator.sql());
+			break;
 
 		default:
 			break;

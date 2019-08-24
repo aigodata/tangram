@@ -193,7 +193,7 @@ public class JsonParser {
 				}
 			}
 		}
-		// 0 source, 1 table, 2alias
+		// 0 source, 1 table, 2 alias
 		return new String[] { source, table, alias };
 	}
 
@@ -831,12 +831,9 @@ public class JsonParser {
 		over: while (pos < length) {
 			switch (filterString.charAt(pos++)) {
 			case '=':
-				switch (filterString.charAt(pos++)) {
-				case '=':
+				if (filterString.charAt(pos) == '=') {
 					operator = Operator.STRONG_EQUAL;
 					break over;
-				default:
-					break;
 				}
 
 				String tail = filterString.substring(pos);
@@ -844,6 +841,8 @@ public class JsonParser {
 					operator = Operator.IN;
 				} else if (tail.contains("~")) { // between
 					operator = Operator.BETWEEN;
+				} else if ("null".equalsIgnoreCase(tail)) {
+					operator = Operator.NULL;
 				} else { // 等于
 					operator = Operator.EQUAL;
 				}
@@ -854,6 +853,8 @@ public class JsonParser {
 					String notTail = filterString.substring(pos);
 					if (notTail.contains(",")) { // in
 						operator = Operator.NOT_IN;
+					} else if ("null".equalsIgnoreCase(notTail)) {
+						operator = Operator.NOT_NULL;
 					} else { // 等于
 						operator = Operator.NOT_EQUAL;
 					}

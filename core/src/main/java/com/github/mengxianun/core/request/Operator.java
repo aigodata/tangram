@@ -33,7 +33,11 @@ public enum Operator {
 	// not like
 	NOT_LIKE("!%=", "not like"),
 	// not
-	NOT("!", "not");
+	NOT("!", "not"),
+	// 空
+	NULL("=", "is null"),
+	// 非空
+	NOT_NULL("!=", "is not null");
 
 	/*
 	 * 运算符号
