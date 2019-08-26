@@ -248,7 +248,7 @@ public class JsonParser {
 			break;
 		}
 
-		parseResult();
+		parseFile();
 		parseTemplate();
 		finish();
 
@@ -1285,13 +1285,12 @@ public class JsonParser {
 		action.setNativeContent(nativeContent);
 	}
 
-	private void parseResult() {
-		if (!validAttribute(RequestKeyword.RESULT.lowerName())) {
+	private void parseFile() {
+		if (!validAttribute(RequestKeyword.FILE.lowerName())) {
 			return;
 		}
-		String resultString = jsonData.get(RequestKeyword.RESULT.lowerName()).getAsString();
-		ResultType resultType = ResultType.from(resultString);
-		action.setResultType(resultType);
+		String file = jsonData.get(RequestKeyword.FILE.lowerName()).getAsString();
+		action.setFile(file);
 	}
 
 	private void parseTemplate() {
@@ -1359,8 +1358,8 @@ public class JsonParser {
 		return operation != null && operation == Operation.NATIVE;
 	}
 
-	public boolean isResultFile() {
-		return jsonData.has(RequestKeyword.RESULT.lowerName());
+	public boolean isFile() {
+		return jsonData.has(RequestKeyword.FILE.lowerName());
 	}
 
 	public boolean isTemplate() {

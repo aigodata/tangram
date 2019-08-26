@@ -23,7 +23,7 @@ public class DefaultTranslator extends AbstractTranslator {
 	@Override
 	protected DataResultSet execute(DataContext dataContext, Action action) {
 		Summary summary = dataContext.execute(action);
-		return new DefaultDataResultSet(summary.getData());
+		return new DefaultDataResultSet(summary);
 	}
 
 }

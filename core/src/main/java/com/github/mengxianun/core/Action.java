@@ -11,9 +11,11 @@ import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
+import com.github.mengxianun.core.request.FileType;
 import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.request.Template;
 import com.github.mengxianun.core.schema.Table;
+import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 
 public class Action {
@@ -29,7 +31,7 @@ public class Action {
 	private List<OrderItem> orderItems;
 	private LimitItem limitItem;
 	private List<ValueItem> valueItems;
-	private ResultType resultType;
+	private String file;
 	private Template template;
 	private String nativeSQL;
 	private String nativeContent;
@@ -228,8 +230,8 @@ public class Action {
 		return operation != null && operation == Operation.NATIVE;
 	}
 
-	public boolean isResultFile() {
-		return resultType != null;
+	public boolean isFile() {
+		return !Strings.isNullOrEmpty(file);
 	}
 
 	public boolean isTemplate() {
@@ -258,6 +260,28 @@ public class Action {
 
 	public Table getPrimaryTable() {
 		return getPrimaryTableItem().getTable();
+	}
+
+	public String getFilename() {
+		if (Strings.isNullOrEmpty(file)) {
+			return "";
+		}
+		if (file.contains(".")) {
+			return file;
+		} else {
+			return getPrimaryTable().getName() + "." + file;
+		}
+	}
+
+	public FileType getFileType() {
+		if (Strings.isNullOrEmpty(file)) {
+			return null;
+		}
+		String fileTypeString = file;
+		if (file.contains(".")) {
+			fileTypeString = file.split("\\.")[1];
+		}
+		return FileType.from(fileTypeString);
 	}
 
 	public Action count() {
@@ -379,12 +403,12 @@ public class Action {
 		this.valueItems = valueItems;
 	}
 
-	public ResultType getResultType() {
-		return resultType;
+	public String getFile() {
+		return file;
 	}
 
-	public void setResultType(ResultType resultType) {
-		this.resultType = resultType;
+	public void setFile(String file) {
+		this.file = file;
 	}
 
 	public Template getTemplate() {

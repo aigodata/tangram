@@ -1,5 +1,6 @@
 package com.github.mengxianun.core;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,7 @@ import com.github.mengxianun.core.config.ResultAttributes;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.data.summary.BasicSummary;
+import com.github.mengxianun.core.data.summary.FileSummary;
 import com.github.mengxianun.core.data.summary.InsertSummary;
 import com.github.mengxianun.core.data.summary.MultiSummary;
 import com.github.mengxianun.core.data.summary.QuerySummary;
@@ -25,6 +27,7 @@ import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValuesItem;
+import com.github.mengxianun.core.render.FileRenderer;
 import com.github.mengxianun.core.render.JsonRenderer;
 import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.schema.Column;
@@ -187,7 +190,9 @@ public abstract class AbstractDataContext implements DataContext {
 		logger.debug("Params: {}", action.getParams());
 
 		Summary summary = null;
-		if (action.isQuery()) {
+		if (action.isFile()) {
+			summary = toFile(action);
+		} else if (action.isQuery()) {
 			summary = query(action);
 		} else if (action.isInsert()) {
 			summary = insert(action);
@@ -195,6 +200,15 @@ public abstract class AbstractDataContext implements DataContext {
 			summary = update(action);
 		}
 		return summary;
+	}
+
+	private FileSummary toFile(Action action) {
+		if (!action.isQuery()) {
+			throw new UnsupportedOperationException();
+		}
+		QuerySummary querySummary = select(action);
+		ByteArrayOutputStream outputStream = new FileRenderer(action).render(querySummary.toRows());
+		return new FileSummary(querySummary, outputStream);
 	}
 
 	protected QuerySummary query(Action action) {
