@@ -63,7 +63,7 @@ public class TestSupport {
 		LOG.info(json);
 		Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
 		LOG.info("-----------------Result-----------------");
-		LOG.info(gson.toJson(dataResultSet));
+		LOG.info(gson.toJson(dataResultSet.getData()));
 		return dataResultSet;
 	}
 
