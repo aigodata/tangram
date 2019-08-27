@@ -47,8 +47,8 @@ public class ColumnItem extends Item {
 		this.customAlias = customAlias;
 	}
 
-	public String getKey() {
-		if (Strings.isNullOrEmpty(alias)) {
+	public String getKey1() {
+		if (!Strings.isNullOrEmpty(alias)) {
 			return alias;
 		} else if (column != null) {
 			return column.getName();
