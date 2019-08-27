@@ -3,6 +3,7 @@ package com.github.mengxianun.core.render;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -41,7 +42,7 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 			break;
 
 		default:
-			throw new UnsupportedOperationException("Unsupported file format");
+			throw new UnsupportedOperationException("Unsupported file type");
 		}
 		return outputStream;
 	}
@@ -51,12 +52,13 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
 		try (HSSFWorkbook wb = new HSSFWorkbook()) {
-			HSSFSheet sheet = wb.createSheet();
+			String tableDisplayName = action.getPrimaryTable().getDisplayName();
+			HSSFSheet sheet = wb.createSheet(tableDisplayName);
 
 			// 头部信息
 			HSSFRow header = sheet.createRow(0);
 			for (int i = 0; i < columnItems.size(); i++) {
-				String key = columnItems.get(i).getKey();
+				String key = getColumnKey(columnItems.get(i));
 
 				HSSFCell cell = header.createCell(i);
 				cell.setCellType(CellType.STRING);
@@ -69,7 +71,6 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 				HSSFRow hssfRow = sheet.createRow(i + 1);
 				for (int j = 0; j < columnItems.size(); j++) {
 					HSSFCell cell = hssfRow.createCell(j);
-					cell.setCellType(CellType.STRING);
 
 					Object value = row.getValue(j);
 					if (value == null) {
@@ -80,10 +81,13 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 					if (column == null) {
 						if (value instanceof Number) {
 							cell.setCellValue(Double.valueOf(value.toString()));
+							cell.setCellType(CellType.NUMERIC);
 						} else if (value instanceof Boolean) {
 							cell.setCellValue(Boolean.valueOf(value.toString()));
+							cell.setCellType(CellType.BOOLEAN);
 						} else {
 							cell.setCellValue(value.toString());
+							cell.setCellType(CellType.STRING);
 						}
 					} else {
 						JsonObject config = column.getConfig();
@@ -100,14 +104,16 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 								number = (Number) value;
 							}
 							cell.setCellValue(Double.valueOf(number.toString()));
+							cell.setCellType(CellType.NUMERIC);
 						} else if (columnType.isBoolean()) {
 							cell.setCellValue(Boolean.valueOf(value.toString()));
-						} else if (columnType.isLiteral()) {
-							cell.setCellValue(value.toString());
-						} else if (columnType.isJson() || columnType.isArray()) {
-							cell.setCellValue(value.toString());
+							cell.setCellType(CellType.BOOLEAN);
+						} else if (columnType.isArray()) {
+							cell.setCellValue(Arrays.toString((Object[]) value));
+							cell.setCellType(CellType.STRING);
 						} else {
 							cell.setCellValue(value.toString());
+							cell.setCellType(CellType.STRING);
 						}
 					}
 				}
