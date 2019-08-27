@@ -87,8 +87,12 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	public void initMetadata() {
 		DefaultSchema schema = new DefaultSchema(VIRTUAL_SCHEMA);
 		metadata.setSchemas(Lists.newArrayList(schema));
+		loadMetadata("", "");
+	}
 
-		String mappingString = request(REQUEST_METHOD_GET, REQUEST_ENDPOINT_MAPPING);
+	private void loadMetadata(String schemaName, String tableName) {
+		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaName);
+		String mappingString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_MAPPING);
 		JsonObject mappingObject = new Gson().fromJson(mappingString, JsonObject.class);
 		for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
 			String index = entry.getKey();
@@ -110,6 +114,12 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 				table.addColumn(column);
 			}
 		}
+	}
+
+	@Override
+	public Table loadTable(String schemaName, String tableName) {
+		loadMetadata(schemaName, tableName);
+		return metadata.getTable(schemaName, tableName);
 	}
 
 	@Override

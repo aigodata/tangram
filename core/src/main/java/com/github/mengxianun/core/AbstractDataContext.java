@@ -277,12 +277,21 @@ public abstract class AbstractDataContext implements DataContext {
 
 	@Override
 	public Table getTable(String tableName) {
-		return metadata.getTable(tableName);
+		return getTable(metadata.getDefaultSchemaName(), tableName);
 	}
 
 	@Override
 	public Table getTable(String schemaName, String tableName) {
-		return metadata.getTable(schemaName, tableName);
+		Table table = metadata.getTable(schemaName, tableName);
+		if (table == null) {
+			table = loadTable(schemaName, tableName);
+		}
+		return table;
+	}
+
+	@Override
+	public Table loadTable(String tableName) {
+		return loadTable(metadata.getDefaultSchemaName(), tableName);
 	}
 
 	@Override

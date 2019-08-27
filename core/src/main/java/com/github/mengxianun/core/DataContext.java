@@ -27,16 +27,13 @@ public interface DataContext {
 
 	public Schema getSchema(String schemaName);
 
-	/**
-	 * 根据表名查询数据表
-	 * 
-	 * @param tableName
-	 *            Config中配置的表别名或者实际的表名
-	 * @return Table
-	 */
 	public Table getTable(String tableName);
 
 	public Table getTable(String schemaName, String tableName);
+
+	public Table loadTable(String tableName);
+
+	public Table loadTable(String schemaName, String tableName);
 
 	public Column getColumn(String tableName, String columnName);
 

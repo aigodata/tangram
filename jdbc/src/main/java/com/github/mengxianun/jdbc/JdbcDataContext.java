@@ -149,17 +149,19 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	public void initMetadata() {
+		DefaultSchema schema = new DefaultSchema(defaultSchema, catalog);
+		metadata.addSchema(schema);
+		// Init all tables metadata
+		loadMetadata(defaultSchema, "%");
+	}
+
+	private void loadMetadata(String schemaPattern, String tableNamePattern) {
+
 		try (final Connection connection = getConnection()) {
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
 
-			metadata.addSchema(new DefaultSchema(defaultSchema, catalog));
-			metadata.addSchema(new DefaultSchema(INFORMATION_SCHEMA, catalog));
-
 			String[] types = Arrays.stream(tableTypes).map(TableType::name).toArray(String[]::new);
-			loadMetadata(databaseMetaData, catalog, defaultSchema, "%", types, null);
-			String[] systemTypes = new String[] { TableType.SYSTEM_TABLE.name() };
-			loadMetadata(databaseMetaData, catalog, INFORMATION_SCHEMA, "%", systemTypes, null);
-
+			loadMetadata(databaseMetaData, catalog, schemaPattern, tableNamePattern, types, null);
 		} catch (SQLException e) {
 			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 		}
@@ -169,7 +171,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			String tableNamePattern, String[] types, String columnNamePattern) throws SQLException {
 		// table metadata
 		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaPattern);
-		ResultSet tablesResultSet = databaseMetaData.getTables(catalog, schemaPattern, "%", null);
+		ResultSet tablesResultSet = databaseMetaData.getTables(catalog, schemaPattern, tableNamePattern, types);
 		while (tablesResultSet.next()) {
 			String tableName = tablesResultSet.getString(3);
 			String tableTypeName = tablesResultSet.getString(4);
@@ -179,7 +181,8 @@ public class JdbcDataContext extends AbstractDataContext {
 		}
 
 		// column metadata
-		ResultSet columnsResultSet = databaseMetaData.getColumns(catalog, schemaPattern, "%", columnNamePattern);
+		ResultSet columnsResultSet = databaseMetaData.getColumns(catalog, schemaPattern, tableNamePattern,
+				columnNamePattern);
 		while (columnsResultSet.next()) {
 			String columnTable = columnsResultSet.getString(3);
 			String columnName = columnsResultSet.getString(4);
@@ -251,6 +254,12 @@ public class JdbcDataContext extends AbstractDataContext {
 			}
 		}
 		return dialectTemp;
+	}
+
+	@Override
+	public Table loadTable(String schemaName, String tableName) {
+		loadMetadata(schemaName, tableName);
+		return metadata.getTable(schemaName, tableName);
 	}
 
 	public Connection getDriverConnection(String url, String username, String password) throws SQLException {
