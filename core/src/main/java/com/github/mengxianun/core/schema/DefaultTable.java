@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.github.mengxianun.core.config.TableConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -17,7 +18,7 @@ public class DefaultTable implements Table {
 	private List<Column> primaryKeys;
 
 	private JsonObject info;
-	// 自定义配置i信息
+	// 自定义配置信息
 	private JsonObject config = new JsonObject();
 
 	public DefaultTable() {
@@ -118,6 +119,14 @@ public class DefaultTable implements Table {
 	@Override
 	public String getRemarks() {
 		return remarks;
+	}
+
+	@Override
+	public String getDisplayName() {
+		if (config != null && config.has(TableConfig.DISPLAY)) {
+			return config.get(TableConfig.DISPLAY).getAsString();
+		}
+		return name;
 	}
 
 	@Override
