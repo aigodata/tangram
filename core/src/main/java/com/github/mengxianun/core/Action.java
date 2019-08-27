@@ -250,10 +250,6 @@ public class Action {
 		return limitItem != null;
 	}
 
-	public boolean columnAliasEnabled() {
-		return App.Context.columnAliasEnabled();
-	}
-
 	public TableItem getPrimaryTableItem() {
 		return tableItems.get(0);
 	}
@@ -269,7 +265,7 @@ public class Action {
 		if (file.contains(".")) {
 			return file;
 		} else {
-			return getPrimaryTable().getName() + "." + file;
+			return getPrimaryTable().getDisplayName() + "." + file;
 		}
 	}
 
