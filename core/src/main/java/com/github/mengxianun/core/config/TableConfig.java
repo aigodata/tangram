@@ -6,6 +6,8 @@ public final class TableConfig {
 		throw new IllegalStateException("Utility class");
 	}
 
+	// 显示名称
+	public static final String DISPLAY = "display";
 	// 别名
 	public static final String ALIAS = "alias";
 	// 列

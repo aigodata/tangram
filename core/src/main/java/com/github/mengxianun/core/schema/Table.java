@@ -22,6 +22,8 @@ public interface Table extends Name {
 
 	public String getRemarks();
 
+	public String getDisplayName();
+
 	public JsonObject getInfo();
 
 	public JsonObject getConfig();
