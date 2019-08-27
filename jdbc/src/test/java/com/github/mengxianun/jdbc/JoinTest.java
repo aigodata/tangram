@@ -49,16 +49,16 @@ public class JoinTest extends TestSupport {
 		assertTrue(!compareJSON.failed());
 	}
 
-  @Test
+	@Test
 	void testJoinUserAndRoleLimit() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "join_user_and_role_limit.json");
 		JsonObject result = dataResultSet.getJsonData().getAsJsonObject();
 		assertTrue(result.has(ResultAttributes.TOTAL));
 		long total = result.get(ResultAttributes.TOTAL).getAsLong();
-		assertEquals(2, total);
+		assertEquals(3, total);
 		JsonArray data = result.get(ResultAttributes.DATA).getAsJsonArray();
 		assertEquals(1, data.size());
-  }
+	}
 
 	@Test
 	void testJoinUserRole() throws JSONException {
@@ -75,9 +75,27 @@ public class JoinTest extends TestSupport {
 		JsonObject result = dataResultSet.getJsonData().getAsJsonObject();
 		assertTrue(result.has(ResultAttributes.TOTAL));
 		long total = result.get(ResultAttributes.TOTAL).getAsLong();
-		assertEquals(2, total);
+		assertEquals(3, total);
 		JsonArray data = result.get(ResultAttributes.DATA).getAsJsonArray();
 		assertEquals(1, data.size());
+	}
+
+	@Test
+	void testJoinUserAndRoleFields() throws JSONException {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "join_user_and_role_fields.json");
+		String result = dataResultSet.getJsonData().toString();
+		String excepted = readJson(JSON_PARENT_PATH + "join_user_and_role_fields_result.json");
+		JSONCompareResult compareJSON = JSONCompare.compareJSON(result, excepted, JSONCompareMode.LENIENT);
+		assertTrue(!compareJSON.failed());
+	}
+
+	@Test
+	void testJoinUserRoleFields() throws JSONException {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "join_user_role_fields.json");
+		String result = dataResultSet.getJsonData().toString();
+		String excepted = readJson(JSON_PARENT_PATH + "join_user_role_fields_result.json");
+		JSONCompareResult compareJSON = JSONCompare.compareJSON(result, excepted, JSONCompareMode.LENIENT);
+		assertTrue(!compareJSON.failed());
 	}
 
 }

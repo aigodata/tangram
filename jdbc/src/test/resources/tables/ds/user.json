@@ -1,0 +1,10 @@
+{
+  "columns":{
+    "detail_id":{
+      "association": {
+        "target_table": "detail",
+        "target_column": "id"
+      }
+    }
+  }
+}

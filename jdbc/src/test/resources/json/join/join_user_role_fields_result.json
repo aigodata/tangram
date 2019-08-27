@@ -1,0 +1,27 @@
+[{
+    "ID": 1.0,
+    "usersname": "user1",
+    "ID_ROLE": [{
+        "rolename": "role1"
+      },
+      {
+        "rolename": "role2"
+      }
+    ],
+    "DETAIL_ID_DETAIL": {
+      "ID": 1.0,
+      "NAME": "detail1"
+    }
+  },
+  {
+    "ID": 2.0,
+    "usersname": "user2",
+    "ID_ROLE": [{
+      "rolename": "role2"
+    }],
+    "DETAIL_ID_DETAIL": {
+      "ID": 2.0,
+      "NAME": "detail2"
+    }
+  }
+]

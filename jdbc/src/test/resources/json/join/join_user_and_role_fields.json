@@ -1,0 +1,6 @@
+{
+  "select":"user",
+  "fields":["id", "name as usersname", "user_role.user_id as userID", "user_role.role_id", "role.name as rolename", "detail.*"],
+  "join":["user_role", "role", "detail"],
+  "where":["detail_id!=null"]
+}

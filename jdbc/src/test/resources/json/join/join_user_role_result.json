@@ -1,22 +1,32 @@
 [{
     "ID": 1.0,
     "NAME": "user1",
+    "DETAIL_ID": 1.0,
     "ID_ROLE": [{
         "ID": 1.0,
-        "NAME": "role1"
+        "NAME": "role1",
+        "DETAIL_ID": 1.0
       },
       {
         "ID": 2.0,
-        "NAME": "role2"
+        "NAME": "role2",
+        "DETAIL_ID": 2.0
       }
     ]
   },
   {
     "ID": 2.0,
     "NAME": "user2",
+    "DETAIL_ID": 2.0,
     "ID_ROLE": [{
       "ID": 2.0,
-      "NAME": "role2"
+      "NAME": "role2",
+      "DETAIL_ID": 2.0
     }]
+  },
+  {
+    "ID": 3.0,
+    "NAME": "user3",
+    "DETAIL_ID": null
   }
 ]
