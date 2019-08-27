@@ -2,16 +2,16 @@
   "columns":{
     "id":{},
     "name":{},
-    "table_3_id":{
+    "table_4_id":{
       "association": {
-        "target_table": "join_table_3",
+        "target_table": "join_table_4",
         "target_column": "id",
-        "type":"n_1"
+        "type":"1_1"
       }
     },
-    "another_table_3_id":{
+    "another_table_4_id":{
       "association": {
-        "target_table": "join_table_3",
+        "target_table": "join_table_4",
         "target_column": "id",
         "type":"1_1"
       }

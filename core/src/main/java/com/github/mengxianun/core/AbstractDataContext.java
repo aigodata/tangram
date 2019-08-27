@@ -319,15 +319,19 @@ public abstract class AbstractDataContext implements DataContext {
 	@Override
 	public boolean addRelationship(Column primaryColumn, Column foreignColumn, AssociationType associationType) {
 		boolean result = graph.addRelationship(primaryColumn, foreignColumn, associationType);
-		// 添加反向关系
-		boolean reverseResult = graph.addRelationship(foreignColumn, primaryColumn, associationType.reverse());
+		boolean reverseResult = false;
+		// Reverse relationship
+		// Do not add an inverse relationship in the same table
+		if (primaryColumn.getTable() != foreignColumn.getTable()) {
+			reverseResult = graph.addRelationship(foreignColumn, primaryColumn, associationType.reverse());
+		}
 		return result || reverseResult;
 	}
 
 	@Override
 	public boolean deleteRelationship(Column primaryColumn, Column foreignColumn) {
 		boolean result = graph.deleteRelationship(primaryColumn, foreignColumn);
-		// 删除反向关系
+		// Delete reverse relationship
 		boolean reverseResult = graph.deleteRelationship(foreignColumn, primaryColumn);
 		return result || reverseResult;
 	}

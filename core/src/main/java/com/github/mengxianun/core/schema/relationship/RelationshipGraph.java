@@ -29,7 +29,7 @@ public final class RelationshipGraph {
 
 				public Set<RelationshipPath> load(RelationshipKey key) throws Exception {
 					Set<RelationshipPath> paths = new LinkedHashSet<>();
-					findAllPaths(new RelationshipPath(), paths, key.getPrimaryTable(), key.getForeignTable());
+					findAllPaths(new RelationshipPath(), paths, key.getPrimaryTable(), key.getForeignTable(), true);
 					return paths;
 				}
 			});
@@ -107,13 +107,14 @@ public final class RelationshipGraph {
 	}
 
 	private void findAllPaths(RelationshipPath visited, Set<RelationshipPath> paths, Table currentTable,
-			Table targetTable) {
-		if (currentTable == targetTable) {
+			Table targetTable, boolean begin) {
+		// 'begin' is to avoid self-associated tables
+		if (currentTable == targetTable && !begin) {
 			paths.add(visited);
 			return;
 		}
+		begin = false;
 		Map<Table, Set<Relationship>> row = relationships.row(currentTable);
-
 		for (Entry<Table, Set<Relationship>> entry : row.entrySet()) {
 			Table node = entry.getKey();
 			for (Relationship relationship : entry.getValue()) {
@@ -123,7 +124,7 @@ public final class RelationshipGraph {
 				RelationshipPath temp = new RelationshipPath();
 				temp.addAll(visited);
 				temp.add(relationship);
-				findAllPaths(temp, paths, node, targetTable);
+				findAllPaths(temp, paths, node, targetTable, begin);
 			}
 		}
 	}
