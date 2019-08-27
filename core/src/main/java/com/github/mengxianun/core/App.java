@@ -247,7 +247,7 @@ public final class App {
 		}
 
 		/**
-		 * 获取请求和响应数据中表的属性名称
+		 * Table key in the data structure. Input or output
 		 * 
 		 * @param table
 		 * @return Alias
