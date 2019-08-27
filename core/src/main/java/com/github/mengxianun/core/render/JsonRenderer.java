@@ -134,7 +134,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			if (action.getJoinTables().contains(foreignTable)) {
 				// 关联表节点名称, 主表字段_关联表字段(或别名, 以别名为主)
 				String foreignTableKey = primaryColumnAlias + "_" + getTableKey(foreignTable);
-				if (currentTableObject.has(foreignTableKey)) {
+				if (currentTableObject.has(foreignTableKey)) { // 已经构建了关联表结构
 					JsonElement parentElement = currentTableObject.get(foreignTableKey);
 					if (parentElement.isJsonArray()) {
 						JsonArray parentArray = parentElement.getAsJsonArray();
@@ -149,19 +149,25 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 					} else {
 						currentTableObject = parentElement.getAsJsonObject();
 					}
-				} else {
-					if (!currentTableObject.has(primaryColumnAlias) && topColumn != null) { // 不包含外表列, 即非直接关联情况
+				} else { // 还未构建关联表的结构
+					if (currentTableObject.has(primaryColumnAlias)) { // 主表中包含关联表的列
+						if (currentTableObject.get(primaryColumnAlias).isJsonNull()) {
+							// 如果主表关联字段值为null, 说明主表该列的值没有关联的外表数据
+							break;
+						} else { // 构建关联表的结构
+							buildJoinTableObject(currentTableObject, associationType, foreignTableKey, tableObject);
+							currentTableObject = tableObject;
+						}
+					} else { // 主表中不包含关联表的列. 可能的情况: 1. 查询fields未指定主表中的关联列   2. 非直接关联的查询, 即A-B-C, 查询A, join C的情况
+						if (topColumn == null) { // 查询fields未指定主表中的关联列
+							topColumn = primaryColumn;
+						}
+						// 有上级关联列, 即A-B-C, 查询A, join C的情况, 存在A列的情况, 即A-B_ID
 						primaryColumnAlias = App.Context.getColumnAlias(topColumn);
 						foreignTableKey = primaryColumnAlias + "_" + getTableKey(foreignTable);
 						AssociationType indirectAssociationType = App.Context.getAssociationType(topColumn.getTable(),
 								foreignTable);
 						buildJoinTableObject(currentTableObject, indirectAssociationType, foreignTableKey, tableObject);
-						currentTableObject = tableObject;
-					} else if (currentTableObject.get(primaryColumnAlias).isJsonNull()) {
-						// 如果主表关联字段值为null, 说明主表该列的值没有关联的外表数据
-						break;
-					} else {
-						buildJoinTableObject(currentTableObject, associationType, foreignTableKey, tableObject);
 						currentTableObject = tableObject;
 					}
 				}
@@ -240,19 +246,6 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 
 	private String getTableKey(Table table) {
 		return App.Context.getTableKey(table);
-	}
-
-	private String getColumnKey(ColumnItem columnItem) {
-		String columnKey = "";
-		Column column = columnItem.getColumn();
-		if (action.columnAliasEnabled() && columnItem.isCustomAlias()) { // 自定义别名
-			columnKey = columnItem.getAlias();
-		} else if (column == null) { // 表达式, 如函数
-			columnKey = columnItem.getExpression();
-		} else {
-			columnKey = App.Context.getColumnAlias(column);
-		}
-		return columnKey;
 	}
 
 	private void addColumnValue(JsonObject record, ColumnItem columnItem, Object value) {
