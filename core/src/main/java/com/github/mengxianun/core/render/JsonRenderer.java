@@ -131,7 +131,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			String primaryColumnAlias = App.Context.getColumnAlias(primaryColumn);
 			// 如果该关联表不是请求中指定的关联表, 不构建关系结构
 			// 只构建请求中指定的关联表
-			if (action.getJoinTables().contains(foreignTable)) {
+			if (action.isJoinTable(foreignTable)) {
 				// 关联表节点名称, 主表字段_关联表字段(或别名, 以别名为主)
 				String foreignTableKey = primaryColumnAlias + "_" + getTableKey(foreignTable);
 				if (currentTableObject.has(foreignTableKey)) { // 已经构建了关联表结构

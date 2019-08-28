@@ -38,8 +38,8 @@ public class Action {
 	private SQLBuilder sqlBuilder;
 	private boolean distinct;
 
-	private List<Table> tables;
-	private List<Table> joinTables;
+	private final List<Table> tables;
+	private final List<Table> joinTables;
 	// 是否处理 Join Limit 的情况
 	private boolean handleJoinLimit;
 
@@ -52,6 +52,8 @@ public class Action {
 		this.orderItems = new ArrayList<>();
 		this.valueItems = new ArrayList<>();
 		handleJoinLimit = true;
+		this.tables = new ArrayList<>();
+		this.joinTables = new ArrayList<>();
 	}
 
 	public Action(DataContext dataContext) {
@@ -182,6 +184,14 @@ public class Action {
 		this.valueItems.addAll(valueItems);
 	}
 
+	public void addTable(Table table) {
+		this.tables.add(table);
+	}
+
+	public void addJoinTable(Table join) {
+		this.joinTables.add(join);
+	}
+
 	public boolean isDetail() {
 		return operation != null && operation == Operation.DETAIL;
 	}
@@ -248,6 +258,10 @@ public class Action {
 
 	public boolean isLimit() {
 		return limitItem != null;
+	}
+
+	public boolean isJoinTable(Table join) {
+		return joinTables.contains(join);
 	}
 
 	public TableItem getPrimaryTableItem() {
@@ -445,22 +459,6 @@ public class Action {
 
 	public void setDistinct(boolean distinct) {
 		this.distinct = distinct;
-	}
-
-	public List<Table> getTables() {
-		return tables;
-	}
-
-	public void setTables(List<Table> tables) {
-		this.tables = tables;
-	}
-
-	public List<Table> getJoinTables() {
-		return joinTables;
-	}
-
-	public void setJoinTables(List<Table> joinTables) {
-		this.joinTables = joinTables;
 	}
 
 	public boolean isHandleJoinLimit() {
