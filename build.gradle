@@ -1,6 +1,6 @@
 allprojects {
   group = 'com.github.mengxianun'
-  version = '1.7.3'
+  version = '1.7.4'
 }
 
 subprojects {
@@ -12,6 +12,8 @@ subprojects {
   sourceCompatibility = '1.8'
   targetCompatibility = '1.8'
   compileJava.options.encoding = 'UTF-8'
+  
+  archivesBaseName = 'tangram-' + project.name
  
   dependencies {
     implementation 'com.google.guava:guava:28.0-jre'
@@ -57,7 +59,7 @@ subprojects {
 	publishing {
 	  publications {
 	    mavenJava(MavenPublication) {
-	      artifactId = 'tangram-' + project.name
+	      artifactId = archivesBaseName
 	      from components.java
 	      artifact sourcesJar
 	      artifact javadocJar
