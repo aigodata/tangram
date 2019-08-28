@@ -500,10 +500,10 @@ public class JsonParser {
 			}
 			// 关联关系获取逻辑
 			// 1. 顺序一致, 如请求的join表为[B, C], 则关联关系只能是B-C, 不能是C-B, 否则会造成多层join
-			// 2. 在多个关联关系路径中, 优先只包含请求表的关系路径, 其次在不包含请求表的关系路径中取最短路径
-			// 如: 已知的关系为, A-B, A-C, A-B-C
+			// 2. 在多个关联关系路径中, 优先请求表的关系路径, 其次非请求表关系的最短路径
+			// 如: 已知的关系为, A-B, A-C, A-B-C, A-H-C
 			// 例, 请求 A, join [B,C], 获取的关系为: A-B, A-C, A-B-C
-			// 例, 请求A, join [C], 获取的关系为: A-C. 这里没有A-B-C, 因为B表不再请求中
+			// 例, 请求A, join [C], 获取的关系为: A-C. 这里没有A-B-C, 因为B表不再请求中. 也没有A-H-C, 因为A-C和A-H-C中最短的路径为A-C
 			Set<RelationshipPath> requestRelationshipPaths = new LinkedHashSet<>();
 			for (RelationshipPath relationshipPath : tempRelationshipPaths) {
 				// Order is the same as the request order of the join tables
