@@ -7,11 +7,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.config.TableConfig;
@@ -37,8 +37,10 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 		Objects.requireNonNull(fileType, "Unrecognized file type");
 		switch (fileType) {
 		case XLS:
+			outputStream = renderXls(rows);
+			break;
 		case XLSX:
-			outputStream = renderExcel(rows);
+			outputStream = renderXlsx(rows);
 			break;
 
 		default:
@@ -47,32 +49,39 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 		return outputStream;
 	}
 
-	private ByteArrayOutputStream renderExcel(List<Row> rows) {
+	private ByteArrayOutputStream renderXls(List<Row> rows) {
+		return renderExcel(rows, new HSSFWorkbook());
+	}
+
+	private ByteArrayOutputStream renderXlsx(List<Row> rows) {
+		return renderExcel(rows, new XSSFWorkbook());
+	}
+
+	private ByteArrayOutputStream renderExcel(List<Row> rows, Workbook workbook) {
 		List<ColumnItem> columnItems = action.getColumnItems();
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-		try (HSSFWorkbook wb = new HSSFWorkbook()) {
+		try (Workbook wb = workbook) {
 			String tableDisplayName = action.getPrimaryTable().getDisplayName();
-			HSSFSheet sheet = wb.createSheet(tableDisplayName);
+			Sheet sheet = wb.createSheet(tableDisplayName);
 
 			// 头部信息
-			HSSFRow header = sheet.createRow(0);
+			org.apache.poi.ss.usermodel.Row header = sheet.createRow(0);
 			for (int i = 0; i < columnItems.size(); i++) {
 				String key = getColumnKey(columnItems.get(i));
 
-				HSSFCell cell = header.createCell(i);
-				cell.setCellType(CellType.STRING);
+				Cell cell = header.createCell(i);
 				cell.setCellValue(key);
 			}
 
 			// 数据
 			for (int i = 0; i < rows.size(); i++) {
-				Row row = rows.get(i);
-				HSSFRow hssfRow = sheet.createRow(i + 1);
+				Row dataRow = rows.get(i);
+				org.apache.poi.ss.usermodel.Row row = sheet.createRow(i + 1);
 				for (int j = 0; j < columnItems.size(); j++) {
-					HSSFCell cell = hssfRow.createCell(j);
+					Cell cell = row.createCell(j);
 
-					Object value = row.getValue(j);
+					Object value = dataRow.getValue(j);
 					if (value == null) {
 						cell.setCellValue((String) null);
 						continue;
@@ -81,13 +90,10 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 					if (column == null) {
 						if (value instanceof Number) {
 							cell.setCellValue(Double.valueOf(value.toString()));
-							cell.setCellType(CellType.NUMERIC);
 						} else if (value instanceof Boolean) {
 							cell.setCellValue(Boolean.valueOf(value.toString()));
-							cell.setCellType(CellType.BOOLEAN);
 						} else {
 							cell.setCellValue(value.toString());
-							cell.setCellType(CellType.STRING);
 						}
 					} else {
 						JsonObject config = column.getConfig();
@@ -104,16 +110,12 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 								number = (Number) value;
 							}
 							cell.setCellValue(Double.valueOf(number.toString()));
-							cell.setCellType(CellType.NUMERIC);
 						} else if (columnType.isBoolean()) {
 							cell.setCellValue(Boolean.valueOf(value.toString()));
-							cell.setCellType(CellType.BOOLEAN);
 						} else if (columnType.isArray()) {
 							cell.setCellValue(Arrays.toString((Object[]) value));
-							cell.setCellType(CellType.STRING);
 						} else {
 							cell.setCellValue(value.toString());
-							cell.setCellType(CellType.STRING);
 						}
 					}
 				}
