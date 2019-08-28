@@ -35,6 +35,17 @@ public class SelectTest extends TestSupport {
 	}
 
 	@Test
+	void testFields() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_fields.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertTrue(result.size() > 0);
+		JsonObject firstElement = result.get(0).getAsJsonObject();
+		assertTrue(firstElement.has("ID"));
+		assertTrue(firstElement.has("myname"));
+		assertTrue(firstElement.has("myage"));
+	}
+
+	@Test
 	void testWhereEqual() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_where_equal.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();

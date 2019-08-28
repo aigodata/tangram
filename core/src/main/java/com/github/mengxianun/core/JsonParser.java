@@ -583,32 +583,6 @@ public class JsonParser {
 	private ColumnItem parseColumn(JsonElement columnElement) {
 		String columnString = columnElement.getAsString().trim();
 		String alias = null;
-		if (columnString.contains(AdditionalKeywords.ALIAS_KEY.value())) {
-			String[] columnPart = columnString.split(AdditionalKeywords.ALIAS_KEY.value());
-			columnString = columnPart[0];
-			alias = columnPart[1];
-		} else if (columnString.contains(" ")) {
-			String columnRegex = "^(?![0-9]*$)[a-zA-Z0-9_$()]+$";
-			String aliasRegex = "^(?![0-9]*$)[a-zA-Z0-9_$']+$";
-			String[] columnPart = columnString.split("\\s+");
-			if (columnPart.length == 2) {
-				if (columnPart[0].matches(columnRegex) && columnPart[1].matches(aliasRegex)) {
-					columnString = columnPart[0];
-					alias = columnPart[1];
-				}
-			} else {
-				int lastSpaceIndex = columnString.lastIndexOf(" ");
-				String frontPart = columnString.substring(0, lastSpaceIndex + 1).trim();
-				String backPart = columnString.substring(lastSpaceIndex + 1).trim();
-				if (backPart.matches(aliasRegex)) {
-					columnString = frontPart;
-					alias = backPart;
-					if (alias.startsWith("'") && alias.endsWith("'")) {
-						alias = alias.split("'")[1];
-					}
-				}
-			}
-		}
 		// 所有列. 例: "fields": "*"
 		if ("*".equals(columnString)) { // 所有列
 			createAllColumns();
@@ -627,6 +601,16 @@ public class JsonParser {
 			createTableColumns(tableName);
 			return null;
 		}
+		if (columnString.contains(AdditionalKeywords.ALIAS_KEY.value())) {
+			String[] columnPart = columnString.split(AdditionalKeywords.ALIAS_KEY.value(), 2);
+			columnString = columnPart[0];
+			alias = columnPart[1];
+		} else if (columnString.contains(" ")) {
+			String[] columnPart = columnString.split("\\s+", 2);
+			columnString = columnPart[0];
+			alias = columnPart[1];
+		}
+
 		// 单列
 		return parseColumn(columnString, alias);
 	}
