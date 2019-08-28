@@ -1,6 +1,7 @@
 package com.github.mengxianun.core;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -8,8 +9,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -352,6 +355,7 @@ public class JsonParser {
 		}
 		// 保存临时 Item
 		tempTableItems.put(table, tableItem);
+		action.addTable(table);
 		return tableItem;
 	}
 
@@ -399,6 +403,7 @@ public class JsonParser {
 		TableItem joinTableItem = new TableItem(joinTable, App.Action.getTableAlias(joinTable), false);
 		// 保存临时 Item
 		tempJoinTableItems.put(joinTable, joinTableItem);
+		action.addJoinTable(joinTable);
 		return new JoinElement(joinTableItem, joinType);
 	}
 
@@ -472,59 +477,83 @@ public class JsonParser {
 
 	/**
 	 * 以主表开始, 以join表请求的顺序为准, 查找请求的所有表的关联关系路径.
-	 * <code>
-	 * {
-	 *   "select": "A",
-	 *   "join":["B", "C"]
-	 * }
-	 * </code>
-	 * <p>
-	 * 上述请求中的关联关系为
-	 * </p>
-	 * <li>A-B
-	 * <li>A-C
-	 * <li>A-B-C
 	 * 
 	 * @param joinElements
 	 * @return
 	 */
 	private Set<RelationshipPath> getRelationshipPaths(List<JoinElement> joinElements) {
 		Table table = action.getPrimaryTable();
-		// 计算请求table的顺序, 在之后的获取关联关系中, 需要比较请求table的顺序
+		// Calculate the order of request tables
 		AtomicInteger index = new AtomicInteger();
 		Map<Table, Integer> tableOrder = new HashMap<>();
 		joinElements.forEach(e -> tableOrder.put(e.getJoinTableItem().getTable(), index.getAndIncrement()));
 
-		// 查找关联关系
+		// Find relationship
 		Set<RelationshipPath> relationshipPaths = new LinkedHashSet<>();
 		for (JoinElement joinElement : joinElements) {
 			Table joinTable = joinElement.getJoinTableItem().getTable();
-			// 1. 主表关联 join 表 (数据表配置文件中的配置)
 			Set<RelationshipPath> tempRelationshipPaths = App.Context.getRelationships(table, joinTable);
 			if (tempRelationshipPaths.isEmpty()) {
 				throw new DataException(String.format("Association relation not found for the table [%s] and [%s]",
 						table.getName(),
 						joinTable.getName()));
 			}
-			// 取与请求的顺序一致的关联关系
-			// 如请求的join表为[B, C], 则关联关系只能是B-C, 不能是C-B, 否则会造成多层join
+			// 关联关系获取逻辑
+			// 1. 顺序一致, 如请求的join表为[B, C], 则关联关系只能是B-C, 不能是C-B, 否则会造成多层join
+			// 2. 在多个关联关系路径中, 优先只包含请求表的关系路径, 其次在不包含请求表的关系路径中取最短路径
+			// 如: 已知的关系为, A-B, A-C, A-B-C
+			// 例, 请求 A, join [B,C], 获取的关系为: A-B, A-C, A-B-C
+			// 例, 请求A, join [C], 获取的关系为: A-C. 这里没有A-B-C, 因为B表不再请求中
+			Set<RelationshipPath> requestRelationshipPaths = new LinkedHashSet<>();
 			for (RelationshipPath relationshipPath : tempRelationshipPaths) {
+				// Order is the same as the request order of the join tables
 				boolean order = true;
-				Set<Relationship> relationships = relationshipPath.getRelationships();
-				for (Relationship relationship : relationships) {
+				// The first table is the main table
+				boolean first = true;
+				// If the tables on the relational path are all tables in the request
+				boolean isRequestRelationshipPath = true;
+				// The previous table in the request
+				Table preTable = table;
+				for (Relationship relationship : relationshipPath.getRelationships()) {
 					Table primaryTable = relationship.getPrimaryColumn().getTable();
 					Table foreignTable = relationship.getForeignColumn().getTable();
-					Integer preIndex = tableOrder.containsKey(primaryTable) ? tableOrder.get(primaryTable) : -1;
-					Integer nextIndex = tableOrder.containsKey(foreignTable) ? tableOrder.get(foreignTable) : -1;
-					if (preIndex > nextIndex) {
-						order = false;
-						break;
+					
+					if (first) { // Skip main table
+						first = false;
+						continue;
 					}
+					if (action.isJoinTable(primaryTable)) {
+						preTable = primaryTable;
+					}
+					if (action.isJoinTable(foreignTable)) {
+						Integer preIndex = tableOrder.containsKey(preTable) ? tableOrder.get(preTable) : -1;
+						Integer nextIndex = tableOrder.get(foreignTable);
+						if (preIndex > nextIndex) {
+							order = false;
+							break;
+						}
+					}
+					if (!action.isJoinTable(primaryTable) || !action.isJoinTable(foreignTable)) {
+						isRequestRelationshipPath = false;
+					}
+
 				}
-				if (order) {
-					relationshipPaths.add(relationshipPath);
+				if (order && isRequestRelationshipPath) {
+					requestRelationshipPaths.add(relationshipPath);
 				}
 			}
+			Set<RelationshipPath> parsedRelationshipPaths = requestRelationshipPaths;
+			if (parsedRelationshipPaths.isEmpty()) {
+				// Shortest relation path length
+				Optional<Integer> minLenOptional = tempRelationshipPaths.parallelStream().map(RelationshipPath::size)
+						.min(Comparator.comparing(Integer::valueOf));
+				if (minLenOptional.isPresent()) {
+					Integer minLen = minLenOptional.get();
+					parsedRelationshipPaths = tempRelationshipPaths.stream().filter(e -> e.size() == minLen)
+							.collect(Collectors.toSet());
+				}
+			}
+			relationshipPaths.addAll(parsedRelationshipPaths);
 		}
 		return relationshipPaths;
 	}
@@ -1286,10 +1315,7 @@ public class JsonParser {
 		action.setTemplate(template);
 	}
 
-	private void finish() {
-		action.setTables(new ArrayList<>(tempTableItems.keySet()));
-		action.setJoinTables(new ArrayList<>(tempJoinTableItems.keySet()));
-	}
+	private void finish() {}
 
 	private boolean validAttribute(String attribute) {
 		if (jsonData.has(attribute)) {
