@@ -65,7 +65,7 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 			String tableDisplayName = action.getPrimaryTable().getDisplayName();
 			Sheet sheet = wb.createSheet(tableDisplayName);
 
-			// 头部信息
+			// Header
 			org.apache.poi.ss.usermodel.Row header = sheet.createRow(0);
 			for (int i = 0; i < columnItems.size(); i++) {
 				String key = getColumnKey(columnItems.get(i));
@@ -74,7 +74,7 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 				cell.setCellValue(key);
 			}
 
-			// 数据
+			// Data
 			for (int i = 0; i < rows.size(); i++) {
 				Row dataRow = rows.get(i);
 				org.apache.poi.ss.usermodel.Row row = sheet.createRow(i + 1);
