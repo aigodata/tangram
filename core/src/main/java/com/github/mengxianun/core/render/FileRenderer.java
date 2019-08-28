@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -120,6 +121,8 @@ public class FileRenderer extends AbstractRenderer<OutputStream> {
 					}
 				}
 			}
+			// Column width auto size
+			IntStream.range(0, columnItems.size()).forEach(sheet::autoSizeColumn);
 			wb.write(byteArrayOutputStream);
 		} catch (IOException e) {
 			throw new DataException("Excel build failed", e);
