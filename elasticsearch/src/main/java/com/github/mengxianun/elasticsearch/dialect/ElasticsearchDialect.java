@@ -32,4 +32,9 @@ public class ElasticsearchDialect extends AbstractDialect {
 		return false;
 	}
 
+	@Override
+	public String processKeyword(String keyword) {
+		return '"' + keyword + '"';
+	}
+
 }
