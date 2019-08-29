@@ -3,6 +3,7 @@ package com.github.mengxianun.elasticsearch;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -109,10 +110,38 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 			for (String columnName : properties.keySet()) {
 				JsonObject columnProperties = properties.getAsJsonObject(columnName);
-				String typeName = columnProperties.has("type") ? columnProperties.get("type").getAsString() : null;
-				DefaultColumn column = new DefaultColumn(table, new ElasticsearchColumnType(typeName), columnName);
-				table.addColumn(column);
+				if (columnProperties.has("properties")) { // object type
+					String typeName = ElasticsearchColumnType.OBJECT;
+					List<List<String>> paths = new ArrayList<>();
+					findAllColumns(Arrays.asList(columnName), paths, columnProperties);
+					for (List<String> list : paths) {
+						String objectColumnName = String.join(".", list);
+						DefaultColumn column = new DefaultColumn(table, new ElasticsearchColumnType(typeName),
+								objectColumnName);
+						table.addColumn(column);
+					}
+				} else {
+					String typeName = columnProperties.has("type") ? columnProperties.get("type").getAsString() : null;
+					DefaultColumn column = new DefaultColumn(table, new ElasticsearchColumnType(typeName), columnName);
+					table.addColumn(column);
+				}
 			}
+		}
+	}
+
+	private void findAllColumns(List<String> visited, List<List<String>> paths, JsonObject columnObjects) {
+		if (!columnObjects.has("properties")) {
+			paths.add(visited);
+			return;
+		}
+		JsonObject columns = columnObjects.getAsJsonObject("properties");
+		for (Entry<String, JsonElement> entry : columns.entrySet()) {
+			String column = entry.getKey();
+			JsonObject columnObject = entry.getValue().getAsJsonObject();
+			List<String> temp = new ArrayList<>();
+			temp.addAll(visited);
+			temp.add(column);
+			findAllColumns(temp, paths, columnObject);
 		}
 	}
 

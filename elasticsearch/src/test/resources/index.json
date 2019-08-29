@@ -22,7 +22,14 @@
   {
     "id":5,
     "name":"Nick",
-    "age":99
+    "age":99,
+    "info":{
+      "birth":"2001-09-10",
+      "country":{
+        "code":"001",
+        "name":"mars"
+      }
+    }
   },
   {
     "id":6,

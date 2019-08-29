@@ -5,13 +5,14 @@ import com.github.mengxianun.core.schema.AbstractColumnType;
 public class ElasticsearchColumnType extends AbstractColumnType {
 
 	// simple type
-	private static final String TEXT = "text";
-	private static final String KEYWORD = "keyword";
-	private static final String DATE = "date";
-	private static final String LONG = "long";
-	private static final String DOUBLE = "double";
-	private static final String BOOLEAN = "boolean";
-	private static final String IP = "ip";
+	public static final String TEXT = "text";
+	public static final String KEYWORD = "keyword";
+	public static final String DATE = "date";
+	public static final String LONG = "long";
+	public static final String DOUBLE = "double";
+	public static final String BOOLEAN = "boolean";
+	public static final String IP = "ip";
+	public static final String OBJECT = "object";
 
 	public ElasticsearchColumnType(String name) {
 		super(name);
@@ -84,6 +85,10 @@ public class ElasticsearchColumnType extends AbstractColumnType {
 
 	public boolean isIP() {
 		return IP.equals(name);
+	}
+
+	public boolean isObject() {
+		return OBJECT.equals(name);
 	}
 
 	@Override
