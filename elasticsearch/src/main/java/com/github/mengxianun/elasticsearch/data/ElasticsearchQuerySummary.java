@@ -19,6 +19,15 @@ import com.google.gson.reflect.TypeToken;
 
 public class ElasticsearchQuerySummary extends QuerySummary {
 
+	private static final String NODE_TOTAL = "total";
+	private static final String NODE_HITS = "hits";
+	private static final String NODE_AGGREGATIONS = "aggregations";
+	private static final String NODE_GROUPBY = "groupby";
+	private static final String NODE_BUCKETS = "buckets";
+	private static final String NODE_SOURCE = "_source";
+	private static final String NODE_FIELDS = "fields";
+	private static final String NODE_KEY = "key";
+
 	private final String resultString;
 
 	public ElasticsearchQuerySummary(String resultString) {
@@ -37,18 +46,18 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 		JsonObject response = gson.fromJson(resultString, JsonObject.class);
 
 		// hits
-		JsonObject hits = response.getAsJsonObject("hits");
-		total = hits.get("total").getAsLong();
-		JsonArray items = hits.getAsJsonArray("hits");
+		JsonObject hits = response.getAsJsonObject(NODE_HITS);
+		total = hits.get(NODE_TOTAL).getAsLong();
+		JsonArray items = hits.getAsJsonArray(NODE_HITS);
 		if (items.size() > 0) {
 			items.forEach(e -> rows.add(new DefaultRow(header, parseHit(e.getAsJsonObject()))));
 		}
 
 		// aggregations
-		if (response.has("aggregations")) {
-			JsonObject aggregations = response.getAsJsonObject("aggregations");
-			JsonObject groupby = aggregations.getAsJsonObject("groupby");
-			JsonArray buckets = groupby.get("buckets").getAsJsonArray();
+		if (response.has(NODE_AGGREGATIONS)) {
+			JsonObject aggregations = response.getAsJsonObject(NODE_AGGREGATIONS);
+			JsonObject groupby = aggregations.getAsJsonObject(NODE_GROUPBY);
+			JsonArray buckets = groupby.get(NODE_BUCKETS).getAsJsonArray();
 			buckets.forEach(e -> rows.add(new DefaultRow(header, parseBucket(e.getAsJsonObject()))));
 		}
 		return rows;
@@ -57,30 +66,34 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 	private Object[] parseHit(JsonObject hit) {
 		final Object[] values = new Object[header.size()];
 		// _source
-		JsonObject source = hit.getAsJsonObject("_source");
-		for (Entry<String, JsonElement> entry : source.entrySet()) {
-			String field = entry.getKey();
-			Object value = entry.getValue();
-			int i = header.indexOf(field);
-			if (i == -1) {
-				continue;
+		if (hit.has(NODE_SOURCE)) {
+			JsonObject source = hit.getAsJsonObject(NODE_SOURCE);
+			for (Entry<String, JsonElement> entry : source.entrySet()) {
+				String field = entry.getKey();
+				Object value = entry.getValue();
+				int i = header.indexOf(field);
+				if (i == -1) {
+					continue;
+				}
+				values[i] = value;
 			}
-			values[i] = value;
 		}
 		// fields
-		JsonObject fields = hit.getAsJsonObject("fields");
-		for (Entry<String, JsonElement> entry : fields.entrySet()) {
-			String field = entry.getKey();
-			JsonElement valueElement = entry.getValue();
-			Object value = valueElement;
-			if (valueElement.isJsonArray()) {
-				value = valueElement.getAsJsonArray().get(0);
+		if (hit.has(NODE_FIELDS)) {
+			JsonObject fields = hit.getAsJsonObject(NODE_FIELDS);
+			for (Entry<String, JsonElement> entry : fields.entrySet()) {
+				String field = entry.getKey();
+				JsonElement valueElement = entry.getValue();
+				Object value = valueElement;
+				if (valueElement.isJsonArray()) {
+					value = valueElement.getAsJsonArray().get(0);
+				}
+				int i = header.indexOf(field);
+				if (i == -1) {
+					continue;
+				}
+				values[i] = value;
 			}
-			int i = header.indexOf(field);
-			if (i == -1) {
-				continue;
-			}
-			values[i] = value;
 		}
 		return values;
 	}
@@ -88,42 +101,48 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 	private Map<String, Object> parseHitToMap(JsonObject hit) {
 		final Map<String, Object> values = new HashMap<>();
 		// _source
-		JsonObject source = hit.getAsJsonObject("_source");
-		Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
-		Map<String, Object> sourceMap = new Gson().fromJson(source, dataType);
-		values.putAll(sourceMap);
+		if (hit.has(NODE_SOURCE)) {
+			JsonObject source = hit.getAsJsonObject(NODE_SOURCE);
+			Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
+			Map<String, Object> sourceMap = new Gson().fromJson(source, dataType);
+			values.putAll(sourceMap);
+		}
 		// fields
-		JsonObject fields = hit.getAsJsonObject("fields");
-		for (Entry<String, JsonElement> entry : fields.entrySet()) {
-			String field = entry.getKey();
-			JsonElement valueElement = entry.getValue();
-			Object value = valueElement;
-			if (valueElement.isJsonArray()) {
-				value = valueElement.getAsJsonArray().get(0);
+		if (hit.has(NODE_FIELDS)) {
+			JsonObject fields = hit.getAsJsonObject(NODE_FIELDS);
+			for (Entry<String, JsonElement> entry : fields.entrySet()) {
+				String field = entry.getKey();
+				JsonElement valueElement = entry.getValue();
+				Object value = valueElement;
+				if (valueElement.isJsonArray()) {
+					value = valueElement.getAsJsonArray().get(0);
+				}
+				values.put(field, value);
 			}
-			values.put(field, value);
 		}
 		return values;
 	}
 
 	private Object[] parseBucket(JsonObject bucket) {
 		final Object[] values = new Object[header.size()];
-		JsonObject key = bucket.getAsJsonObject("key");
-		for (Entry<String, JsonElement> entry : key.entrySet()) {
-			String field = entry.getKey();
-			JsonElement value = entry.getValue();
-			int i = header.indexOf(field);
-			if (i == -1) {
-				continue;
+		if (bucket.has(NODE_KEY)) {
+			JsonObject key = bucket.getAsJsonObject(NODE_KEY);
+			for (Entry<String, JsonElement> entry : key.entrySet()) {
+				String field = entry.getKey();
+				JsonElement value = entry.getValue();
+				int i = header.indexOf(field);
+				if (i == -1) {
+					continue;
+				}
+				values[i] = value;
 			}
-			values[i] = value;
 		}
 		return values;
 	}
 
 	private Map<String, Object> parseBucketToMap(JsonObject bucket) {
 		final Map<String, Object> values = new HashMap<>();
-		JsonObject key = bucket.getAsJsonObject("key");
+		JsonObject key = bucket.getAsJsonObject(NODE_KEY);
 		Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
 		Map<String, Object> keyMap = new Gson().fromJson(key, dataType);
 		values.putAll(keyMap);
@@ -137,18 +156,18 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 		JsonObject response = gson.fromJson(resultString, JsonObject.class);
 
 		// hits
-		JsonObject hits = response.getAsJsonObject("hits");
-		total = hits.get("total").getAsLong();
-		JsonArray items = hits.getAsJsonArray("hits");
+		JsonObject hits = response.getAsJsonObject(NODE_HITS);
+		total = hits.get(NODE_TOTAL).getAsLong();
+		JsonArray items = hits.getAsJsonArray(NODE_HITS);
 		if (items.size() > 0) {
 			items.forEach(e -> values.add(parseHitToMap(e.getAsJsonObject())));
 		}
 
 		// aggregations
-		if (response.has("aggregations")) {
-			JsonObject aggregations = response.getAsJsonObject("aggregations");
-			JsonObject groupby = aggregations.getAsJsonObject("groupby");
-			JsonArray buckets = groupby.get("buckets").getAsJsonArray();
+		if (response.has(NODE_AGGREGATIONS)) {
+			JsonObject aggregations = response.getAsJsonObject(NODE_AGGREGATIONS);
+			JsonObject groupby = aggregations.getAsJsonObject(NODE_GROUPBY);
+			JsonArray buckets = groupby.get(NODE_BUCKETS).getAsJsonArray();
 			buckets.forEach(e -> values.add(parseBucketToMap(e.getAsJsonObject())));
 		}
 		return values;
