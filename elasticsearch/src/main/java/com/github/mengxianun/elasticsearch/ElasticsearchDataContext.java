@@ -101,6 +101,8 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 			DefaultTable table = new DefaultTable(index, TableType.TABLE, schema);
 			schema.addTable(table);
 
+			logger.info("Find elasticsearch index [{}]", index);
+
 			JsonObject mappingNode = mappingMetaData.getAsJsonObject("mappings");
 			if (mappingNode.size() == 0) {
 				continue;

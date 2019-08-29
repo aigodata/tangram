@@ -94,9 +94,9 @@ public abstract class AbstractTranslator implements Translator {
 				dataSourceJsonObject.remove(DataSourceConfig.TYPE);
 				DataContext dataContext = dataContextFactory.create(dataSourceJsonObject);
 				addDataContext(dataSourceName, dataContext);
-				logger.info("Initialize data source [{}] successfully", dataSourceName);
+				logger.info("Create data source [{}] successfully", dataSourceName);
 			} else {
-				logger.warn("Initialize data source [{}] failed, Could not find DataContextFactory with type [{}]",
+				logger.warn("Create data source [{}] failed, Could not find DataContextFactory with type [{}]",
 						dataSourceName, type);
 			}
 		}
@@ -167,7 +167,7 @@ public abstract class AbstractTranslator implements Translator {
 
 	@Override
 	public DataResultSet translate(String json) {
-		logger.debug("Request: {}", json);
+		logger.debug("Request: \n{}", json);
 
 		// 设置当前线程的上下文
 		com.github.mengxianun.core.JsonParser parser = new com.github.mengxianun.core.JsonParser(json);
@@ -193,7 +193,7 @@ public abstract class AbstractTranslator implements Translator {
 		// Done
 		Duration duration = stopwatch.stop().elapsed();
 
-		logger.debug("Operation is completed, taking {} milliseconds", duration.toMillis());
+		logger.debug("Operation completed in {} milliseconds", duration.toMillis());
 
 		// 清理当前线程的上下文
 		App.cleanup();

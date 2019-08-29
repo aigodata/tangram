@@ -178,6 +178,8 @@ public class JdbcDataContext extends AbstractDataContext {
 			TableType tableType = TableType.getTableType(tableTypeName);
 			String remarks = tablesResultSet.getString(5);
 			schema.addTable(new DefaultTable(tableName, tableType, schema, remarks));
+
+			logger.info("Find [{}] table [{}]", databaseProductName, tableName);
 		}
 
 		// column metadata
