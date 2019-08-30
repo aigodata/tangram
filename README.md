@@ -12,7 +12,7 @@ Add the library to your project.
 <dependency>
   <groupId>com.github.mengxianun</groupId>
   <artifactId>tangram-jdbc</artifactId>
-  <version>1.6.0</version>
+  <version>x.x.x</version>
 </dependency>
 ```
 
@@ -20,7 +20,7 @@ Add the library to your project.
 
 ```
 dependencies {
-  implementation 'com.github.mengxianun:tangram-jdbc:1.6.0'
+  implementation 'com.github.mengxianun:tangram-jdbc:x.x.x'
 }
 ```
 
