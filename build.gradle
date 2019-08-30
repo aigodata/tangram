@@ -1,6 +1,6 @@
 allprojects {
   group = 'com.github.mengxianun'
-  version = '1.7.5'
+  version = '1.7.6'
 }
 
 subprojects {
