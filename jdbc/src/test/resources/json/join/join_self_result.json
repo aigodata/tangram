@@ -3,7 +3,7 @@
     "NAME": "table4_name1",
     "TABLE_4_ID": 1.0,
     "ANOTHER_TABLE_4_ID": null,
-    "TABLE_4_ID_JOIN_TABLE_4": {
+    "TABLE_4_ID__JOIN_TABLE_4": {
       "ID": 1.0,
       "NAME": "table4_name1",
       "TABLE_4_ID": 1.0,
@@ -15,13 +15,13 @@
     "NAME": "table4_name2",
     "TABLE_4_ID": 1.0,
     "ANOTHER_TABLE_4_ID": 3.0,
-    "TABLE_4_ID_JOIN_TABLE_4": {
+    "TABLE_4_ID__JOIN_TABLE_4": {
       "ID": 1.0,
       "NAME": "table4_name1",
       "TABLE_4_ID": 1.0,
       "ANOTHER_TABLE_4_ID": null
     },
-    "ANOTHER_TABLE_4_ID_JOIN_TABLE_4": {
+    "ANOTHER_TABLE_4_ID__JOIN_TABLE_4": {
       "ID": 3.0,
       "NAME": "table4_name3",
       "TABLE_4_ID": null,
@@ -33,7 +33,7 @@
     "NAME": "table4_name3",
     "TABLE_4_ID": null,
     "ANOTHER_TABLE_4_ID": 2.0,
-    "ANOTHER_TABLE_4_ID_JOIN_TABLE_4": {
+    "ANOTHER_TABLE_4_ID__JOIN_TABLE_4": {
       "ID": 2.0,
       "NAME": "table4_name2",
       "TABLE_4_ID": 1.0,

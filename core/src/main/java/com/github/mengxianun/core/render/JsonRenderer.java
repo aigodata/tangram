@@ -9,6 +9,7 @@ import java.util.UUID;
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.config.AssociationType;
+import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.item.ColumnItem;
@@ -113,6 +114,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 
 	private void buildJoinTableValues(JsonObject currentTableObject, Map<TableItem, JsonObject> tableItemValues,
 			JoinTableItem joinTableItem) {
+		// 关联节点连接符
+		String associationConnector = App.Config.getString(GlobalConfig.ASSOCIATION_CONNECTOR);
 		// 父级关联表字段, 在请求非直接关联表的查询的时候用到
 		// 如存在关联关系 A-B-C, 请求 "select":"A", "join":["C"]
 		Column topColumn = null;
@@ -132,8 +135,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			// 如果该关联表不是请求中指定的关联表, 不构建关系结构
 			// 只构建请求中指定的关联表
 			if (action.isJoinTable(foreignTable)) {
-				// 关联表节点名称, 主表字段_关联表字段(或别名, 以别名为主)
-				String foreignTableKey = primaryColumnAlias + "_" + getTableKey(foreignTable);
+				// 关联表节点名称, 主表字段__关联表字段(或别名, 以别名为主)
+				String foreignTableKey = primaryColumnAlias + associationConnector + getTableKey(foreignTable);
 				if (currentTableObject.has(foreignTableKey)) { // 已经构建了关联表结构
 					JsonElement parentElement = currentTableObject.get(foreignTableKey);
 					if (parentElement.isJsonArray()) {
@@ -164,7 +167,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 						}
 						// 有上级关联列, 即A-B-C, 查询A, join C的情况, 存在A列的情况, 即A-B_ID
 						primaryColumnAlias = App.Context.getColumnAlias(topColumn);
-						foreignTableKey = primaryColumnAlias + "_" + getTableKey(foreignTable);
+						foreignTableKey = primaryColumnAlias + associationConnector + getTableKey(foreignTable);
 						AssociationType indirectAssociationType = App.Context.getAssociationType(topColumn.getTable(),
 								foreignTable);
 						buildJoinTableObject(currentTableObject, indirectAssociationType, foreignTableKey, tableObject);

@@ -1,12 +1,12 @@
 [{
   "aid": 1.0,
   "A-name": "A",
-  "aid_bbb": {
+  "aid__bbb": {
     "ID": 1.0,
     "bname": "B",
     "B-Aid": 1.0
   },
-  "aid_TABLE_C": {
+  "aid__TABLE_C": {
     "ID": 1.0,
     "cname": "B",
     "A_ID": 1.0

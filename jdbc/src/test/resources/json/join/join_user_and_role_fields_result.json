@@ -1,22 +1,22 @@
 [{
     "ID": 1.0,
     "usersname": "user1",
-    "ID_USER_ROLE": [{
+    "ID__USER_ROLE": [{
         "userID": 1.0,
         "ROLE_ID": 1.0,
-        "ROLE_ID_ROLE": {
+        "ROLE_ID__ROLE": {
           "rolename": "role1"
         }
       },
       {
         "userID": 1.0,
         "ROLE_ID": 2.0,
-        "ROLE_ID_ROLE": {
+        "ROLE_ID__ROLE": {
           "rolename": "role2"
         }
       }
     ],
-    "DETAIL_ID_DETAIL": {
+    "DETAIL_ID__DETAIL": {
       "ID": 1.0,
       "NAME": "detail1"
     }
@@ -24,14 +24,14 @@
   {
     "ID": 2.0,
     "usersname": "user2",
-    "ID_USER_ROLE": [{
+    "ID__USER_ROLE": [{
       "userID": 2.0,
       "ROLE_ID": 2.0,
-      "ROLE_ID_ROLE": {
+      "ROLE_ID__ROLE": {
         "rolename": "role2"
       }
     }],
-    "DETAIL_ID_DETAIL": {
+    "DETAIL_ID__DETAIL": {
       "ID": 2.0,
       "NAME": "detail2"
     }

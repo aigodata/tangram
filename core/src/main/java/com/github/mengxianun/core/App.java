@@ -165,6 +165,7 @@ public final class App {
 			configuration.addProperty(GlobalConfig.DEFAULT_DATASOURCE, "");
 			configuration.addProperty(GlobalConfig.TABLE_CONFIG_PATH, DEFAULT_TABLE_CONFIG_PATH);
 			configuration.add(GlobalConfig.TABLE_CONFIG, JsonNull.INSTANCE);
+			configuration.addProperty(GlobalConfig.ASSOCIATION_CONNECTOR, "__");
 		}
 
 		public static JsonElement get(String key) {
