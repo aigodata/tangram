@@ -1,19 +1,16 @@
 package com.github.mengxianun.core.schema;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 
 public class DefaultSchema implements Schema {
 
 	private String name;
 	private String catalog;
 	private List<Table> tables;
-
-	private JsonObject info;
 
 	public DefaultSchema() {
 		this.tables = new ArrayList<>();
@@ -89,16 +86,14 @@ public class DefaultSchema implements Schema {
 	}
 
 	@Override
-	public JsonObject getInfo() {
-		if (info != null && info.size() > 0) {
-			return info;
-		}
-		info = new JsonObject();
-		info.addProperty("catalog", catalog);
-		info.addProperty("schema", name);
-		JsonArray tablesInfo = new JsonArray();
+	public Map<String, Object> getInfo() {
+		Map<String, Object> info = new HashMap<>();
+		info.put("catalog", catalog);
+		info.put("schema", name);
+
+		List<Map<String, Object>> tablesInfo = new ArrayList<>();
 		tables.stream().forEach(e -> tablesInfo.add(e.getInfo()));
-		info.add("tables", tablesInfo);
+		info.put("tables", tablesInfo);
 		return info;
 	}
 

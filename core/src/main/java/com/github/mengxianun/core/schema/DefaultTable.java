@@ -1,11 +1,12 @@
 package com.github.mengxianun.core.schema;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.github.mengxianun.core.config.TableConfig;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 public class DefaultTable implements Table {
@@ -17,7 +18,6 @@ public class DefaultTable implements Table {
 	private List<Column> columns;
 	private List<Column> primaryKeys;
 
-	private JsonObject info;
 	// 自定义配置信息
 	private JsonObject config = new JsonObject();
 
@@ -124,17 +124,15 @@ public class DefaultTable implements Table {
 	}
 
 	@Override
-	public JsonObject getInfo() {
-		if (info != null && info.size() > 0) {
-			return info;
-		}
-		info = new JsonObject();
-		info.addProperty("name", name);
-		info.addProperty("type", type.name());
-		info.addProperty("remarks", remarks);
-		JsonArray columnsInfo = new JsonArray();
+	public Map<String, Object> getInfo() {
+		Map<String, Object> info = new HashMap<>();
+		info.put("name", name);
+		info.put("type", type.name());
+		info.put("remarks", remarks);
+
+		List<Map<String, Object>> columnsInfo = new ArrayList<>();
 		columns.forEach(e -> columnsInfo.add(e.getInfo()));
-		info.add("columns", columnsInfo);
+		info.put("columns", columnsInfo);
 		return info;
 	}
 

@@ -51,16 +51,17 @@ public abstract class AbstractDataResultSet implements DataResultSet {
 		}
 		Object data = summary.getData();
 		if (data instanceof JsonElement) {
+			Gson gson = new GsonBuilder().serializeNulls().create();
 			JsonElement jsonData = (JsonElement) data;
 			if (jsonData.isJsonArray()) {
 				Type dataType = new TypeToken<List<Map<String, Object>>>() {}.getType();
-				return new Gson().fromJson(jsonData, dataType);
+				return gson.fromJson(jsonData, dataType);
 			} else if (jsonData.isJsonObject()) {
 				Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
-				return new Gson().fromJson(jsonData, dataType);
+				return gson.fromJson(jsonData, dataType);
 			} else {
 				Type dataType = new TypeToken<Object>() {}.getType();
-				return new Gson().fromJson(jsonData, dataType);
+				return gson.fromJson(jsonData, dataType);
 			}
 		} else {
 			return data;

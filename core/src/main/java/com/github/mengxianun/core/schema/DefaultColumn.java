@@ -1,5 +1,8 @@
 package com.github.mengxianun.core.schema;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.google.gson.JsonObject;
 
 public class DefaultColumn implements Column {
@@ -12,7 +15,6 @@ public class DefaultColumn implements Column {
 	private Integer columnSize;
 	private Column relationColumn;
 
-	private JsonObject info;
 	// 自定义配置信息
 	private JsonObject config = new JsonObject();
 
@@ -85,15 +87,12 @@ public class DefaultColumn implements Column {
 	}
 
 	@Override
-	public JsonObject getInfo() {
-		if (info != null && info.size() > 0) {
-			return info;
-		}
-		info = new JsonObject();
-		info.addProperty("name", name);
-		info.addProperty("type", columnType.getName());
-		info.addProperty("size", columnSize);
-		info.addProperty("remarks", remarks);
+	public Map<String, Object> getInfo() {
+		Map<String, Object> info = new HashMap<>();
+		info.put("name", name);
+		info.put("type", columnType.getName());
+		info.put("size", columnSize);
+		info.put("remarks", remarks);
 		return info;
 	}
 

@@ -1,6 +1,7 @@
 package com.github.mengxianun.core.schema;
 
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.JsonObject;
 
@@ -24,7 +25,7 @@ public interface Table extends Name {
 
 	public String getDisplayName();
 
-	public JsonObject getInfo();
+	public Map<String, Object> getInfo();
 
 	public JsonObject getConfig();
 
