@@ -47,12 +47,6 @@ public class DefaultTable implements Table {
 		this.remarks = remarks;
 	}
 
-	public DefaultTable(String name, TableType type, Schema schema, String remarks, List<Column> columns) {
-		this(name, type, schema, remarks);
-		this.columns = columns;
-
-	}
-
 	@Override
 	public String getName() {
 		return name;
@@ -150,7 +144,9 @@ public class DefaultTable implements Table {
 	}
 
 	public void addColumn(Column column) {
-		columns.add(column);
+		if (!columns.contains(column)) {
+			columns.add(column);
+		}
 	}
 
 	public void removeColumn(Column column) {
@@ -158,11 +154,13 @@ public class DefaultTable implements Table {
 	}
 
 	public void addPrimaryKey(Column column) {
-		primaryKeys.add(column);
+		if (!primaryKeys.contains(column)) {
+			primaryKeys.add(column);
+		}
 	}
 
 	public void addPrimaryKey(String columnName) {
-		primaryKeys.add(getColumnByName(columnName));
+		addPrimaryKey(getColumnByName(columnName));
 	}
 
 	public void setName(String name) {
