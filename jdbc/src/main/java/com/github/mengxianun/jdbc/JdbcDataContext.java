@@ -260,6 +260,9 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	public Table loadTable(String schemaName, String tableName) {
+		if (tableName.contains("%")) {
+			return null;
+		}
 		loadMetadata(schemaName, tableName);
 		return metadata.getTable(schemaName, tableName);
 	}

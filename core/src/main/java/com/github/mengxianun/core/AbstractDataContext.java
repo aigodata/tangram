@@ -36,6 +36,7 @@ import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.relationship.Relationship;
 import com.github.mengxianun.core.schema.relationship.RelationshipGraph;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
+import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -282,6 +283,9 @@ public abstract class AbstractDataContext implements DataContext {
 
 	@Override
 	public Table getTable(String schemaName, String tableName) {
+		if (Strings.isNullOrEmpty(tableName)) {
+			return null;
+		}
 		Table table = metadata.getTable(schemaName, tableName);
 		if (table == null) {
 			table = loadTable(schemaName, tableName);
