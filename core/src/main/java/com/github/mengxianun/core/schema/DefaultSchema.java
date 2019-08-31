@@ -103,7 +103,10 @@ public class DefaultSchema implements Schema {
 	}
 
 	public void addTable(Table table) {
-		tables.add(table);
+		boolean match = tables.parallelStream().anyMatch(e -> e.getName().equals(table.getName()));
+		if (!match) {
+			tables.add(table);
+		}
 	}
 
 	public void removeTable(Table table) {

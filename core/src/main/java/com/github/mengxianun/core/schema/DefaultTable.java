@@ -144,7 +144,8 @@ public class DefaultTable implements Table {
 	}
 
 	public void addColumn(Column column) {
-		if (!columns.contains(column)) {
+		boolean match = columns.parallelStream().anyMatch(e -> e.getName().equals(column.getName()));
+		if (!match) {
 			columns.add(column);
 		}
 	}
