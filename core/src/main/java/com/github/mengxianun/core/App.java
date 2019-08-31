@@ -320,6 +320,11 @@ public final class App {
 			if (result) {
 				dataContext.cleanRelationshipCache();
 			}
+			String association = associationType.text();
+			logger.info(
+					"Add relationship {}: source[{}] primaryTable[{}] primaryColumn[{}] foreignTable[{}] foreignColumn[{}] association[{}]",
+					result ? "success" : "fail", dataSourceName, primaryTableName, primaryColumnName, foreignTableName,
+					foreignColumnName, association);
 		}
 
 		public static void deleteRelationship(String dataSourceName, String primaryTableName, String primaryColumnName,
@@ -331,6 +336,10 @@ public final class App {
 			if (result) {
 				dataContext.cleanRelationshipCache();
 			}
+			logger.info(
+					"Add relationship {}: source[{}] primaryTable[{}] primaryColumn[{}] foreignTable[{}] foreignColumn[{}]",
+					result ? "success" : "fail", dataSourceName, primaryTableName, primaryColumnName, foreignTableName,
+					foreignColumnName);
 		}
 
 		public static void deleteRelationship(String dataSourceName, String primaryTableName, String foreignTableName) {
