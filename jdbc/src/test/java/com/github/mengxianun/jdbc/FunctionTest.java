@@ -49,11 +49,11 @@ public class FunctionTest extends TestSupport {
 		JsonArray data = result.get(ResultAttributes.DATA).getAsJsonArray();
 		assertEquals(2, data.size());
 		JsonObject rowObject1 = data.get(0).getAsJsonObject();
-		assertTrue(rowObject1.get("timestamp_day").getAsString().equals("1.0"));
+		assertTrue(rowObject1.get("$day(timestamp_col)").getAsString().equals("1.0"));
 		assertTrue(rowObject1.get("timestamp_hour").getAsString().equals("12.0"));
 		assertTrue(rowObject1.get("count").getAsString().equals("2.0"));
 		JsonObject rowObject2 = data.get(1).getAsJsonObject();
-		assertTrue(rowObject2.get("timestamp_day").getAsString().equals("25.0"));
+		assertTrue(rowObject2.get("$day(timestamp_col)").getAsString().equals("25.0"));
 		assertTrue(rowObject2.get("timestamp_hour").getAsString().equals("5.0"));
 		assertTrue(rowObject2.get("count").getAsString().equals("1.0"));
 
