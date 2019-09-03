@@ -149,7 +149,12 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 	@Override
 	public Table loadTable(String schemaName, String tableName) {
-		loadMetadata(schemaName, tableName);
+		try {
+			loadMetadata(schemaName, tableName);
+		} catch (Exception e) {
+			logger.error("Load table [{}].[{}] failed.", schemaName, tableName);
+			return null;
+		}
 		return metadata.getTable(schemaName, tableName);
 	}
 
