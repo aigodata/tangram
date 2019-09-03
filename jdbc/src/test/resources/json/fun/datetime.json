@@ -1,0 +1,18 @@
+{
+  "select":"datetime_table",
+  "fields":[
+    "id",
+    "$year(date_col) as date_year",
+    "$month(date_col) as date_month",
+    "$day(date_col) as date_day",
+    "$hour(time_col) as time_hour",
+    "$minute(time_col) as time_minute",
+    "$second(time_col) as time_second",
+    "$year(timestamp_col) as timestamp_year",
+    "$month(timestamp_col) as timestamp_month",
+    "$day(timestamp_col) as timestamp_day",
+    "$hour(timestamp_col) as timestamp_hour",
+    "$minute(timestamp_col) as timestamp_minute",
+    "$second(timestamp_col) as timestamp_second"
+  ]
+}

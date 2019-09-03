@@ -30,7 +30,6 @@ import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.data.summary.InsertSummary;
 import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.github.mengxianun.core.data.summary.UpdateSummary;
-import com.github.mengxianun.core.dialect.DefaultDialect;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.DefaultColumn;
@@ -213,7 +212,7 @@ public class JdbcDataContext extends AbstractDataContext {
 	public Dialect createDialect(String databaseProductName) {
 		Dialect dialectTemp = null;
 		if (Strings.isNullOrEmpty(databaseProductName)) {
-			dialectTemp = new DefaultDialect();
+			dialectTemp = new JdbcDialect(this);
 		} else {
 			switch (databaseProductName) {
 			case DATABASE_PRODUCT_POSTGRESQL:

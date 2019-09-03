@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.FilterItem;
 import com.github.mengxianun.core.item.GroupItem;
+import com.github.mengxianun.core.item.JoinColumnItem;
 import com.github.mengxianun.core.item.JoinItem;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
@@ -26,6 +29,7 @@ import com.google.common.base.Strings;
 public class SQLBuilder {
 
 	public static final String PREFIX_SELECT = "SELECT ";
+	public static final String PREFIX_SELECT_DISTINCT = "SELECT DISTINCT ";
 	public static final String PREFIX_FROM = " FROM ";
 	public static final String PREFIX_WHERE = " WHERE ";
 	public static final String PREFIX_GROUP_BY = " GROUP BY ";
@@ -53,6 +57,11 @@ public class SQLBuilder {
 	public static final String PREFIX_UPDATE = "UPDATE ";
 	public static final String UPDATE_SET = " SET ";
 	public static final String PREFIX_DELETE_FROM = "DELETE FROM ";
+
+	public static final Pattern FUNCTION_PATTERN = Pattern.compile("\\$(?<func>[^$()]*)\\((?<args>[^$()]*)\\)");
+	// matcher's pattern name
+	public static final String FUNCTION_MATCHER_GROUP_FUNC = "func";
+	public static final String FUNCTION_MATCHER_GROUP_ARGS = "args";
 
 	protected Action action;
 	protected DataContext dataContext;
@@ -126,11 +135,13 @@ public class SQLBuilder {
 	}
 
 	public String toColumns() {
-		StringBuilder columnsBuilder = new StringBuilder(PREFIX_SELECT);
-		if (action.isDistinct()) {
-			columnsBuilder.append(DISTINCT);
-		}
-		List<ColumnItem> columnItems = action.getColumnItems();
+		StringBuilder columnsBuilder = new StringBuilder(action.isDistinct() ? PREFIX_SELECT_DISTINCT : PREFIX_SELECT);
+		columnsBuilder.append(toColumns(action.getColumnItems()));
+		return columnString = columnsBuilder.toString();
+	}
+
+	public String toColumns(List<ColumnItem> columnItems) {
+		StringBuilder columnsBuilder = new StringBuilder();
 		boolean comma = false;
 		for (ColumnItem columnItem : columnItems) {
 			if (comma) {
@@ -143,7 +154,7 @@ public class SQLBuilder {
 			}
 			comma = true;
 		}
-		return columnString = columnsBuilder.toString();
+		return columnsBuilder.toString();
 	}
 
 	public String toSelectTables() {
@@ -387,7 +398,11 @@ public class SQLBuilder {
 				groupsBuilder.append(", ");
 			}
 			ColumnItem columnItem = groupItem.getColumnItem();
-			groupsBuilder.append(spliceColumn(columnItem));
+			if (!Strings.isNullOrEmpty(columnItem.getAlias())) {
+				groupsBuilder.append(columnItem.getAlias());
+			} else {
+				groupsBuilder.append(spliceColumn(columnItem));
+			}
 			comma = true;
 		}
 		return groupString = groupsBuilder.toString();
@@ -412,7 +427,11 @@ public class SQLBuilder {
 				ordersBuilder.append(", ");
 			}
 			ColumnItem columnItem = orderItem.getColumnItem();
-			ordersBuilder.append(spliceColumn(columnItem, assignTableAlias));
+			if (!Strings.isNullOrEmpty(columnItem.getAlias())) {
+				ordersBuilder.append(columnItem.getAlias());
+			} else {
+				ordersBuilder.append(spliceColumn(columnItem, assignTableAlias));
+			}
 
 			if (orderItem.getOrder() == Order.DESC) {
 				ordersBuilder.append(ORDER_DESC);
@@ -563,7 +582,7 @@ public class SQLBuilder {
 		StringBuilder columnBuilder = new StringBuilder();
 		Column column = columnItem.getColumn();
 		if (column == null) {
-			columnBuilder.append(columnItem.getExpression());
+			columnBuilder.append(processExpression(columnItem.getExpression()));
 		} else {
 			if (dialect.tableAliasEnabled() && assignTableAlias) {
 				TableItem tableItem = columnItem.getTableItem();
@@ -618,52 +637,57 @@ public class SQLBuilder {
 		return columnBuilder.toString();
 	}
 
-	public String process(String element) {
+	private String process(String element) {
 		return dialect.processKeyword(element);
 	}
 
-	public String countSql() {
-		// 主表列
-		StringBuilder columnsBuilder = new StringBuilder();
-		TableItem mainTableItem = action.getTableItems().get(0);
-		Table mainTable = mainTableItem.getTable();
-		String tablePrefix = Strings.isNullOrEmpty(mainTableItem.getAlias()) ? mainTable.getName()
-				: mainTableItem.getAlias();
-		boolean comma = false;
+	private String processExpression(String element) {
+		if (Strings.isNullOrEmpty(element)) {
+			return element;
+		}
+		// check function expression
+		element = matchFunction(element);
+		return element;
+	}
 
-		List<Column> columns;
-		if (action.isGroup()) {
-			columns = new ArrayList<>();
-			List<GroupItem> groupItems = action.getGroupItems();
-			for (GroupItem groupItem : groupItems) {
-				Column column = groupItem.getColumnItem().getColumn();
-				if (column != null) {
-					columns.add(column);
+	private String matchFunction(String element) {
+		Matcher matcher = FUNCTION_PATTERN.matcher(element);
+		if (matcher.find()) {
+			matcher.reset();
+			StringBuffer buffer = new StringBuffer();
+			while (matcher.find()) {
+				// If a function exists, it is treated as a function; otherwise, the $prefix is removed to match the data source function
+				String processFunction;
+				String func = matcher.group(FUNCTION_MATCHER_GROUP_FUNC);
+				String args = matcher.group(FUNCTION_MATCHER_GROUP_ARGS);
+				if (dialect.hasFunction(func)) {
+					processFunction = dialect.getFunction(func).convert(func, args);
+				} else {
+					processFunction = matcher.group().substring(1);
 				}
+				matcher.appendReplacement(buffer, processFunction);
 			}
+			matcher.appendTail(buffer);
+			return matchFunction(buffer.toString());
 		} else {
-			columns = mainTable.getColumns();
+			return element;
 		}
-		for (Column column : columns) {
-			if (column.getType().isJson()) { // 跳过 JSON 类型, 无法与 Distinct 一起使用
-				continue;
-			}
-			if (comma) {
-				columnsBuilder.append(", ");
-			}
-			if (dialect.tableAliasEnabled()) {
-				columnsBuilder.append(tablePrefix).append(".");
-			}
-			columnsBuilder.append(column.getName());
-			comma = true;
-		}
+	}
 
-		String mainColumnString = columnsBuilder.toString();
+	public String countSql() {
+		List<ColumnItem> columnItems = action.isGroup()
+				// Only query the group field
+				? action.getGroupItems().stream().map(GroupItem::getColumnItem).collect(Collectors.toList())
+				// Only query the primary table fields
+				// Do not query json fields because json fields cannot be used with distinct
+				: action.getColumnItems().stream().filter(e -> e.getColumn() != null
+						&& !e.getColumn().getType().isJson() && !(e instanceof JoinColumnItem))
+						.collect(Collectors.toList());
+		String columnsString = toColumns(columnItems);
 		StringBuilder originalBuilder = new StringBuilder();
-		// 原始SQL
-		// 1. 只查询主表的列
-		// 2. 去掉 LIMIT 条件
-		String originalSql = originalBuilder.append(PREFIX_SELECT).append("distinct ").append(mainColumnString)
+		// Original SQL
+		// Remove the LIMIT condition
+		String originalSql = originalBuilder.append(PREFIX_SELECT_DISTINCT).append(columnsString)
 				.append(" ").append(tableString).append(joinString).append(whereString).append(groupString).toString();
 		originalSql = originalSql.replace(Strings.nullToEmpty(limitString), "");
 		StringBuilder countBuilder = new StringBuilder();

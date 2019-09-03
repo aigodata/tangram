@@ -7,6 +7,10 @@ import com.google.auto.service.AutoService;
 @AutoService(Dialect.class)
 public class ElasticsearchDialect extends AbstractDialect {
 
+	public ElasticsearchDialect() {
+		super();
+	}
+
 	@Override
 	public String getType() {
 		return "elasticsearch";

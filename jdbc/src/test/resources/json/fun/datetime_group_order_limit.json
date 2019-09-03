@@ -1,0 +1,11 @@
+{
+  "select":"datetime_table",
+  "fields":[
+    "$day(timestamp_col) as timestamp_day",
+    "$hour(timestamp_col) as timestamp_hour",
+    "count(*) as count"
+  ],
+  "group":["timestamp_day", "timestamp_hour"],
+  "order":["timestamp_day", "timestamp_hour"],
+  "limit":[1, 3]
+}
