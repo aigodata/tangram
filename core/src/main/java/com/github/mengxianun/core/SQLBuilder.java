@@ -398,7 +398,7 @@ public class SQLBuilder {
 				groupsBuilder.append(", ");
 			}
 			ColumnItem columnItem = groupItem.getColumnItem();
-			if (!Strings.isNullOrEmpty(columnItem.getAlias())) {
+			if (!Strings.isNullOrEmpty(columnItem.getAlias()) && columnItem.isCustomAlias()) {
 				groupsBuilder.append(columnItem.getAlias());
 			} else {
 				groupsBuilder.append(spliceColumn(columnItem));
@@ -427,7 +427,7 @@ public class SQLBuilder {
 				ordersBuilder.append(", ");
 			}
 			ColumnItem columnItem = orderItem.getColumnItem();
-			if (!Strings.isNullOrEmpty(columnItem.getAlias())) {
+			if (!Strings.isNullOrEmpty(columnItem.getAlias()) && columnItem.isCustomAlias()) {
 				ordersBuilder.append(columnItem.getAlias());
 			} else {
 				ordersBuilder.append(spliceColumn(columnItem, assignTableAlias));
