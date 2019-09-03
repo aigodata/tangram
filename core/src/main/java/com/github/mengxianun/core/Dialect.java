@@ -1,5 +1,7 @@
 package com.github.mengxianun.core;
 
+import com.github.mengxianun.core.dialect.Function;
+
 public interface Dialect {
 
 	public String getType();
@@ -76,5 +78,9 @@ public interface Dialect {
 	default long offset() {
 		return 1;
 	}
+
+	public boolean hasFunction(String func);
+
+	public Function getFunction(String func);
 
 }
