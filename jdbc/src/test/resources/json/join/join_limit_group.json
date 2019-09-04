@@ -1,0 +1,7 @@
+{
+  "select":"join_table_1",
+  "fields":["name","join_table_2.table_3_id","join_table_3.table_2_id", "count(*)"],
+  "join":["join_table_2", "join_table_3"],
+  "group":["name", "join_table_2.table_3_id", "join_table_3.table_2_id"],
+  "limit":[0, 2]
+}

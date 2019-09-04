@@ -3,7 +3,7 @@
   "fields":[
     "id",
     "$year(date_col) as date_year",
-    "$month(date_col) as date_month",
+    "$month(datetime_table.date_col) as date_month",
     "$day(date_col) as date_day",
     "$hour(time_col) as time_hour",
     "$minute(time_col) as time_minute",

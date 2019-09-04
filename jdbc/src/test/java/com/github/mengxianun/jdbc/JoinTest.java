@@ -41,6 +41,17 @@ public class JoinTest extends TestSupport {
 	}
 
 	@Test
+	void testJoinLimitGroup() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "join_limit_group.json");
+		JsonObject result = dataResultSet.getJsonData().getAsJsonObject();
+		assertTrue(result.has(ResultAttributes.TOTAL));
+		long total = result.get(ResultAttributes.TOTAL).getAsLong();
+		assertEquals(3, total);
+		JsonArray data = result.get(ResultAttributes.DATA).getAsJsonArray();
+		assertEquals(2, data.size());
+	}
+
+	@Test
 	void testJoinSelf() throws JSONException {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "join_self.json");
 		String result = dataResultSet.getJsonData().toString();
