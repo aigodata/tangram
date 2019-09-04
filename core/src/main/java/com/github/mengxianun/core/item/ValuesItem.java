@@ -3,12 +3,11 @@ package com.github.mengxianun.core.item;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.DateTimeException;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
-import com.github.mengxianun.core.Keyword;
+import com.github.mengxianun.core.Keywords;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.joestelmach.natty.DateGroup;
@@ -46,8 +45,11 @@ public class ValuesItem extends Item {
 		if (value.getClass().isArray()) {
 			return getRealValueInArray(column, value);
 		}
-		if (Keyword.DATE_NOW.equals(value)) {
-			return LocalDateTime.now();
+		if (value instanceof String && value.toString().startsWith("$")) {
+			String keyword = value.toString().substring(1).toUpperCase();
+			try {
+				return Keywords.valueOf(keyword).parse();
+			} catch (Exception ignore) {}
 		}
 		if (column != null) {
 			value = getRealValue(column.getType(), value);
