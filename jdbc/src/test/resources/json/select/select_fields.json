@@ -1,4 +1,4 @@
 {
   "select":"select_table",
-  "fields":["id", "name as myname", "age myage"]
+  "fields":["id", "name as myname", "age as myage"]
 }

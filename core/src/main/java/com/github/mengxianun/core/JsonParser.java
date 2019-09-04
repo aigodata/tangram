@@ -634,13 +634,7 @@ public class JsonParser {
 			String[] columnPart = columnString.split(AdditionalKeywords.ALIAS_KEY.value(), 2);
 			columnString = columnPart[0];
 			alias = columnPart[1];
-		} else if (columnString.contains(" ")) {
-			String[] columnPart = columnString.split("\\s+", 2);
-			columnString = columnPart[0];
-			alias = columnPart[1];
 		}
-
-		// 单列
 		return parseColumn(columnString, alias);
 	}
 
