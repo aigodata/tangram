@@ -269,7 +269,7 @@ public final class App {
 
 		public static Column getColumn(Table table, String columnNameOrAlias) {
 			if (table == null) {
-				throw new IllegalArgumentException("Table cannot be null");
+				return null;
 			}
 			// 1 根据别名查询
 			List<Column> columns = table.getColumns();
