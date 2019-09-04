@@ -19,6 +19,7 @@ import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
 import com.github.mengxianun.core.request.Connector;
+import com.github.mengxianun.core.request.JoinType;
 import com.github.mengxianun.core.request.Operator;
 import com.github.mengxianun.core.request.Order;
 import com.github.mengxianun.core.schema.Column;
@@ -62,6 +63,11 @@ public class SQLBuilder {
 	// matcher's pattern name
 	public static final String FUNCTION_MATCHER_GROUP_FUNC = "func";
 	public static final String FUNCTION_MATCHER_GROUP_ARGS = "args";
+	public static final Pattern SOURCE_TABLE_COLUMN = Pattern
+			.compile("((?<source>[\\w+]*)(\\.)+)*(?<table>[\\w+]+)\\.(?<column>[\\w+]+)");
+	public static final String MATCHER_GROUP_SOURCE = "source";
+	public static final String MATCHER_GROUP_TABLE = "table";
+	public static final String MATCHER_GROUP_COLUMN = "column";
 
 	protected Action action;
 	protected DataContext dataContext;
@@ -181,7 +187,7 @@ public class SQLBuilder {
 			////////////////////////////////////////////
 			// join 和 limit 同时存在时, 并且存在一对多或多对多的情况下, 分页会出问题.
 			// 这里将主表作为基础表(子查询), 进行Inner Join.
-			if (!action.getJoinItems().isEmpty() && action.getLimitItem() != null && action.isHandleJoinLimit()) {
+			if (action.isJoin() && action.isLimit() && !action.isGroup() && action.isHandleJoinLimit()) {
 				tablesBuilder.append(toJoinLimit(tableItem));
 			}
 			comma = true;
@@ -212,7 +218,7 @@ public class SQLBuilder {
 		action.setHandleJoinLimit(false);
 		// 构建子查询 SQL
 		action.build();
-		String sql = action.getSql();
+		String innerSQL = action.getSql();
 
 		// 返回原始状态
 		tableItem.setAlias(tableItem.getAlias().replaceFirst(tempAliasPrefix, ""));
@@ -227,15 +233,15 @@ public class SQLBuilder {
 		joinLimitFilterItems = Collections.emptyList();
 		joinLimit = true;
 
-		StringBuilder builder = new StringBuilder(INNER_JOIN);
-		builder.append("(").append(sql).append(")");
-		String innerAlias = ActionUtil.createTableAlias(tableItem.getTable());
-		builder.append(ALIAS_KEY).append(innerAlias);
-		builder.append(JOIN_ON);
-		builder.append(originalTableAlias).append(".").append(process(table.getColumns().get(0).getName()));
-		builder.append(" = ");
-		builder.append(innerAlias).append(".").append(process(table.getColumns().get(0).getName()));
-		return builder.toString();
+		// splice join string
+		String joinTable = "(" + innerSQL + ")";
+		String joinTableAlias = ActionUtil.createTableAlias(tableItem.getTable());
+		String leftTableString = originalTableAlias;
+		String rightTableString = joinTableAlias;
+		Column joinColumn = (!table.getPrimaryKeys().isEmpty() ? table.getPrimaryKeys() : table.getColumns()).get(0);
+		String joinColumnString = process(joinColumn.getName());
+		return spliceJoin(joinTable, joinTableAlias, leftTableString, joinColumnString,
+				rightTableString, joinColumnString, JoinType.INNER);
 	}
 
 	public String toJoins() {
@@ -245,24 +251,6 @@ public class SQLBuilder {
 		}
 		StringBuilder joinsBuilder = new StringBuilder();
 		for (JoinItem joinItem : joinItems) {
-			switch (joinItem.getJoinType()) {
-			case LEFT:
-				joinsBuilder.append(LEFT_OUTER_JOIN);
-				break;
-			case RIGHT:
-				joinsBuilder.append(RIGHT_OUTER_JOIN);
-				break;
-			case INNER:
-				joinsBuilder.append(INNER_JOIN);
-				break;
-			case FULL:
-				joinsBuilder.append(FULL_OUTER_JOIN);
-				break;
-
-			default:
-				throw new DataException(String.format("wrong join type [%s]", joinItem.getJoinType()));
-			}
-
 			// join left table
 			ColumnItem leftColumnItem = joinItem.getLeftColumn();
 			TableItem leftTableItem = leftColumnItem.getTableItem();
@@ -273,27 +261,60 @@ public class SQLBuilder {
 			TableItem rightTableItem = rightColumnItem.getTableItem();
 			Table rightTable = rightTableItem.getTable();
 			String rightTableAlias = rightTableItem.getAlias();
-			joinsBuilder.append(spliceTable(rightTable));
-			if (!Strings.isNullOrEmpty(rightTableAlias) && dialect.tableAliasEnabled()) {
-				joinsBuilder.append(ALIAS_KEY).append(rightTableAlias);
-			}
-			joinsBuilder.append(JOIN_ON);
-			if (!Strings.isNullOrEmpty(leftTableAlias) && dialect.tableAliasEnabled()) {
-				joinsBuilder.append(leftTableAlias);
-			} else {
-				joinsBuilder.append(process(leftTable.getName()));
-			}
-			joinsBuilder.append(".").append(process(leftColumnItem.getColumn().getName()));
-			joinsBuilder.append(" = ");
-			if (!Strings.isNullOrEmpty(rightTableAlias) && dialect.tableAliasEnabled()) {
-				joinsBuilder.append(rightTableAlias);
-			} else {
-				joinsBuilder.append(process(rightTable.getName()));
-			}
-			joinsBuilder.append(".").append(process(rightColumnItem.getColumn().getName()));
+			// join elements
+			String joinTable = spliceTable(rightTable);
+			String joinTableAlias = !Strings.isNullOrEmpty(rightTableAlias)
+					? rightTableAlias
+					: null;
+			String leftTableString = !Strings.isNullOrEmpty(leftTableAlias) ? leftTableAlias
+					: process(leftTable.getName());
+			String leftColumnString = process(leftColumnItem.getColumn().getName());
+			String rightTableString = !Strings.isNullOrEmpty(rightTableAlias) ? rightTableAlias
+					: process(rightTable.getName());
+			String rightColumnString = process(rightColumnItem.getColumn().getName());
+			JoinType joinType = joinItem.getJoinType();
+
+			String joinSpliceString = spliceJoin(joinTable, joinTableAlias, leftTableString, leftColumnString,
+					rightTableString, rightColumnString, joinType);
+			joinsBuilder.append(joinSpliceString);
 
 		}
 		return joinString = joinsBuilder.toString();
+	}
+
+	private String spliceJoin(String joinTable, String joinTableAlias, String leftTableString, String leftColumnString,
+			String rightTableString,
+			String rightColumnString, JoinType joinType) {
+		StringBuilder joinsBuilder = new StringBuilder();
+		switch (joinType) {
+		case LEFT:
+			joinsBuilder.append(LEFT_OUTER_JOIN);
+			break;
+		case RIGHT:
+			joinsBuilder.append(RIGHT_OUTER_JOIN);
+			break;
+		case INNER:
+			joinsBuilder.append(INNER_JOIN);
+			break;
+		case FULL:
+			joinsBuilder.append(FULL_OUTER_JOIN);
+			break;
+
+		default:
+			throw new DataException(String.format("Wrong join type [%s]", joinType));
+		}
+
+		joinsBuilder.append(joinTable);
+		if (!Strings.isNullOrEmpty(joinTableAlias)) {
+			joinsBuilder.append(ALIAS_KEY).append(joinTableAlias);
+		}
+		joinsBuilder.append(JOIN_ON);
+		joinsBuilder.append(leftTableString);
+		joinsBuilder.append(".").append(leftColumnString);
+		joinsBuilder.append(" = ");
+		joinsBuilder.append(rightTableString);
+		joinsBuilder.append(".").append(rightColumnString);
+		return joinsBuilder.toString();
 	}
 
 	public String toWhere() {
@@ -660,6 +681,8 @@ public class SQLBuilder {
 				String processFunction;
 				String func = matcher.group(FUNCTION_MATCHER_GROUP_FUNC);
 				String args = matcher.group(FUNCTION_MATCHER_GROUP_ARGS);
+				// Replace table alias
+				args = replaceTableWithAlias(args);
 				if (dialect.hasFunction(func)) {
 					processFunction = dialect.getFunction(func).convert(func, args);
 				} else {
@@ -672,6 +695,55 @@ public class SQLBuilder {
 		} else {
 			return element;
 		}
+	}
+
+	private String replaceTableWithAlias(String expression) {
+		if (Strings.isNullOrEmpty(expression)) {
+			return expression;
+		}
+		Matcher matcher = SOURCE_TABLE_COLUMN.matcher(expression);
+		if (matcher.find()) {
+			matcher.reset();
+			StringBuffer buffer = new StringBuffer();
+			while (matcher.find()) {
+				String processExpression = matcher.group();
+				String tableName = matcher.group(MATCHER_GROUP_TABLE);
+				Table table = App.Context.getTable(tableName);
+				if (table != null) {
+					String tableAlias = getTableAlias(tableName);
+					if (!Strings.isNullOrEmpty(tableAlias)) {
+						processExpression = processExpression.replace(tableName, tableAlias);
+					}
+				}
+				matcher.appendReplacement(buffer, processExpression);
+			}
+			matcher.appendTail(buffer);
+			return matchFunction(buffer.toString());
+		} else {
+			return expression;
+		}
+	}
+
+	/**
+	 * Find table alias, priority primary table
+	 * To do optimize
+	 * 
+	 * @param tableName
+	 * @return
+	 */
+	private String getTableAlias(String tableName) {
+		for (TableItem tableItem : action.getTableItems()) {
+			if (tableItem.getTable() != null && tableItem.getTable().getName().equalsIgnoreCase(tableName)) {
+				return tableItem.getAlias();
+			}
+		}
+		for (JoinItem joinItem : action.getJoinItems()) {
+			TableItem joinTableItem = joinItem.getRightColumn().getTableItem();
+			if (joinTableItem.getTable() != null && joinTableItem.getTable().getName().equalsIgnoreCase(tableName)) {
+				return joinTableItem.getAlias();
+			}
+		}
+		return null;
 	}
 
 	public String countSql() {
