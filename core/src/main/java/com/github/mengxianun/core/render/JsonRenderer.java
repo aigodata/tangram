@@ -64,10 +64,10 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		for (Entry<TableItem, JsonObject> entry : tableItemValues.entrySet()) {
 			TableItem tableItem = entry.getKey();
 			JsonObject tableObject = entry.getValue();
-			if (isNull(tableObject)) {
-				continue;
-			}
 			if (tableItem instanceof JoinTableItem) {
+				if (isNull(tableObject)) {
+					continue;
+				}
 				buildJoinTableValues(uniqueRecord, tableItemValues, (JoinTableItem) tableItem);
 			} else {
 				buildMainTableValues(uniqueRecord, tableObject);
