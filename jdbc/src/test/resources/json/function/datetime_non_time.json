@@ -1,0 +1,6 @@
+{
+  "select":"datetime_table",
+  "fields":[
+    "$year(id)"
+  ]
+}

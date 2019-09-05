@@ -1,6 +1,7 @@
 package com.github.mengxianun.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
@@ -14,7 +15,7 @@ import com.google.gson.JsonObject;
 @DisplayName("Jdbc function test")
 public class FunctionTest extends TestSupport {
 
-	private static final String JSON_PARENT_PATH = "json/fun/";
+	private static final String JSON_PARENT_PATH = "json/function/";
 
 	@Test
 	void testDateTime() {
@@ -22,7 +23,6 @@ public class FunctionTest extends TestSupport {
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertTrue(result.size() > 0);
 		JsonObject rowObject = result.get(0).getAsJsonObject();
-		assertTrue(rowObject.has("ID"));
 		assertTrue(rowObject.get("date_year").getAsString().equals("2010.0"));
 		assertTrue(rowObject.get("date_month").getAsString().equals("1.0"));
 		assertTrue(rowObject.get("date_day").getAsString().equals("1.0"));
@@ -37,6 +37,11 @@ public class FunctionTest extends TestSupport {
 		assertTrue(rowObject.get("timestamp_hour").getAsString().equals("10.0"));
 		assertTrue(rowObject.get("timestamp_minute").getAsString().equals("10.0"));
 		assertTrue(rowObject.get("timestamp_second").getAsString().equals("10.0"));
+	}
+
+	@Test
+	void testNonTime() {
+		assertThrows(JdbcDataException.class, () -> run(JSON_PARENT_PATH + "datetime_non_time.json"));
 	}
 
 	@Test

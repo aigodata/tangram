@@ -1,7 +1,6 @@
 {
   "select":"datetime_table",
   "fields":[
-    "id",
     "$year(date_col) as date_year",
     "$month(datetime_table.date_col) as date_month",
     "$day(date_col) as date_day",
