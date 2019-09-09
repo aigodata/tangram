@@ -1,31 +1,31 @@
 [{
-    "ID": 1.0,
+    "ID": 1,
     "NAME": "user1",
-    "DETAIL_ID": 1.0,
+    "DETAIL_ID": 1,
     "ID__ROLE": [{
-        "ID": 1.0,
+        "ID": 1,
         "NAME": "role1",
-        "DETAIL_ID": 1.0
+        "DETAIL_ID": 1
       },
       {
-        "ID": 2.0,
+        "ID": 2,
         "NAME": "role2",
-        "DETAIL_ID": 2.0
+        "DETAIL_ID": 2
       }
     ]
   },
   {
-    "ID": 2.0,
+    "ID": 2,
     "NAME": "user2",
-    "DETAIL_ID": 2.0,
+    "DETAIL_ID": 2,
     "ID__ROLE": [{
-      "ID": 2.0,
+      "ID": 2,
       "NAME": "role2",
-      "DETAIL_ID": 2.0
+      "DETAIL_ID": 2
     }]
   },
   {
-    "ID": 3.0,
+    "ID": 3,
     "NAME": "user3",
     "DETAIL_ID": null
   }

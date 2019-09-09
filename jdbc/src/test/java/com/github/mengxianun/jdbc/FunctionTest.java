@@ -23,20 +23,21 @@ public class FunctionTest extends TestSupport {
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertTrue(result.size() > 0);
 		JsonObject rowObject = result.get(0).getAsJsonObject();
-		assertTrue(rowObject.get("date_year").getAsString().equals("2010.0"));
-		assertTrue(rowObject.get("date_month").getAsString().equals("1.0"));
-		assertTrue(rowObject.get("date_day").getAsString().equals("1.0"));
 
-		assertTrue(rowObject.get("time_hour").getAsString().equals("10.0"));
-		assertTrue(rowObject.get("time_minute").getAsString().equals("10.0"));
-		assertTrue(rowObject.get("time_second").getAsString().equals("10.0"));
+		assertEquals(2010, rowObject.get("date_year").getAsLong());
+		assertEquals(1, rowObject.get("date_month").getAsLong());
+		assertEquals(1, rowObject.get("date_day").getAsLong());
 
-		assertTrue(rowObject.get("timestamp_year").getAsString().equals("2010.0"));
-		assertTrue(rowObject.get("timestamp_month").getAsString().equals("1.0"));
-		assertTrue(rowObject.get("timestamp_day").getAsString().equals("1.0"));
-		assertTrue(rowObject.get("timestamp_hour").getAsString().equals("10.0"));
-		assertTrue(rowObject.get("timestamp_minute").getAsString().equals("10.0"));
-		assertTrue(rowObject.get("timestamp_second").getAsString().equals("10.0"));
+		assertEquals(10, rowObject.get("time_hour").getAsLong());
+		assertEquals(10, rowObject.get("time_minute").getAsLong());
+		assertEquals(10, rowObject.get("time_second").getAsLong());
+
+		assertEquals(2010, rowObject.get("timestamp_year").getAsLong());
+		assertEquals(1, rowObject.get("timestamp_month").getAsLong());
+		assertEquals(1, rowObject.get("timestamp_day").getAsLong());
+		assertEquals(10, rowObject.get("timestamp_hour").getAsLong());
+		assertEquals(10, rowObject.get("timestamp_minute").getAsLong());
+		assertEquals(10, rowObject.get("timestamp_second").getAsLong());
 	}
 
 	@Test
@@ -53,14 +54,16 @@ public class FunctionTest extends TestSupport {
 		assertEquals(4, total);
 		JsonArray data = result.get(ResultAttributes.DATA).getAsJsonArray();
 		assertEquals(2, data.size());
+
 		JsonObject rowObject1 = data.get(0).getAsJsonObject();
-		assertTrue(rowObject1.get("$day(timestamp_col)").getAsString().equals("1.0"));
-		assertTrue(rowObject1.get("timestamp_hour").getAsString().equals("12.0"));
-		assertTrue(rowObject1.get("count").getAsString().equals("2.0"));
+		assertEquals(1, rowObject1.get("$day(timestamp_col)").getAsLong());
+		assertEquals(12, rowObject1.get("timestamp_hour").getAsLong());
+		assertEquals(2, rowObject1.get("count").getAsLong());
+
 		JsonObject rowObject2 = data.get(1).getAsJsonObject();
-		assertTrue(rowObject2.get("$day(timestamp_col)").getAsString().equals("25.0"));
-		assertTrue(rowObject2.get("timestamp_hour").getAsString().equals("5.0"));
-		assertTrue(rowObject2.get("count").getAsString().equals("1.0"));
+		assertEquals(25, rowObject2.get("$day(timestamp_col)").getAsLong());
+		assertEquals(5, rowObject2.get("timestamp_hour").getAsLong());
+		assertEquals(1, rowObject2.get("count").getAsLong());
 
 	}
 

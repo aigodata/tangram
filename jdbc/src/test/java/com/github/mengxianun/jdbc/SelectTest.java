@@ -157,10 +157,10 @@ public class SelectTest extends TestSupport {
 		assertEquals(result.size(), 6);
 		JsonObject firstElement = result.get(0).getAsJsonObject();
 		String maxAge = firstElement.get("AGE").getAsString();
-		assertEquals("99.0", maxAge);
+		assertEquals("99", maxAge);
 		JsonObject lastElement = result.get(result.size() - 1).getAsJsonObject();
 		String minAge = lastElement.get("AGE").getAsString();
-		assertEquals("10.0", minAge);
+		assertEquals("10", minAge);
 	}
 	
 	@Test

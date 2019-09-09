@@ -21,7 +21,6 @@ import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.relationship.Relationship;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -291,7 +290,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			} else if (columnType.isLiteral()) {
 				record.addProperty(key, render(column, value.toString()));
 			} else if (columnType.isJson() || columnType.isArray()) {
-				record.add(key, new Gson().toJsonTree(value));
+				record.add(key, App.gson.toJsonTree(value));
 			} else {
 				record.addProperty(key, render(column, value.toString()));
 			}

@@ -8,10 +8,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.github.mengxianun.core.Action;
+import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.data.DefaultRow;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.data.summary.QuerySummary;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -42,8 +42,7 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 	@Override
 	public List<Row> toRows() {
 		List<Row> rows = new ArrayList<>();
-		Gson gson = new Gson();
-		JsonObject response = gson.fromJson(resultString, JsonObject.class);
+		JsonObject response = App.gson.fromJson(resultString, JsonObject.class);
 
 		// hits
 		JsonObject hits = response.getAsJsonObject(NODE_HITS);
@@ -104,7 +103,7 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 		if (hit.has(NODE_SOURCE)) {
 			JsonObject source = hit.getAsJsonObject(NODE_SOURCE);
 			Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
-			Map<String, Object> sourceMap = new Gson().fromJson(source, dataType);
+			Map<String, Object> sourceMap = App.gson.fromJson(source, dataType);
 			values.putAll(sourceMap);
 		}
 		// fields
@@ -144,7 +143,7 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 		final Map<String, Object> values = new HashMap<>();
 		JsonObject key = bucket.getAsJsonObject(NODE_KEY);
 		Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
-		Map<String, Object> keyMap = new Gson().fromJson(key, dataType);
+		Map<String, Object> keyMap = App.gson.fromJson(key, dataType);
 		values.putAll(keyMap);
 		return values;
 	}
@@ -152,8 +151,7 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 	@Override
 	public List<Map<String, Object>> toValues() {
 		List<Map<String, Object>> values = new ArrayList<>();
-		Gson gson = new Gson();
-		JsonObject response = gson.fromJson(resultString, JsonObject.class);
+		JsonObject response = App.gson.fromJson(resultString, JsonObject.class);
 
 		// hits
 		JsonObject hits = response.getAsJsonObject(NODE_HITS);

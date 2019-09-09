@@ -24,6 +24,8 @@ import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -42,6 +44,7 @@ public final class App {
 
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 	private static Injector injector = Guice.createInjector(Stage.PRODUCTION, new AppModule());
+	public static final Gson gson = new GsonBuilder().serializeNulls().create();
 
 	private static final Map<String, DataContext> dataContexts = new LinkedHashMap<>();
 	// 当前线程的 DataContext

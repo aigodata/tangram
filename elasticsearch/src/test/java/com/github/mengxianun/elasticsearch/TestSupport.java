@@ -22,6 +22,7 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.jupiter.api.BeforeAll;
 
+import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.DefaultTranslator;
 import com.google.common.io.Resources;
@@ -63,7 +64,7 @@ public class TestSupport {
 			indices.create(createIndexRequest, RequestOptions.DEFAULT);
 
 			String dataString = Resources.toString(Resources.getResource(TEST_DATA), StandardCharsets.UTF_8);
-			JsonArray dataArray = new Gson().fromJson(dataString, JsonArray.class);
+			JsonArray dataArray = App.gson.fromJson(dataString, JsonArray.class);
 			BulkRequest bulkRequest = new BulkRequest();
 			for (JsonElement jsonElement : dataArray) {
 				String source = jsonElement.getAsJsonObject().toString();

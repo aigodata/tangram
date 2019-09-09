@@ -7,10 +7,10 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import com.alibaba.druid.pool.DruidDataSourceFactory;
+import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataContextFactory;
 import com.google.auto.service.AutoService;
 import com.google.common.base.Strings;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -26,7 +26,7 @@ public final class JdbcDataContextFactory implements DataContextFactory {
 	public JdbcDataContext create(JsonObject dataSourceJsonObject) {
 		Type type = new TypeToken<Map<String, String>>() {
 		}.getType();
-		Map<String, Object> dataSourceMap = new Gson().fromJson(dataSourceJsonObject, type);
+		Map<String, Object> dataSourceMap = App.gson.fromJson(dataSourceJsonObject, type);
 		DataSource dataSource = createDataSource(dataSourceMap);
 		return new JdbcDataContext(dataSource);
 	}

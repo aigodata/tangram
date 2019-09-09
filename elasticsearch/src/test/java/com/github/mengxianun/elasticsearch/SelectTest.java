@@ -141,11 +141,11 @@ public class SelectTest extends TestSupport {
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertEquals(6, result.size());
 		JsonObject firstElement = result.get(0).getAsJsonObject();
-		String maxAge = firstElement.get("age").getAsString();
-		assertEquals("99.0", maxAge);
+		long maxAge = firstElement.get("age").getAsLong();
+		assertEquals(99, maxAge);
 		JsonObject lastElement = result.get(result.size() - 1).getAsJsonObject();
-		String minAge = lastElement.get("age").getAsString();
-		assertEquals("10.0", minAge);
+		long minAge = lastElement.get("age").getAsLong();
+		assertEquals(10, minAge);
 	}
 	
 	@Test

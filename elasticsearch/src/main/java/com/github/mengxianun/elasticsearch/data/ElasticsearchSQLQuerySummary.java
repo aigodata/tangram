@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.github.mengxianun.core.Action;
+import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.data.DefaultRow;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.data.summary.QuerySummary;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -30,17 +30,16 @@ public class ElasticsearchSQLQuerySummary extends QuerySummary {
 	@Override
 	public List<Row> toRows() {
 		List<Row> rows = new ArrayList<>();
-		JsonObject jsonObject = new Gson().fromJson(resultString, JsonObject.class);
+		JsonObject jsonObject = App.gson.fromJson(resultString, JsonObject.class);
 		JsonArray rowsArray = jsonObject.getAsJsonArray("rows");
-		Gson gson = new Gson();
-		rowsArray.forEach(e -> rows.add(new DefaultRow(null, gson.fromJson(e, Object[].class))));
+		rowsArray.forEach(e -> rows.add(new DefaultRow(null, App.gson.fromJson(e, Object[].class))));
 		return rows;
 	}
 
 	@Override
 	public List<Map<String, Object>> toValues() {
 		List<Map<String, Object>> values = new ArrayList<>();
-		JsonObject jsonObject = new Gson().fromJson(resultString, JsonObject.class);
+		JsonObject jsonObject = App.gson.fromJson(resultString, JsonObject.class);
 		JsonArray columnsArray = jsonObject.getAsJsonArray("columns");
 		int size = columnsArray.size();
 		String[] columns = new String[size];

@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.AbstractDataContext;
 import com.github.mengxianun.core.Action;
+import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.Atom;
 import com.github.mengxianun.core.ResultStatus;
 import com.github.mengxianun.core.SQLBuilder;
@@ -41,7 +42,6 @@ import com.github.mengxianun.elasticsearch.data.ElasticsearchSQLQuerySummary;
 import com.github.mengxianun.elasticsearch.dialect.ElasticsearchDialect;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchColumnType;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -80,7 +80,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 	private String readVersion() {
 		String infoString = request(REQUEST_METHOD_GET, REQUEST_ENDPOINT_ROOT);
-		JsonObject infoObject = new Gson().fromJson(infoString, JsonObject.class);
+		JsonObject infoObject = App.gson.fromJson(infoString, JsonObject.class);
 		return infoObject.getAsJsonObject("version").get("number").getAsString();
 	}
 
@@ -94,7 +94,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	private void loadMetadata(String schemaName, String tableName) {
 		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaName);
 		String mappingString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_MAPPING);
-		JsonObject mappingObject = new Gson().fromJson(mappingString, JsonObject.class);
+		JsonObject mappingObject = App.gson.fromJson(mappingString, JsonObject.class);
 		for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
 			String index = entry.getKey();
 			JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
@@ -173,8 +173,6 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		// 说明: 6.8.2 以及之前的版本, SQL分页只支持 LIMIT, 不支持 OFFSET
 		// 所有在这里, 分页查询通过将 SQL translate, 再进行查询
 
-		Gson gson = new Gson();
-
 		// Build query
 		ElasticsearchSQLBuilder sqlBuilder = new ElasticsearchSQLBuilder(action);
 		sqlBuilder.toSelectWithoutLimit();
@@ -183,7 +181,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		String fullSql = fill(sql, params);
 		// translate
 		String nativeQueryString = translateSQL(fullSql);
-		JsonObject query = gson.fromJson(nativeQueryString, JsonObject.class);
+		JsonObject query = App.gson.fromJson(nativeQueryString, JsonObject.class);
 
 		// aggregations
 		if (action.isGroup()) {
@@ -300,11 +298,11 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 	@Override
 	public Summary executeNative(String statement) {
-		JsonObject nativeObject = new Gson().fromJson(statement, JsonObject.class);
+		JsonObject nativeObject = App.gson.fromJson(statement, JsonObject.class);
 		String endpoint = nativeObject.get("endpoint").getAsString();
 		JsonObject bodyObject = nativeObject.getAsJsonObject("body");
 		String resultString = request(REQUEST_METHOD_GET, endpoint, bodyObject.toString());
-		return new BasicSummary(new Gson().fromJson(resultString, JsonObject.class));
+		return new BasicSummary(App.gson.fromJson(resultString, JsonObject.class));
 	}
 
 	private String request(String method, String endpoint) {

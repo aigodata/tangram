@@ -5,12 +5,11 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
+import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.ResultStatus;
 import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.data.summary.FileSummary;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
@@ -51,17 +50,16 @@ public abstract class AbstractDataResultSet implements DataResultSet {
 		}
 		Object data = summary.getData();
 		if (data instanceof JsonElement) {
-			Gson gson = new GsonBuilder().serializeNulls().create();
 			JsonElement jsonData = (JsonElement) data;
 			if (jsonData.isJsonArray()) {
 				Type dataType = new TypeToken<List<Map<String, Object>>>() {}.getType();
-				return gson.fromJson(jsonData, dataType);
+				return App.gson.fromJson(jsonData, dataType);
 			} else if (jsonData.isJsonObject()) {
 				Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
-				return gson.fromJson(jsonData, dataType);
+				return App.gson.fromJson(jsonData, dataType);
 			} else {
 				Type dataType = new TypeToken<Object>() {}.getType();
-				return gson.fromJson(jsonData, dataType);
+				return App.gson.fromJson(jsonData, dataType);
 			}
 		} else {
 			return data;
@@ -70,8 +68,7 @@ public abstract class AbstractDataResultSet implements DataResultSet {
 
 	@Override
 	public JsonElement getJsonData() {
-		Gson gson = new GsonBuilder().serializeNulls().create();
-		return gson.toJsonTree(getData());
+		return App.gson.toJsonTree(getData());
 	}
 
 	@Override

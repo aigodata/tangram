@@ -38,7 +38,6 @@ import com.github.mengxianun.core.schema.relationship.RelationshipGraph;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -218,7 +217,7 @@ public abstract class AbstractDataContext implements DataContext {
 		JsonArray jsonData = new JsonRenderer(action).render(querySummary.toRows());
 		// Convert json to native type
 		Type dataType = new TypeToken<List<Map<String, Object>>>() {}.getType();
-		List<Map<String, Object>> values = new Gson().fromJson(jsonData, dataType);
+		List<Map<String, Object>> values = App.gson.fromJson(jsonData, dataType);
 		querySummary.setValues(values);
 		if (action.isLimit() && querySummary.getTotal() == -1) {
 			long total = count(action);

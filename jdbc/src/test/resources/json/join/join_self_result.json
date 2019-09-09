@@ -1,43 +1,43 @@
 [{
-    "ID": 1.0,
+    "ID": 1,
     "NAME": "table4_name1",
-    "TABLE_4_ID": 1.0,
+    "TABLE_4_ID": 1,
     "ANOTHER_TABLE_4_ID": null,
     "TABLE_4_ID__JOIN_TABLE_4": {
-      "ID": 1.0,
+      "ID": 1,
       "NAME": "table4_name1",
-      "TABLE_4_ID": 1.0,
+      "TABLE_4_ID": 1,
       "ANOTHER_TABLE_4_ID": null
     }
   },
   {
-    "ID": 2.0,
+    "ID": 2,
     "NAME": "table4_name2",
-    "TABLE_4_ID": 1.0,
-    "ANOTHER_TABLE_4_ID": 3.0,
+    "TABLE_4_ID": 1,
+    "ANOTHER_TABLE_4_ID": 3,
     "TABLE_4_ID__JOIN_TABLE_4": {
-      "ID": 1.0,
+      "ID": 1,
       "NAME": "table4_name1",
-      "TABLE_4_ID": 1.0,
+      "TABLE_4_ID": 1,
       "ANOTHER_TABLE_4_ID": null
     },
     "ANOTHER_TABLE_4_ID__JOIN_TABLE_4": {
-      "ID": 3.0,
+      "ID": 3,
       "NAME": "table4_name3",
       "TABLE_4_ID": null,
-      "ANOTHER_TABLE_4_ID": 2.0
+      "ANOTHER_TABLE_4_ID": 2
     }
   },
   {
-    "ID": 3.0,
+    "ID": 3,
     "NAME": "table4_name3",
     "TABLE_4_ID": null,
-    "ANOTHER_TABLE_4_ID": 2.0,
+    "ANOTHER_TABLE_4_ID": 2,
     "ANOTHER_TABLE_4_ID__JOIN_TABLE_4": {
-      "ID": 2.0,
+      "ID": 2,
       "NAME": "table4_name2",
-      "TABLE_4_ID": 1.0,
-      "ANOTHER_TABLE_4_ID": 3.0
+      "TABLE_4_ID": 1,
+      "ANOTHER_TABLE_4_ID": 3
     }
   }
 ]

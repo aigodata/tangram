@@ -44,7 +44,6 @@ import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table.Cell;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -81,7 +80,7 @@ public class JsonParser {
 	//	private Map<Column, ColumnItem> tempColumnItems = new LinkedHashMap<>();
 
 	public JsonParser(final String json) {
-		this(new com.google.gson.JsonParser().parse(json).getAsJsonObject());
+		this(App.gson.fromJson(json, JsonObject.class));
 	}
 
 	public JsonParser(final JsonObject jsonData) {
@@ -1080,7 +1079,7 @@ public class JsonParser {
 					} else if (valueElement.isJsonPrimitive()) {
 						value = valueElement.getAsString();
 					} else if (valueElement.isJsonArray()) {
-						value = new Gson().fromJson(valueElement.toString(), Object[].class);
+						value = App.gson.fromJson(valueElement.toString(), Object[].class);
 					} else {
 						value = valueElement.toString();
 					}
