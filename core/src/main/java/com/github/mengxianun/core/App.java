@@ -44,13 +44,15 @@ public final class App {
 
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 	private static Injector injector = Guice.createInjector(Stage.PRODUCTION, new AppModule());
-	public static final Gson gson = new GsonBuilder().serializeNulls().create();
+	private static final Gson gson = new GsonBuilder().serializeNulls().create();
 
 	private static final Map<String, DataContext> dataContexts = new LinkedHashMap<>();
 	// 当前线程的 DataContext
 	private static final ThreadLocal<DataContext> currentDataContext = new ThreadLocal<>();
 
-	private App() {}
+	private App() {
+		throw new AssertionError();
+	}
 
 	public static Map<String, DataContext> getDataContexts() {
 		return dataContexts;
@@ -142,6 +144,10 @@ public final class App {
 
 	public static Injector getInjector() {
 		return injector;
+	}
+
+	public static Gson gson() {
+		return gson;
 	}
 
 	public static void cleanup() {

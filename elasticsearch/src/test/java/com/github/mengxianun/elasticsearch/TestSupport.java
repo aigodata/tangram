@@ -64,7 +64,7 @@ public class TestSupport {
 			indices.create(createIndexRequest, RequestOptions.DEFAULT);
 
 			String dataString = Resources.toString(Resources.getResource(TEST_DATA), StandardCharsets.UTF_8);
-			JsonArray dataArray = App.gson.fromJson(dataString, JsonArray.class);
+			JsonArray dataArray = App.gson().fromJson(dataString, JsonArray.class);
 			BulkRequest bulkRequest = new BulkRequest();
 			for (JsonElement jsonElement : dataArray) {
 				String source = jsonElement.getAsJsonObject().toString();

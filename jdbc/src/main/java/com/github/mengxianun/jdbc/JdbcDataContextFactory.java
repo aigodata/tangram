@@ -26,7 +26,7 @@ public final class JdbcDataContextFactory implements DataContextFactory {
 	public JdbcDataContext create(JsonObject dataSourceJsonObject) {
 		Type type = new TypeToken<Map<String, String>>() {
 		}.getType();
-		Map<String, Object> dataSourceMap = App.gson.fromJson(dataSourceJsonObject, type);
+		Map<String, Object> dataSourceMap = App.gson().fromJson(dataSourceJsonObject, type);
 		DataSource dataSource = createDataSource(dataSourceMap);
 		return new JdbcDataContext(dataSource);
 	}

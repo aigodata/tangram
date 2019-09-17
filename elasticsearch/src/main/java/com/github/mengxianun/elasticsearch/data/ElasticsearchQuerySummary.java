@@ -42,7 +42,7 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 	@Override
 	public List<Row> toRows() {
 		List<Row> rows = new ArrayList<>();
-		JsonObject response = App.gson.fromJson(resultString, JsonObject.class);
+		JsonObject response = App.gson().fromJson(resultString, JsonObject.class);
 
 		// hits
 		JsonObject hits = response.getAsJsonObject(NODE_HITS);
@@ -103,7 +103,7 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 		if (hit.has(NODE_SOURCE)) {
 			JsonObject source = hit.getAsJsonObject(NODE_SOURCE);
 			Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
-			Map<String, Object> sourceMap = App.gson.fromJson(source, dataType);
+			Map<String, Object> sourceMap = App.gson().fromJson(source, dataType);
 			values.putAll(sourceMap);
 		}
 		// fields
@@ -143,7 +143,7 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 		final Map<String, Object> values = new HashMap<>();
 		JsonObject key = bucket.getAsJsonObject(NODE_KEY);
 		Type dataType = new TypeToken<Map<String, Object>>() {}.getType();
-		Map<String, Object> keyMap = App.gson.fromJson(key, dataType);
+		Map<String, Object> keyMap = App.gson().fromJson(key, dataType);
 		values.putAll(keyMap);
 		return values;
 	}
@@ -151,7 +151,7 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 	@Override
 	public List<Map<String, Object>> toValues() {
 		List<Map<String, Object>> values = new ArrayList<>();
-		JsonObject response = App.gson.fromJson(resultString, JsonObject.class);
+		JsonObject response = App.gson().fromJson(resultString, JsonObject.class);
 
 		// hits
 		JsonObject hits = response.getAsJsonObject(NODE_HITS);

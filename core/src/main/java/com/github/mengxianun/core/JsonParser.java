@@ -80,7 +80,7 @@ public class JsonParser {
 	//	private Map<Column, ColumnItem> tempColumnItems = new LinkedHashMap<>();
 
 	public JsonParser(final String json) {
-		this(App.gson.fromJson(json, JsonObject.class));
+		this(App.gson().fromJson(json, JsonObject.class));
 	}
 
 	public JsonParser(final JsonObject jsonData) {
@@ -1079,7 +1079,7 @@ public class JsonParser {
 					} else if (valueElement.isJsonPrimitive()) {
 						value = valueElement.getAsString();
 					} else if (valueElement.isJsonArray()) {
-						value = App.gson.fromJson(valueElement.toString(), Object[].class);
+						value = App.gson().fromJson(valueElement.toString(), Object[].class);
 					} else {
 						value = valueElement.toString();
 					}

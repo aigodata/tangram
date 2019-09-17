@@ -80,7 +80,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 	private String readVersion() {
 		String infoString = request(REQUEST_METHOD_GET, REQUEST_ENDPOINT_ROOT);
-		JsonObject infoObject = App.gson.fromJson(infoString, JsonObject.class);
+		JsonObject infoObject = App.gson().fromJson(infoString, JsonObject.class);
 		return infoObject.getAsJsonObject("version").get("number").getAsString();
 	}
 
@@ -94,7 +94,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	private void loadMetadata(String schemaName, String tableName) {
 		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaName);
 		String mappingString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_MAPPING);
-		JsonObject mappingObject = App.gson.fromJson(mappingString, JsonObject.class);
+		JsonObject mappingObject = App.gson().fromJson(mappingString, JsonObject.class);
 		for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
 			String index = entry.getKey();
 			JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
@@ -181,7 +181,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		String fullSql = fill(sql, params);
 		// translate
 		String nativeQueryString = translateSQL(fullSql);
-		JsonObject query = App.gson.fromJson(nativeQueryString, JsonObject.class);
+		JsonObject query = App.gson().fromJson(nativeQueryString, JsonObject.class);
 
 		// aggregations
 		if (action.isGroup()) {
@@ -298,11 +298,11 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 	@Override
 	public Summary executeNative(String statement) {
-		JsonObject nativeObject = App.gson.fromJson(statement, JsonObject.class);
+		JsonObject nativeObject = App.gson().fromJson(statement, JsonObject.class);
 		String endpoint = nativeObject.get("endpoint").getAsString();
 		JsonObject bodyObject = nativeObject.getAsJsonObject("body");
 		String resultString = request(REQUEST_METHOD_GET, endpoint, bodyObject.toString());
-		return new BasicSummary(App.gson.fromJson(resultString, JsonObject.class));
+		return new BasicSummary(App.gson().fromJson(resultString, JsonObject.class));
 	}
 
 	private String request(String method, String endpoint) {

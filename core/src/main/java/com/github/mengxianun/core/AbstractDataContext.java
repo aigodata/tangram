@@ -217,7 +217,7 @@ public abstract class AbstractDataContext implements DataContext {
 		JsonArray jsonData = new JsonRenderer(action).render(querySummary.toRows());
 		// Convert json to native type
 		Type dataType = new TypeToken<List<Map<String, Object>>>() {}.getType();
-		List<Map<String, Object>> values = App.gson.fromJson(jsonData, dataType);
+		List<Map<String, Object>> values = App.gson().fromJson(jsonData, dataType);
 		querySummary.setValues(values);
 		if (action.isLimit() && querySummary.getTotal() == -1) {
 			long total = count(action);
