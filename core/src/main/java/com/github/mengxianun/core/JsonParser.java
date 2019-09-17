@@ -87,6 +87,10 @@ public class JsonParser {
 		this.jsonData = jsonData;
 		action.setRequestData(jsonData);
 		parseOperation();
+		if (operation == Operation.SELECT_DISTINCT) {
+			operation = Operation.SELECT;
+			action.setDistinct(true);
+		}
 		action.setOperation(operation);
 	}
 
@@ -96,7 +100,7 @@ public class JsonParser {
 		int operationCount = 0;
 		for (String key : keys) {
 			for (Operation op : operations) {
-				if (op.name().equalsIgnoreCase(key)) {
+				if (op.value().equalsIgnoreCase(key)) {
 					operation = op;
 					operationAttribute = key;
 					operationCount++;

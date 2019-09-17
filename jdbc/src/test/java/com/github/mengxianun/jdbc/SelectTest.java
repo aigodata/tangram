@@ -46,6 +46,13 @@ public class SelectTest extends TestSupport {
 	}
 
 	@Test
+	void testDistinct() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_distinct.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(2, result.size());
+	}
+
+	@Test
 	void testWhereEqual() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_where_equal.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();

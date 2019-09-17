@@ -1,0 +1,4 @@
+{
+  "select.distinct":"select_distinct_table",
+  "fields":["name"]
+}
