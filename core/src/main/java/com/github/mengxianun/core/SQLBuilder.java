@@ -171,16 +171,7 @@ public class SQLBuilder {
 			if (comma) {
 				tablesBuilder.append(", ");
 			}
-			Table table = tableItem.getTable();
-			if (table != null) {
-				tablesBuilder.append(spliceTable(table));
-			} else {
-				tablesBuilder.append(tableItem.getExpression());
-			}
-			String alias = tableItem.getAlias();
-			if (!Strings.isNullOrEmpty(alias) && dialect.tableAliasEnabled()) {
-				tablesBuilder.append(ALIAS_KEY).append(alias);
-			}
+			tablesBuilder.append(spliceTable(tableItem));
 
 			////////////////////////////////////////////
 			// To optimize
@@ -479,10 +470,8 @@ public class SQLBuilder {
 	}
 
 	public String toInsertTable() {
-		List<TableItem> tableItems = action.getTableItems();
 		StringBuilder tableBuilder = new StringBuilder(PREFIX_INSERT_INTO);
-		Table table = tableItems.get(0).getTable();
-		tableBuilder.append(spliceTable(table));
+		tableBuilder.append(spliceTable(action.getPrimaryTable()));
 		return tableString = tableBuilder.toString();
 
 	}
@@ -516,9 +505,8 @@ public class SQLBuilder {
 	}
 
 	public String toUpdateTable() {
-		List<TableItem> tableItems = action.getTableItems();
 		StringBuilder tableBuilder = new StringBuilder(PREFIX_UPDATE);
-		tableBuilder.append(spliceTable(tableItems.get(0)));
+		tableBuilder.append(spliceTable(action.getPrimaryTable()));
 		return tableString = tableBuilder.toString();
 	}
 
@@ -549,9 +537,8 @@ public class SQLBuilder {
 	}
 
 	public String toDeleteTable() {
-		List<TableItem> tableItems = action.getTableItems();
 		StringBuilder tableBuilder = new StringBuilder(PREFIX_DELETE_FROM);
-		tableBuilder.append(spliceTable(tableItems.get(0)));
+		tableBuilder.append(spliceTable(action.getPrimaryTable()));
 		return tableString = tableBuilder.toString();
 	}
 
@@ -570,7 +557,7 @@ public class SQLBuilder {
 	public String spliceTable(TableItem tableItem) {
 		StringBuilder tableBuilder = new StringBuilder();
 		Table table = tableItem.getTable();
-		tableBuilder.append(spliceTable(table));
+		tableBuilder.append(table != null ? spliceTable(table) : spliceTable(tableItem.getExpression()));
 		String alias = tableItem.getAlias();
 		if (!Strings.isNullOrEmpty(alias) && dialect.tableAliasEnabled()) {
 			tableBuilder.append(ALIAS_KEY).append(alias);
@@ -586,6 +573,10 @@ public class SQLBuilder {
 		}
 		tableBuilder.append(process(table.getName()));
 		return tableBuilder.toString();
+	}
+
+	public String spliceTable(String expression) {
+		return expression;
 	}
 
 	public String spliceColumn(ColumnItem columnItem) {
@@ -658,7 +649,7 @@ public class SQLBuilder {
 		return columnBuilder.toString();
 	}
 
-	private String process(String element) {
+	public String process(String element) {
 		return dialect.processKeyword(element);
 	}
 

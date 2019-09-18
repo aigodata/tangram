@@ -44,6 +44,11 @@ public class ElasticsearchSQLBuilder extends SQLBuilder {
 	}
 
 	@Override
+	public String spliceTable(String expression) {
+		return process(expression);
+	}
+
+	@Override
 	public String countSql() {
 		// 主表列
 		StringBuilder columnsBuilder = new StringBuilder();
