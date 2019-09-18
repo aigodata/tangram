@@ -31,6 +31,20 @@ public class SelectTest extends TestSupport {
 	}
 
 	@Test
+	void testStarTable() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_star_table.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(12, result.size());
+	}
+
+	@Test
+	void testMultiTable() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_multi_table.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(12, result.size());
+	}
+
+	@Test
 	void testWhereEqual() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_where_equal.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();

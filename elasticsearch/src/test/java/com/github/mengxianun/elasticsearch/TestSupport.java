@@ -36,6 +36,8 @@ public class TestSupport {
 	static final Logger LOG = Logger.getLogger(TestSupport.class.getName());
 	
 	private static final String TEST_INDEX = "test";
+	private static final String TEST_INDEX2 = "test2";
+	private static final String[] TEST_INDEXS = { TEST_INDEX, TEST_INDEX2 };
 	private static final String TEST_DATA = "index.json";
 	private static final String TEST_CONFIG_FILE = "test.json";
 	public static final DefaultTranslator translator;
@@ -47,36 +49,41 @@ public class TestSupport {
 	}
 
 	@BeforeAll
-	public static void init() {
+	static void init() {
 		// Initialize test data
 		RestClientBuilder clientBuilder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
 		try (RestHighLevelClient client = new RestHighLevelClient(clientBuilder)) {
 			IndicesClient indices = client.indices();
-			// Delete
-			GetIndexRequest getIndexRequest = new GetIndexRequest(TEST_INDEX);
-			boolean exists = indices.exists(getIndexRequest, RequestOptions.DEFAULT);
-			if (exists) {
-				DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest(TEST_INDEX);
-				indices.delete(deleteIndexRequest, RequestOptions.DEFAULT);
-			}
-			// Create
-			CreateIndexRequest createIndexRequest = new CreateIndexRequest(TEST_INDEX);
-			indices.create(createIndexRequest, RequestOptions.DEFAULT);
 
-			String dataString = Resources.toString(Resources.getResource(TEST_DATA), StandardCharsets.UTF_8);
-			JsonArray dataArray = App.gson().fromJson(dataString, JsonArray.class);
-			BulkRequest bulkRequest = new BulkRequest();
-			for (JsonElement jsonElement : dataArray) {
-				String source = jsonElement.getAsJsonObject().toString();
-				IndexRequest indexRequest = new IndexRequest(TEST_INDEX, "_doc");
-				indexRequest.source(source, XContentType.JSON);
-				bulkRequest.add(indexRequest);
-			}
-			bulkRequest.setRefreshPolicy(RefreshPolicy.IMMEDIATE);
-			BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
-			int length = bulkResponse.getItems().length;
+			for (String index : TEST_INDEXS) {
+				// Delete index
+				GetIndexRequest getIndexRequest = new GetIndexRequest(index);
+				boolean exists = indices.exists(getIndexRequest, RequestOptions.DEFAULT);
+				if (exists) {
+					DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest(index);
+					indices.delete(deleteIndexRequest, RequestOptions.DEFAULT);
+				}
+				// Create index
+				CreateIndexRequest createIndexRequest = new CreateIndexRequest(index);
+				indices.create(createIndexRequest, RequestOptions.DEFAULT);
+				// Bulk data
+				String dataString = Resources.toString(Resources.getResource(TEST_DATA), StandardCharsets.UTF_8);
+				JsonArray dataArray = App.gson().fromJson(dataString, JsonArray.class);
+				BulkRequest bulkRequest = new BulkRequest();
+				for (JsonElement jsonElement : dataArray) {
+					String source = jsonElement.getAsJsonObject().toString();
+					IndexRequest indexRequest = new IndexRequest(index, "_doc");
+					indexRequest.source(source, XContentType.JSON);
+					bulkRequest.add(indexRequest);
+				}
+				bulkRequest.setRefreshPolicy(RefreshPolicy.IMMEDIATE);
+				BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+				int length = bulkResponse.getItems().length;
 
-			LOG.info("Initialize " + length + " elasticsearch test data");
+				String msg = String.format("Initialize index [%s] %s test data", index, length);
+				LOG.info(msg);
+			}
+
 		} catch (IOException e) {
 			LOG.log(Level.SEVERE, "Elasticsearch create index failed", e);
 		}
