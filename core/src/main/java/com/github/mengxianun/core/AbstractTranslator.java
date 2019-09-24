@@ -17,8 +17,14 @@ import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.config.DataSourceConfig;
 import com.github.mengxianun.core.config.GlobalConfig;
+import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.exception.JsonDataException;
+import com.github.mengxianun.core.parser.ActionParser;
+import com.github.mengxianun.core.parser.ParserFactory;
+import com.github.mengxianun.core.parser.SimpleParser;
+import com.github.mengxianun.core.parser.info.SimpleInfo;
+import com.github.mengxianun.core.resutset.DefaultDataResultSet;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.io.Resources;
@@ -169,9 +175,14 @@ public abstract class AbstractTranslator implements Translator {
 	public DataResultSet translate(String json) {
 		logger.debug("Request: \n{}", json);
 
-		// 设置当前线程的上下文
-		com.github.mengxianun.core.JsonParser parser = new com.github.mengxianun.core.JsonParser(json);
-		String sourceName = parser.parseSource();
+		// Sets the context of the current thread
+		SimpleInfo simpleInfo = SimpleParser.parse(json);
+		String sourceName = null;
+		if (simpleInfo.source() != null) {
+			sourceName = simpleInfo.source().source();
+		} else if (simpleInfo.table() != null) {
+			sourceName = simpleInfo.table().source();
+		}
 		if (Strings.isNullOrEmpty(sourceName)) {
 			sourceName = App.getDefaultDataSource();
 		}
@@ -184,27 +195,37 @@ public abstract class AbstractTranslator implements Translator {
 		// Stopwatch
 		Stopwatch stopwatch = Stopwatch.createStarted();
 
-		// Run
-		Action action = parser.parse();
-		action.build();
+		// Permission valid
+		checkPermission(simpleInfo);
 
-		DataResultSet dataResultSet = execute(dataContext, action);
+		ActionParser actionParser = ParserFactory.getActionParser(simpleInfo, dataContext);
+		NewAction newAction = actionParser.parse();
+
+		Summary summary = newAction.execute();
+		DataResultSet dataResultSet = new DefaultDataResultSet(summary);
+
+		//		DataResultSet dataResultSet = execute(dataContext, action);
 
 		// Done
 		Duration duration = stopwatch.stop().elapsed();
 
 		logger.debug("Operation completed in {} milliseconds", duration.toMillis());
 
-		// 清理当前线程的上下文
+		// Cleans up the context of the current thread
 		App.cleanup();
 
 		return dataResultSet;
 	}
 
+	private void checkPermission(SimpleInfo simpleInfo) {
+		//		HashBasedTable<String, String, List<TablePermission>> tablePermissions = App.getTablePermissions();
+		//		PermissionChecker.check(action, tablePermissions);
+	}
+
 	protected abstract DataResultSet execute(DataContext dataContext, Action action);
 
 	/**
-	 * 释放资源
+	 * Release resources
 	 */
 	@PreDestroy
 	protected void destroy() {

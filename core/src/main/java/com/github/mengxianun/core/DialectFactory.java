@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 
+@Deprecated
 public class DialectFactory {
 
 	// 数据库方言集合. key: 数据库关键字 value: 数据库方言类

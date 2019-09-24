@@ -1,9 +1,9 @@
 package com.github.mengxianun.core;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.jexl3.JexlBuilder;
 import org.apache.commons.jexl3.JexlContext;
@@ -19,11 +19,14 @@ import com.github.mengxianun.core.config.ColumnConfig;
 import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.exception.DataException;
+import com.github.mengxianun.core.permission.PermissionPolicy;
+import com.github.mengxianun.core.permission.TablePermission;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
+import com.google.common.collect.HashBasedTable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -46,9 +49,11 @@ public final class App {
 	private static Injector injector = Guice.createInjector(Stage.PRODUCTION, new AppModule());
 	private static final Gson gson = new GsonBuilder().serializeNulls().create();
 
-	private static final Map<String, DataContext> dataContexts = new LinkedHashMap<>();
-	// 当前线程的 DataContext
+	private static final Map<String, DataContext> dataContexts = new ConcurrentHashMap<>();
+	// DataContext for the current thread
 	private static final ThreadLocal<DataContext> currentDataContext = new ThreadLocal<>();
+	// Permissions <datasource, table, conditions>
+	private static HashBasedTable<String, String, List<TablePermission>> tablePermissions = HashBasedTable.create();
 
 	private App() {
 		throw new AssertionError();
@@ -109,7 +114,7 @@ public final class App {
 		}
 		Set<String> dataContextNames = getDataContextNames();
 		if (!dataContextNames.isEmpty()) {
-			// 将第一个数据源设置为默认数据源
+			// Set the first data source as the default data source
 			Config.set(GlobalConfig.DEFAULT_DATASOURCE, dataContextNames.iterator().next());
 		}
 	}
@@ -126,6 +131,15 @@ public final class App {
 		return currentDataContext.get();
 	}
 
+	public static HashBasedTable<String, String, List<TablePermission>> getTablePermissions() {
+		return tablePermissions;
+	}
+
+	public static PermissionPolicy getPermissionPolicy() {
+		String permissionPolicy = Config.getString(GlobalConfig.PERMISSION_POLICY);
+		return PermissionPolicy.from(permissionPolicy);
+	}
+
 	/**
 	 * 获取表或者列等的别名, 根据配置的别名表达式
 	 * 
@@ -133,6 +147,7 @@ public final class App {
 	 *            获取别名的元素, 比如表或者列等
 	 * @return Alias
 	 */
+	@Deprecated
 	public static String getAliasKey(String element) {
 		JexlEngine jexl = new JexlBuilder().create();
 		String jexlExp = App.Config.getString(GlobalConfig.TABLE_ALIAS_EXPRESSION);
@@ -142,7 +157,7 @@ public final class App {
 		return e.evaluate(jc).toString();
 	}
 
-	public static Injector getInjector() {
+	public static Injector injector() {
 		return injector;
 	}
 
@@ -232,6 +247,7 @@ public final class App {
 			return currentDataContext().getSchema(schemaName);
 		}
 
+		@Deprecated
 		public static Table getTable(String nameOrAlias) {
 			// 1 根据别名查询
 			Schema schema = currentDataContext().getDefaultSchema();

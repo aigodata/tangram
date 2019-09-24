@@ -13,9 +13,9 @@ import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 
 public interface DataContext {
 
-	public Summary execute(Action action);
+	public Summary execute(NewAction action);
 
-	public MultiSummary execute(Action... actions);
+	public MultiSummary execute(NewAction... actions);
 
 	public Summary executeSql(String sql);
 
@@ -26,6 +26,8 @@ public interface DataContext {
 	public Schema getDefaultSchema();
 
 	public Schema getSchema(String schemaName);
+
+	public boolean hasTable(Table table);
 
 	public Table getTable(String tableName);
 

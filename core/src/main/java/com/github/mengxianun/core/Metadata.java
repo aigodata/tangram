@@ -102,6 +102,10 @@ public class Metadata {
 		this.schemas.add(schema);
 	}
 
+	public boolean hasTable(Table table) {
+		return schemas.parallelStream().flatMap(e -> e.getTables().stream()).anyMatch(table::equals);
+	}
+
 	public List<Table> getTables(String schemaName) {
 		Schema schema = getSchema(schemaName);
 		if (schema == null) {

@@ -28,7 +28,6 @@ import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.RelationshipItem;
 import com.github.mengxianun.core.item.TableItem;
-import com.github.mengxianun.core.item.ValueItem;
 import com.github.mengxianun.core.request.AdditionalKeywords;
 import com.github.mengxianun.core.request.Connector;
 import com.github.mengxianun.core.request.JoinType;
@@ -65,7 +64,7 @@ public class JsonParser {
 	private Operation operation;
 	private String operationAttribute;
 	// 解析结果对象
-	private final Action action = new Action();
+	private final Action action;
 	// 表关联关系, 内部 List Table 从左到右依次关联. 不包含主表
 	private List<List<Table>> tempJoins = new ArrayList<>();
 	// 主表的TableItems
@@ -84,6 +83,7 @@ public class JsonParser {
 	}
 
 	public JsonParser(final JsonObject jsonData) {
+		this.action = new Action(App.currentDataContext());
 		this.jsonData = jsonData;
 		action.setRequestData(jsonData);
 		parseOperation();
@@ -219,7 +219,7 @@ public class JsonParser {
 		// -------------
 		// Optimize
 		// -------------
-		action.setDataContext(App.currentDataContext());
+		//		action.setDataContext(App.currentDataContext());
 
 		if (isTransaction() || isStructs()) {
 			return action;
@@ -730,29 +730,7 @@ public class JsonParser {
 		for (Column column : columns) {
 			JoinColumnItem joinColumnItem = new JoinColumnItem(column, App.Action.getColumnAlias(column), false,
 					tableItem);
-			parseJoinColumnAssociation(joinColumnItem);
 			action.addColumnItem(joinColumnItem);
-		}
-	}
-
-	/**
-	 * 查找关联表的列的关联信息, 用于结果渲染时的关联表结构创建
-	 * 
-	 * @param joinColumnItem
-	 */
-	@Deprecated
-	private void parseJoinColumnAssociation(JoinColumnItem joinColumnItem) {
-		Table joinTable = joinColumnItem.getTableItem().getTable();
-		over: for (List<Table> tables : tempJoins) {
-			for (int i = tables.size() - 1; i > 0; i--) {
-				if (joinTable.getName().equals(tables.get(i).getName())) {
-					// 添加所有父级关联表
-					for (int j = 0; j < i; j++) {
-						joinColumnItem.addParentTable(tables.get(j));
-					}
-					break over;
-				}
-			}
 		}
 	}
 
@@ -771,7 +749,9 @@ public class JsonParser {
 			String connectorString = objectFilter.getKey();
 			JsonElement objectInnerFilter = objectFilter.getValue();
 			FilterItem parsedFilter = parseFilter(objectInnerFilter);
-			parsedFilter.setConnector(Connector.from(connectorString));
+			Connector connector = Connector.from(connectorString);
+			parsedFilter = new FilterItem(connector, parsedFilter.getColumnItem(), parsedFilter.getOperator(),
+					parsedFilter.getValue());
 			action.addFilterItem(parsedFilter);
 		} else {
 			action.addFilterItem(parseFilter(whereElement));
@@ -785,27 +765,30 @@ public class JsonParser {
 	 * @return
 	 */
 	private FilterItem parseFilter(JsonElement filterElement) {
-		FilterItem filterItem = new FilterItem();
 		if (filterElement.isJsonArray()) {
+			List<FilterItem> subFilterItems = new ArrayList<>();
 			for (JsonElement innerFilterItem : (JsonArray) filterElement) {
-				filterItem.addSubFilterItem(parseFilter(innerFilterItem));
+				subFilterItems.add(parseFilter(innerFilterItem));
 			}
-			return filterItem;
+			return new FilterItem(Connector.AND, subFilterItems);
 		} else if (filterElement.isJsonObject()) {
 			Entry<String, JsonElement> objectFilter = ((JsonObject) filterElement).entrySet().iterator().next();
 			String connectorString = objectFilter.getKey();
+			Connector connector = Connector.from(connectorString);
 			JsonElement objectInnerFilter = objectFilter.getValue();
 			if (objectInnerFilter.isJsonArray()) {
+				List<FilterItem> subFilterItems = new ArrayList<>();
 				for (JsonElement innerFilterItem : (JsonArray) objectInnerFilter) {
-					filterItem.addSubFilterItem(parseFilter(innerFilterItem));
+					subFilterItems.add(parseFilter(innerFilterItem));
 				}
+				return new FilterItem(connector, subFilterItems);
 			} else if (objectInnerFilter.isJsonPrimitive()) {
-				filterItem = parseFilter(objectInnerFilter);
+				FilterItem filterItem = parseFilter(objectInnerFilter);
+				return new FilterItem(connector, filterItem.getColumnItem(), filterItem.getOperator(),
+						filterItem.getValue());
 			} else {
 				throw new JsonDataException("where node format error");
 			}
-			filterItem.setConnector(Connector.from(connectorString));
-			return filterItem;
 		} else {
 			String filterString = filterElement.getAsString().trim();
 			return parseFilter(filterString);
@@ -825,7 +808,7 @@ public class JsonParser {
 		Object value = cond.getValue();
 
 		ColumnItem columnItem = findColumnItem(columnString);
-		return new FilterItem(columnItem, value, Connector.AND, operator);
+		return new FilterItem(Connector.AND, columnItem, operator, value);
 	}
 
 	/**
@@ -1087,7 +1070,7 @@ public class JsonParser {
 					} else {
 						value = valueElement.toString();
 					}
-					action.addValueItem(new ValueItem(column, value));
+					//					action.addValueItem(new ValueItem(column, value));
 				}
 			}
 		}
@@ -1124,7 +1107,6 @@ public class JsonParser {
 				tableItem = getJoinTableItem(column.getTable());
 				if (tableItem != null) {
 					JoinColumnItem joinColumnItem = new JoinColumnItem(column, alias, customAlias, tableItem);
-					parseJoinColumnAssociation(joinColumnItem);
 					return joinColumnItem;
 				}
 			}

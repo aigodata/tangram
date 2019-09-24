@@ -64,7 +64,7 @@ public class SQLBuilder {
 	public static final String FUNCTION_MATCHER_GROUP_FUNC = "func";
 	public static final String FUNCTION_MATCHER_GROUP_ARGS = "args";
 	public static final Pattern SOURCE_TABLE_COLUMN = Pattern
-			.compile("((?<source>[\\w+]*)(\\.)+)*(?<table>[\\w+]+)\\.(?<column>[\\w+]+)");
+			.compile("((?<source>[\\w-]*)(\\.)+)*(?<table>[\\w-]+)\\.(?<column>([\\w-]+|\\*))");
 	public static final String MATCHER_GROUP_SOURCE = "source";
 	public static final String MATCHER_GROUP_TABLE = "table";
 	public static final String MATCHER_GROUP_COLUMN = "column";
@@ -477,7 +477,8 @@ public class SQLBuilder {
 	}
 
 	public String toInsertValues() {
-		List<ValueItem> valueItems = action.getValueItems();
+		List<List<ValueItem>> insertValueItems = action.getInsertValueItems();
+		List<ValueItem> valueItems = insertValueItems.get(0);
 		StringBuilder valuesBuilder = new StringBuilder();
 		StringBuilder tempColumnsBuilder = new StringBuilder("(");
 		StringBuilder tempValuesBuilder = new StringBuilder(" VALUES(");
@@ -511,7 +512,7 @@ public class SQLBuilder {
 	}
 
 	public String toUpdateValues() {
-		List<ValueItem> valueItems = action.getValueItems();
+		List<ValueItem> valueItems = action.getUpdateValueItem();
 		StringBuilder valuesBuilder = new StringBuilder(UPDATE_SET);
 		boolean comma = false;
 		for (ValueItem valueItem : valueItems) {

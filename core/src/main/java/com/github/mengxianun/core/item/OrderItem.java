@@ -18,16 +18,8 @@ public class OrderItem extends Item {
 		return columnItem;
 	}
 
-	public void setColumnItem(ColumnItem columnItem) {
-		this.columnItem = columnItem;
-	}
-
 	public Order getOrder() {
 		return order;
-	}
-
-	public void setOrder(Order order) {
-		this.order = order;
 	}
 
 }

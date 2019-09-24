@@ -3,6 +3,8 @@ package com.github.mengxianun.core;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.mengxianun.core.action.AbstractAction;
+import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.FilterItem;
 import com.github.mengxianun.core.item.GroupItem;
@@ -18,9 +20,8 @@ import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 
-public class Action {
+public class Action extends AbstractAction {
 
-	private DataContext dataContext;
 	private JsonObject requestData;
 	private Operation operation;
 	private List<TableItem> tableItems;
@@ -30,7 +31,8 @@ public class Action {
 	private List<GroupItem> groupItems;
 	private List<OrderItem> orderItems;
 	private LimitItem limitItem;
-	private List<ValueItem> valueItems;
+	private List<List<ValueItem>> insertValueItems;
+	private List<ValueItem> updateValueItem;
 	private String file;
 	private Template template;
 	private String nativeSQL;
@@ -43,18 +45,7 @@ public class Action {
 	// 是否处理 Join Limit 的情况
 	private boolean handleJoinLimit;
 
-	public Action() {
-		this.tableItems = new ArrayList<>();
-		this.columnItems = new ArrayList<>();
-		this.joinItems = new ArrayList<>();
-		this.filterItems = new ArrayList<>();
-		this.groupItems = new ArrayList<>();
-		this.orderItems = new ArrayList<>();
-		this.valueItems = new ArrayList<>();
-		handleJoinLimit = true;
-		this.tables = new ArrayList<>();
-		this.joinTables = new ArrayList<>();
-	}
+	private boolean builded;
 
 	public Action(DataContext dataContext) {
 		this(dataContext, null);
@@ -62,13 +53,23 @@ public class Action {
 
 	public Action(Operation operation) {
 		this(null, operation);
-
 	}
 
 	public Action(DataContext dataContext, Operation operation) {
-		this();
-		this.dataContext = dataContext;
+		super(dataContext);
+		this.tableItems = new ArrayList<>();
+		this.columnItems = new ArrayList<>();
+		this.joinItems = new ArrayList<>();
+		this.filterItems = new ArrayList<>();
+		this.groupItems = new ArrayList<>();
+		this.orderItems = new ArrayList<>();
+		this.insertValueItems = new ArrayList<>();
+		this.updateValueItem = new ArrayList<>();
+		handleJoinLimit = true;
+		this.tables = new ArrayList<>();
+		this.joinTables = new ArrayList<>();
 		this.operation = operation;
+		this.sqlBuilder = dataContext.getSQLBuilder(this);
 	}
 
 	public void addTableItem(TableItem tableItem) {
@@ -170,18 +171,32 @@ public class Action {
 		this.limitItem = limitItem;
 	}
 
-	public void addValueItem(ValueItem valueItem) {
-		if (valueItem == null) {
-			return;
-		}
-		this.valueItems.add(valueItem);
-	}
-
-	public void addValueItems(List<ValueItem> valueItems) {
+	public void addInsertValueItems(List<ValueItem> valueItems) {
 		if (valueItems == null || valueItems.isEmpty()) {
 			return;
 		}
-		this.valueItems.addAll(valueItems);
+		this.insertValueItems.add(valueItems);
+	}
+
+	public void addAllInsertValueItems(List<List<ValueItem>> valueItems) {
+		if (valueItems == null || valueItems.isEmpty()) {
+			return;
+		}
+		this.insertValueItems.addAll(valueItems);
+	}
+
+	public void addUpdateValueItem(ValueItem valueItem) {
+		if (valueItem == null) {
+			return;
+		}
+		this.updateValueItem.add(valueItem);
+	}
+
+	public void addAllUpdateValueItem(List<ValueItem> valueItems) {
+		if (valueItems == null || valueItems.isEmpty()) {
+			return;
+		}
+		this.updateValueItem.addAll(valueItems);
 	}
 
 	public void addTable(Table table) {
@@ -272,6 +287,10 @@ public class Action {
 		return getPrimaryTableItem().getTable();
 	}
 
+	public List<Table> getJoinTables() {
+		return joinTables;
+	}
+
 	public String getFilename() {
 		if (Strings.isNullOrEmpty(file)) {
 			return "";
@@ -306,15 +325,16 @@ public class Action {
 	}
 
 	public void build() {
-		if (sqlBuilder == null) {
-			sqlBuilder = dataContext.getSQLBuilder(this);
+		if (!builded) {
+			sqlBuilder.toSql();
+			builded = true;
 		}
-		sqlBuilder.toSql();
 	}
 
 	public void reBuild() {
 		sqlBuilder.clear();
 		sqlBuilder.toSql();
+		builded = true;
 	}
 
 	public String getSql() {
@@ -327,14 +347,6 @@ public class Action {
 
 	public JsonObject getRequestData() {
 		return requestData;
-	}
-
-	public DataContext getDataContext() {
-		return dataContext;
-	}
-
-	public void setDataContext(DataContext dataContext) {
-		this.dataContext = dataContext;
 	}
 
 	public void setRequestData(JsonObject requestData) {
@@ -405,12 +417,12 @@ public class Action {
 		this.limitItem = limitItem;
 	}
 
-	public List<ValueItem> getValueItems() {
-		return valueItems;
+	public List<List<ValueItem>> getInsertValueItems() {
+		return insertValueItems;
 	}
 
-	public void setValueItems(List<ValueItem> valueItems) {
-		this.valueItems = valueItems;
+	public List<ValueItem> getUpdateValueItem() {
+		return updateValueItem;
 	}
 
 	public String getFile() {
@@ -467,6 +479,12 @@ public class Action {
 
 	public void setHandleJoinLimit(boolean handleJoinLimit) {
 		this.handleJoinLimit = handleJoinLimit;
+	}
+
+	@Override
+	public Summary execute() {
+		build();
+		return dataContext.execute(this);
 	}
 
 }

@@ -22,6 +22,8 @@ public final class GlobalConfig {
 	public static final String TABLE_CONFIG = "table_config";
 	// 别名表达式, 参见 JEXL
 	public static final String TABLE_ALIAS_EXPRESSION = "table_alias_expression";
-	// 关联节点连接符, 如A join B, 在查询结果中的关联节点名称为, A_ATTR + connector + B_ATTR
+	// 关联节点连接符, 如A join B, 在查询结果中的关联节点名称为, COLUMN(A) + connector + B
 	public static final String ASSOCIATION_CONNECTOR = "association_connector";
+	// 权限策略
+	public static final String PERMISSION_POLICY = "permission_policy";
 }

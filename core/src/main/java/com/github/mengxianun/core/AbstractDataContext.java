@@ -50,44 +50,39 @@ public abstract class AbstractDataContext implements DataContext {
 
 	protected Dialect dialect;
 	protected SQLBuilder sqlBuilder;
-	private RelationshipGraph graph = new RelationshipGraph();
+	private final RelationshipGraph graph = new RelationshipGraph();
 
 	protected abstract void initMetadata();
 
 	@Override
-	public Summary execute(Action action) {
+	public Summary execute(NewAction action) {
 		Summary summary = null;
-		if (action.isStruct()) {
-			summary = executeStruct(action);
-		} else if (action.isStructs()) {
-			summary = executeStructs(action);
-		} else if (action.isTransaction()) {
-			summary = executeTransaction(action);
-		} else if (action.isSQL()) {
-			return executeSql(action.getNativeSQL());
-		} else if (action.isNative()) {
-			summary = executeNative(action.getNativeContent());
-		} else if (action.isCRUD()) {
-			summary = executeCRUD(action);
+		if (action instanceof Action) {
+			summary = executeCRUD((Action) action);
 		} else {
-			throw new UnsupportedOperationException(action.getOperation().name());
+			summary = action.execute();
 		}
 		return summary;
 	}
 
 	@Override
-	public MultiSummary execute(Action... actions) {
+	public MultiSummary execute(NewAction... actions) {
 		List<Summary> summaries = new ArrayList<>();
 		trans(new Atom() {
 
 			@Override
 			public void run() {
-				for (Action action : actions) {
-					boolean parsed = parsePlaceholder(action, summaries);
-					if (parsed) {
-						action.reBuild();
+				for (NewAction action : actions) {
+					if (action instanceof Action) {
+						Action curdAction = (Action) action;
+						boolean parsed = parsePlaceholder(curdAction, summaries);
+						if (parsed) {
+							curdAction.reBuild();
+						}
+						summaries.add(curdAction.execute());
+					} else {
+						summaries.add(action.execute());
 					}
-					summaries.add(executeCRUD(action));
 				}
 
 			}
@@ -99,7 +94,10 @@ public abstract class AbstractDataContext implements DataContext {
 
 	private boolean parsePlaceholder(Action action, List<Summary> summaries) {
 		boolean parsed = false;
-		List<? extends ValuesItem> valuesItems = Stream.of(action.getFilterItems(), action.getValueItems())
+		List<? extends ValuesItem> valuesItems = Stream
+				.of(action.getFilterItems(),
+						action.getInsertValueItems().stream().flatMap(List::stream).collect(Collectors.toList()),
+						action.getUpdateValueItem())
 				.flatMap(List::stream).collect(Collectors.toList());
 		for (ValuesItem valuesItem : valuesItems) {
 			Object value = valuesItem.getValue();
@@ -160,15 +158,16 @@ public abstract class AbstractDataContext implements DataContext {
 		return parseValue;
 	}
 
+	@Deprecated
 	private Summary executeStruct(Action action) {
 		TableItem tableItem = action.getTableItems().get(0);
 		Table table = tableItem.getTable();
 		return new BasicSummary(table.getInfo());
 	}
 
+	@Deprecated
 	private Summary executeStructs(Action action) {
-		Schema schema = action.getDataContext().getDefaultSchema();
-		return new BasicSummary(schema.getInfo());
+		return new BasicSummary(getDefaultSchema().getInfo());
 	}
 
 	private MultiSummary executeTransaction(Action action) {
@@ -273,6 +272,11 @@ public abstract class AbstractDataContext implements DataContext {
 	@Override
 	public Schema getSchema(String schemaName) {
 		return metadata.getSchema(schemaName);
+	}
+
+	@Override
+	public boolean hasTable(Table table) {
+		return metadata.hasTable(table);
 	}
 
 	@Override

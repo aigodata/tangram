@@ -16,10 +16,6 @@ public class ValueItem extends ValuesItem {
 		return column;
 	}
 
-	public void setColumn(Column column) {
-		this.column = column;
-	}
-
 	public Object getRealValue() {
 		return getRealValue(column, value);
 	}

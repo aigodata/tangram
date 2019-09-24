@@ -16,8 +16,4 @@ public class GroupItem extends Item {
 		return columnItem;
 	}
 
-	public void setColumnItem(ColumnItem columnItem) {
-		this.columnItem = columnItem;
-	}
-
 }

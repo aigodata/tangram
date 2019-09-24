@@ -45,7 +45,7 @@ public class ValuesItem extends Item {
 		if (value.getClass().isArray()) {
 			return getRealValueInArray(column, value);
 		}
-		if (value instanceof String && value.toString().startsWith("$")) {
+		if (value.toString().startsWith("$")) {
 			String keyword = value.toString().substring(1).toUpperCase();
 			try {
 				return Keywords.valueOf(keyword).parse();

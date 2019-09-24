@@ -1,18 +1,10 @@
 package com.github.mengxianun.core.item;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.schema.Column;
-import com.github.mengxianun.core.schema.Table;
 
 public class JoinColumnItem extends ColumnItem {
 
 	private static final long serialVersionUID = 1L;
-	private AssociationType associationType;
-	// 关联的所有父表
-	private List<Table> parentTables = new ArrayList<>();
 
 	public JoinColumnItem(Column column) {
 		super(column);
@@ -36,26 +28,6 @@ public class JoinColumnItem extends ColumnItem {
 
 	public JoinColumnItem(String expression, String alias, boolean customAlias) {
 		super(expression, alias, customAlias);
-	}
-
-	public void addParentTable(Table parentTable) {
-		parentTables.add(parentTable);
-	}
-
-	public AssociationType getAssociationType() {
-		return associationType;
-	}
-
-	public void setAssociationType(AssociationType associationType) {
-		this.associationType = associationType;
-	}
-
-	public List<Table> getParentTables() {
-		return parentTables;
-	}
-
-	public void setParentTables(List<Table> parentTables) {
-		this.parentTables = parentTables;
 	}
 
 }

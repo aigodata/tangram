@@ -22,34 +22,16 @@ public class LimitItem extends Item {
 		return offset;
 	}
 
-	public void setOffset(long offset) {
-		this.offset = offset;
-		this.start = offset;
-	}
-
 	public long getLimit() {
 		return limit;
-	}
-
-	public void setLimit(long limit) {
-		this.limit = limit;
 	}
 
 	public long getStart() {
 		return start;
 	}
 
-	public void setStart(long start) {
-		this.start = start;
-		this.offset = start;
-	}
-
 	public long getEnd() {
 		return end;
-	}
-
-	public void setEnd(long end) {
-		this.end = end;
 	}
 
 }

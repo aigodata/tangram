@@ -61,40 +61,20 @@ public class ColumnItem extends Item {
 		return column;
 	}
 
-	public void setColumn(Column column) {
-		this.column = column;
-	}
-
 	public String getAlias() {
 		return alias;
-	}
-
-	public void setAlias(String alias) {
-		this.alias = alias;
 	}
 
 	public String getExpression() {
 		return expression;
 	}
 
-	public void setExpression(String expression) {
-		this.expression = expression;
-	}
-
 	public TableItem getTableItem() {
 		return tableItem;
 	}
 
-	public void setTableItem(TableItem tableItem) {
-		this.tableItem = tableItem;
-	}
-
 	public boolean isCustomAlias() {
 		return customAlias;
-	}
-
-	public void setCustomAlias(boolean customAlias) {
-		this.customAlias = customAlias;
 	}
 
 }

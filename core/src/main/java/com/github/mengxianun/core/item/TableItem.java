@@ -38,10 +38,6 @@ public class TableItem extends Item {
 		return table;
 	}
 
-	public void setTable(Table table) {
-		this.table = table;
-	}
-
 	public String getAlias() {
 		return alias;
 	}
@@ -54,16 +50,8 @@ public class TableItem extends Item {
 		return expression;
 	}
 
-	public void setExpression(String expression) {
-		this.expression = expression;
-	}
-
 	public boolean isCustomAlias() {
 		return customAlias;
-	}
-
-	public void setCustomAlias(boolean customAlias) {
-		this.customAlias = customAlias;
 	}
 
 }
