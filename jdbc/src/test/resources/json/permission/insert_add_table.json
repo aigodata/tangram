@@ -1,0 +1,6 @@
+{
+  "insert":"permission_add_table",
+  "values":{
+    "name":"ABC"
+  }
+}

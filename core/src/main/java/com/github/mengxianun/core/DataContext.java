@@ -55,6 +55,8 @@ public interface DataContext {
 
 	public void cleanRelationshipCache();
 
+	public Set<RelationshipPath> getRelationships(String primaryTable, String foreignTable);
+
 	/**
 	 * 获取2个表的关联关系, 包含所有可能的路径
 	 * 

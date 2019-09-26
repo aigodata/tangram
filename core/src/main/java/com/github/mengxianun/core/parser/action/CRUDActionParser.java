@@ -75,6 +75,11 @@ public class CRUDActionParser extends AbstractActionParser {
 	private Map<String, ColumnItem> tempAliasColumnItems = new HashMap<>();
 	private Map<Column, ColumnItem> tempColumnItems = new HashMap<>();
 
+	// 已经存在关联关系路径, 用户后续循环复用, 避免关联表多次Join
+	// 注: 这里是路径复用, 不是关系复用
+	// Key 为关系路径, Value 为关系路径Item
+	Map<RelationshipPath, List<RelationshipItem>> existRelationshipItems = new HashMap<>();
+
 	public CRUDActionParser(SimpleInfo simpleInfo, DataContext dataContext) {
 		super(simpleInfo, dataContext);
 		this.action = new Action(dataContext);
@@ -212,66 +217,8 @@ public class CRUDActionParser extends AbstractActionParser {
 		// 获取所有关系路径
 		Set<RelationshipPath> relationshipPaths = getRelationshipPaths(joinElements);
 
-		// 已经存在关联关系路径, 用户后续循环复用, 避免关联表多次Join
-		// 注: 这里是路径复用, 不是关系复用
-		// Key 为关系路径, Value 为关系路径Item
-		Map<RelationshipPath, List<RelationshipItem>> existRelationshipItems = new HashMap<>();
 		for (RelationshipPath relationshipPath : relationshipPaths) {
-			// 上级 TableItem, 记录此值, 保证在多表多字段关联时, join操作正确的表
-			// 例: 当前循环的关联路径为 A-B-C, 当循环到A-B的时候, 上级TableItem为A, 当循环到B-C的时候, 上级TableItem为B
-			Table firstTable = relationshipPath.getFirst().getPrimaryColumn().getTable();
-			TableItem preTableItem = getTableItem(firstTable);
-
-			// 当前循环中的关联关系
-			Set<Relationship> currentRelationships = new LinkedHashSet<>();
-			List<RelationshipItem> currentRelationshipItems = new ArrayList<>();
-
-			for (Relationship relationship : relationshipPath.getRelationships()) {
-				currentRelationships.add(relationship);
-
-				// 当前循环的关联关系, 不可改变
-				Set<Relationship> currentFixedRelationships = new LinkedHashSet<>(currentRelationships);
-				List<RelationshipItem> currentFixedRelationshipItems = new ArrayList<>(currentRelationshipItems);
-
-				RelationshipPath existRelationshipPath = new RelationshipPath(currentFixedRelationships);
-				if (existRelationshipItems.containsKey(existRelationshipPath)) {
-					currentRelationshipItems = existRelationshipItems.get(existRelationshipPath);
-				} else {
-					if (!currentRelationshipItems.isEmpty()) {
-						// 在已存在的关联关系中的取最后一个, 为当前循环的左表TableItem
-						preTableItem = currentRelationshipItems.get(currentRelationshipItems.size() - 1)
-								.getRightTableItem();
-					}
-					Column primaryColumn = relationship.getPrimaryColumn();
-					Column foreignColumn = relationship.getForeignColumn();
-					Table foreignTable = foreignColumn.getTable();
-
-					JoinTableItem foreignTableItem = new JoinTableItem(foreignTable, getTableAlias(foreignTable), false,
-							currentFixedRelationshipItems);
-					tempRelationTableItems.put(foreignTable, foreignTableItem.getAlias(), foreignTableItem);
-					// update JoinTableItems
-					if (tempJoinTableItems.containsKey(foreignTable)) {
-						tempJoinTableItems.put(foreignTable, foreignTableItem);
-					}
-
-					ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, preTableItem);
-					ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, foreignTableItem);
-					JoinType joinType = tempJoinTypes.containsKey(foreignColumn.getTable())
-							? tempJoinTypes.get(foreignColumn.getTable())
-							: JoinType.LEFT;
-
-					action.addJoinItem(new JoinItem(primaryColumnItem, foreignColumnItem, joinType));
-					// 添加关联关系最后一个Item
-					RelationshipItem relationshipItem = new RelationshipItem(preTableItem, foreignTableItem,
-							relationship);
-					currentFixedRelationshipItems.add(relationshipItem);
-					// 记录添加的关联关系Item
-					existRelationshipItems.put(existRelationshipPath, currentFixedRelationshipItems);
-
-					currentRelationshipItems = new ArrayList<>(currentRelationshipItems);
-					currentRelationshipItems.add(relationshipItem);
-				}
-			}
+			createRelationship(relationshipPath);
 		}
 	}
 
@@ -355,6 +302,63 @@ public class CRUDActionParser extends AbstractActionParser {
 			relationshipPaths.addAll(parsedRelationshipPaths);
 		}
 		return relationshipPaths;
+	}
+
+	private void createRelationship(RelationshipPath relationshipPath) {
+		// 上级 TableItem, 记录此值, 保证在多表多字段关联时, join操作正确的表
+		// 例: 当前循环的关联路径为 A-B-C, 当循环到A-B的时候, 上级TableItem为A, 当循环到B-C的时候, 上级TableItem为B
+		Table firstTable = relationshipPath.getFirst().getPrimaryColumn().getTable();
+		TableItem preTableItem = getTableItem(firstTable);
+
+		// 当前循环中的关联关系
+		Set<Relationship> currentRelationships = new LinkedHashSet<>();
+		List<RelationshipItem> currentRelationshipItems = new ArrayList<>();
+
+		for (Relationship relationship : relationshipPath.getRelationships()) {
+			currentRelationships.add(relationship);
+
+			// 当前循环的关联关系, 不可改变
+			Set<Relationship> currentFixedRelationships = new LinkedHashSet<>(currentRelationships);
+			List<RelationshipItem> currentFixedRelationshipItems = new ArrayList<>(currentRelationshipItems);
+
+			RelationshipPath existRelationshipPath = new RelationshipPath(currentFixedRelationships);
+			if (existRelationshipItems.containsKey(existRelationshipPath)) {
+				currentRelationshipItems = existRelationshipItems.get(existRelationshipPath);
+			} else {
+				if (!currentRelationshipItems.isEmpty()) {
+					// 在已存在的关联关系中的取最后一个, 为当前循环的左表TableItem
+					preTableItem = currentRelationshipItems.get(currentRelationshipItems.size() - 1)
+							.getRightTableItem();
+				}
+				Column primaryColumn = relationship.getPrimaryColumn();
+				Column foreignColumn = relationship.getForeignColumn();
+				Table foreignTable = foreignColumn.getTable();
+
+				JoinTableItem foreignTableItem = new JoinTableItem(foreignTable, getTableAlias(foreignTable), false,
+						currentFixedRelationshipItems);
+				tempRelationTableItems.put(foreignTable, foreignTableItem.getAlias(), foreignTableItem);
+				// update JoinTableItems
+				if (tempJoinTableItems.containsKey(foreignTable)) {
+					tempJoinTableItems.put(foreignTable, foreignTableItem);
+				}
+
+				ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, preTableItem);
+				ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, foreignTableItem);
+				JoinType joinType = tempJoinTypes.containsKey(foreignColumn.getTable())
+						? tempJoinTypes.get(foreignColumn.getTable())
+						: JoinType.LEFT;
+
+				action.addJoinItem(new JoinItem(primaryColumnItem, foreignColumnItem, joinType));
+				// 添加关联关系最后一个Item
+				RelationshipItem relationshipItem = new RelationshipItem(preTableItem, foreignTableItem, relationship);
+				currentFixedRelationshipItems.add(relationshipItem);
+				// 记录添加的关联关系Item
+				existRelationshipItems.put(existRelationshipPath, currentFixedRelationshipItems);
+
+				currentRelationshipItems = new ArrayList<>(currentRelationshipItems);
+				currentRelationshipItems.add(relationshipItem);
+			}
+		}
 	}
 
 	class JoinElement {
@@ -528,7 +532,39 @@ public class CRUDActionParser extends AbstractActionParser {
 		ColumnInfo columnInfo = conditionInfo.columnInfo();
 		Object value = conditionInfo.value();
 
+		// add where table to relation join tables when the where table does not exist in join tables
+		// the relation join tables is the table related but not in join tables
+
+		// not primary table
+		if (!Strings.isNullOrEmpty(columnInfo.table()) && !columnInfo.table().equals(simpleInfo.table().table())) {
+			boolean joinTableExist = simpleInfo.joins().parallelStream().allMatch(e -> {
+				boolean sameSource = (e.tableInfo().source() == null && columnInfo.source() == null)
+						|| (e.tableInfo().source() != null && e.tableInfo().source().equals(columnInfo.source()));
+				boolean sameTable = e.tableInfo().table().equals(columnInfo.table());
+				return sameSource && sameTable;
+			});
+			if (!joinTableExist) {
+
+			}
+		}
+
 		ColumnItem columnItem = findColumnItem(columnInfo);
+		// The column was not found in the requested tables (primary tables and join talbes)
+		if (columnItem == null) {
+			Table table = dataContext.getTable(columnInfo.table());
+			if (tempRelationTableItems.containsRow(table)) {
+				TableItem tableItem = tempRelationTableItems.values().iterator().next();
+				columnItem = new JoinColumnItem(findColumn(columnInfo), columnInfo.alias(), false, tableItem);
+			} else {
+				// 1. add join table
+				JoinElement joinElement = parseJoin(JoinType.LEFT,
+						TableInfo.create(columnInfo.source(), columnInfo.table(), null));
+				buildJoin(Lists.newArrayList(joinElement));
+				// 2. create join column item
+				TableItem tableItem = tempRelationTableItems.row(table).values().iterator().next();
+				columnItem = new JoinColumnItem(findColumn(columnInfo), columnInfo.alias(), false, tableItem);
+			}
+		}
 		return new FilterItem(connector, columnItem, operator, value);
 	}
 

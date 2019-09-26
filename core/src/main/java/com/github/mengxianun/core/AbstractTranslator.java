@@ -15,22 +15,27 @@ import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.mengxianun.core.Configuration.Builder;
 import com.github.mengxianun.core.config.DataSourceConfig;
 import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.exception.JsonDataException;
+import com.github.mengxianun.core.exception.PermissionException;
 import com.github.mengxianun.core.parser.ActionParser;
 import com.github.mengxianun.core.parser.ParserFactory;
 import com.github.mengxianun.core.parser.SimpleParser;
 import com.github.mengxianun.core.parser.info.SimpleInfo;
+import com.github.mengxianun.core.permission.PermissionCheckResult;
+import com.github.mengxianun.core.permission.PermissionChecker;
+import com.github.mengxianun.core.permission.PermissionPolicy;
 import com.github.mengxianun.core.resutset.DefaultDataResultSet;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.io.Resources;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 public abstract class AbstractTranslator implements Translator {
 
@@ -66,15 +71,54 @@ public abstract class AbstractTranslator implements Translator {
 	protected void readConfig(URL configFileURL) {
 		try {
 			String configurationFileContent = Resources.toString(configFileURL, StandardCharsets.UTF_8);
-			JsonObject configurationJsonObject = new JsonParser().parse(configurationFileContent).getAsJsonObject();
+			JsonObject configurationJsonObject = new Gson().fromJson(configurationFileContent, JsonObject.class);
 			// 覆盖默认配置
 			for (Entry<String, JsonElement> entry : configurationJsonObject.entrySet()) {
 				App.Config.set(entry.getKey(), entry.getValue());
 			}
+			///////////////
+			// optimize
+			///////////////
+			App.setConfiguration(parseConfiguration(configFileURL, configurationJsonObject));
 			createDataContexts();
 		} catch (IOException e) {
 			logger.error(String.format("Config file [%s] parse error", configFileURL), e);
 		}
+	}
+
+	protected Configuration parseConfiguration(URL configFileURL, JsonObject configurationJsonObject) {
+		Builder builder = Configuration.builder();
+		builder.configFile(configFileURL.getPath());
+		// datasources
+		if (configurationJsonObject.has(GlobalConfig.DATASOURCES)) {
+			builder.datasources(configurationJsonObject.getAsJsonObject(GlobalConfig.DATASOURCES).toString());
+		} else {
+			throw new DataException("Data sources are required");
+		}
+		if (configurationJsonObject.has(GlobalConfig.DEFAULT_DATASOURCE)) {
+			builder.defaultDatasource(configurationJsonObject.get(GlobalConfig.DEFAULT_DATASOURCE).getAsString());
+		}
+		if (configurationJsonObject.has(GlobalConfig.SQL)) {
+			builder.sqlEnabled(configurationJsonObject.get(GlobalConfig.SQL).getAsBoolean());
+		}
+		if (configurationJsonObject.has(GlobalConfig.NATIVE)) {
+			builder.nativeEnabled(configurationJsonObject.get(GlobalConfig.NATIVE).getAsBoolean());
+		}
+		if (configurationJsonObject.has(GlobalConfig.TABLE_CONFIG_PATH)) {
+			builder.tableConfigPath(configurationJsonObject.get(GlobalConfig.TABLE_CONFIG_PATH).getAsString());
+		}
+		if (configurationJsonObject.has(GlobalConfig.TABLE_ALIAS_EXPRESSION)) {
+			builder.tableAliasExpression(
+					configurationJsonObject.get(GlobalConfig.TABLE_ALIAS_EXPRESSION).getAsString());
+		}
+		if (configurationJsonObject.has(GlobalConfig.ASSOCIATION_CONNECTOR)) {
+			builder.associationConnector(configurationJsonObject.get(GlobalConfig.ASSOCIATION_CONNECTOR).getAsString());
+		}
+		if (configurationJsonObject.has(GlobalConfig.PERMISSION_POLICY)) {
+			String permissionPolicy = configurationJsonObject.get(GlobalConfig.PERMISSION_POLICY).getAsString();
+			builder.permissionPolicy(PermissionPolicy.from(permissionPolicy));
+		}
+		return builder.build();
 	}
 
 	protected void createDataContexts() {
@@ -196,15 +240,13 @@ public abstract class AbstractTranslator implements Translator {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 
 		// Permission valid
-		checkPermission(simpleInfo);
+		simpleInfo = checkPermission(simpleInfo);
 
 		ActionParser actionParser = ParserFactory.getActionParser(simpleInfo, dataContext);
 		NewAction newAction = actionParser.parse();
 
 		Summary summary = newAction.execute();
 		DataResultSet dataResultSet = new DefaultDataResultSet(summary);
-
-		//		DataResultSet dataResultSet = execute(dataContext, action);
 
 		// Done
 		Duration duration = stopwatch.stop().elapsed();
@@ -217,9 +259,12 @@ public abstract class AbstractTranslator implements Translator {
 		return dataResultSet;
 	}
 
-	private void checkPermission(SimpleInfo simpleInfo) {
-		//		HashBasedTable<String, String, List<TablePermission>> tablePermissions = App.getTablePermissions();
-		//		PermissionChecker.check(action, tablePermissions);
+	private SimpleInfo checkPermission(SimpleInfo simpleInfo) {
+		PermissionCheckResult checkWithResult = PermissionChecker.checkWithResult(simpleInfo);
+		if (!checkWithResult.pass()) {
+			throw new PermissionException();
+		}
+		return PermissionChecker.applyConditions(simpleInfo, checkWithResult.conditions());
 	}
 
 	protected abstract DataResultSet execute(DataContext dataContext, Action action);

@@ -10,8 +10,8 @@ public final class GlobalConfig {
 	public static final String CONFIG_FILE = "config_file";
 	// 数据源
 	public static final String DATASOURCES = "datasources";
-	// 如果数据不存在, 就新增一条
-	public static final String UPSERT = "upsert";
+	// 是否启用原生SQL
+	public static final String SQL = "sql";
 	// 是否启用原生语句, 默认false
 	public static final String NATIVE = "native";
 	// 默认数据源

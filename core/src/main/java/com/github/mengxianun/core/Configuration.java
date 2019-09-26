@@ -1,9 +1,12 @@
 package com.github.mengxianun.core;
 
-import com.github.mengxianun.core.permission.PermissionPolicy;
+import javax.annotation.Nullable;
 
-@Deprecated
-public class Configuration {
+import com.github.mengxianun.core.permission.PermissionPolicy;
+import com.google.auto.value.AutoValue;
+
+@AutoValue
+public abstract class Configuration {
 
 	// 默认配置文件名
 	private static final String DEFAULT_CONFIG_FILE = "air.json";
@@ -12,129 +15,55 @@ public class Configuration {
 	// 
 	private static final String DEFAULT_ASSOCIATION_CONNECTOR = "__";
 
-	private String configFile = DEFAULT_CONFIG_FILE;
-	private String datasources;
-	private boolean upsert;
-	private boolean nativeEnabled;
-	private String defaultDatasource;
-	private String tableConfigPath = DEFAULT_TABLE_CONFIG_PATH;
-	private String tableAliasExpression;
-	private String associationConnector = DEFAULT_ASSOCIATION_CONNECTOR;
-	private PermissionPolicy permissionPolicy;
+	public abstract String configFile();
 
-	public Configuration(Builder builder) {
-		this.datasources = builder.datasources;
-		this.upsert = builder.upsert;
-		this.nativeEnabled = builder.nativeEnabled;
-		this.defaultDatasource = builder.defaultDatasource;
-		if (builder.tableConfigPath != null) {
-			this.tableConfigPath = builder.tableConfigPath;
-		}
-		this.tableAliasExpression = builder.tableAliasExpression;
-		if (builder.associationConnector != null) {
-			this.associationConnector = builder.associationConnector;
-		}
-		this.permissionPolicy = builder.permissionPolicy;
+	public abstract String datasources();
+
+	@Nullable
+	public abstract String defaultDatasource();
+
+	public abstract boolean sqlEnabled();
+
+	public abstract boolean nativeEnabled();
+
+	public abstract String tableConfigPath();
+
+	@Nullable
+	public abstract String tableAliasExpression();
+
+	public abstract String associationConnector();
+
+	public abstract PermissionPolicy permissionPolicy();
+
+	public static Builder builder() {
+		return new AutoValue_Configuration.Builder().configFile(DEFAULT_CONFIG_FILE).sqlEnabled(false)
+				.nativeEnabled(false)
+				.tableConfigPath(DEFAULT_TABLE_CONFIG_PATH).associationConnector(DEFAULT_ASSOCIATION_CONNECTOR)
+				.permissionPolicy(PermissionPolicy.ALLOW_ALL);
 	}
 
-	public String getConfigFile() {
-		return configFile;
-	}
+	@AutoValue.Builder
+	public abstract static class Builder {
 
-	public String getDatasources() {
-		return datasources;
-	}
+		public abstract Builder configFile(String configFile);
 
-	public boolean isUpsert() {
-		return upsert;
-	}
+		public abstract Builder datasources(String datasources);
 
-	public boolean isNativeEnabled() {
-		return nativeEnabled;
-	}
+		public abstract Builder defaultDatasource(String defaultDatasource);
 
-	public String getDefaultDatasource() {
-		return defaultDatasource;
-	}
+		public abstract Builder sqlEnabled(boolean sqlEnabled);
 
-	public String getTableConfigPath() {
-		return tableConfigPath;
-	}
+		public abstract Builder nativeEnabled(boolean nativeEnabled);
 
-	public String getTableAliasExpression() {
-		return tableAliasExpression;
-	}
+		public abstract Builder tableConfigPath(String tableConfigPath);
 
-	public String getAssociationConnector() {
-		return associationConnector;
-	}
+		public abstract Builder tableAliasExpression(String tableAliasExpression);
 
-	public PermissionPolicy getPermissionPolicy() {
-		return permissionPolicy;
-	}
+		public abstract Builder associationConnector(String associationConnector);
 
-	static Configuration fromConfig(String configFile) {
-		throw new UnsupportedOperationException();
-	}
+		public abstract Builder permissionPolicy(PermissionPolicy permissionPolicy);
 
-	static Builder builder() {
-		return Configuration.builder();
-	}
-
-	public static class Builder {
-
-		private String datasources;
-		private boolean upsert;
-		private boolean nativeEnabled;
-		private String defaultDatasource;
-		private String tableConfigPath;
-		private String tableAliasExpression;
-		private String associationConnector;
-		private PermissionPolicy permissionPolicy;
-
-		public Builder setDatasources(String datasources) {
-			this.datasources = datasources;
-			return this;
-		}
-
-		public Builder setUpsert(boolean upsert) {
-			this.upsert = upsert;
-			return this;
-		}
-
-		public Builder setNativeEnabled(boolean nativeEnabled) {
-			this.nativeEnabled = nativeEnabled;
-			return this;
-		}
-
-		public Builder setDefaultDatasource(String defaultDatasource) {
-			this.defaultDatasource = defaultDatasource;
-			return this;
-		}
-
-		public Builder setTableConfigPath(String tableConfigPath) {
-			this.tableConfigPath = tableConfigPath;
-			return this;
-		}
-
-		public Builder setTableAliasExpression(String tableAliasExpression) {
-			this.tableAliasExpression = tableAliasExpression;
-			return this;
-		}
-
-		public Builder setAssociationConnector(String associationConnector) {
-			this.associationConnector = associationConnector;
-			return this;
-		}
-
-		public Builder setPermissionPolicy(PermissionPolicy permissionPolicy) {
-			this.permissionPolicy = permissionPolicy;
-			return this;
-		}
-
-		public Configuration build() {
-			return new Configuration(this);
-		}
+		public abstract Configuration build();
 	}
 
 }

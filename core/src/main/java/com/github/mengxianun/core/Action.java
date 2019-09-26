@@ -212,7 +212,7 @@ public class Action extends AbstractAction {
 	}
 
 	public boolean isSelect() {
-		return operation != null && (operation == Operation.SELECT);
+		return operation != null && (operation == Operation.SELECT || operation == Operation.SELECT_DISTINCT);
 	}
 
 	public boolean isQuery() {

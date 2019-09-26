@@ -1,0 +1,4 @@
+{
+  "delete":"permission_delete_table",
+  "where":["id=2"]
+}

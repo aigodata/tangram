@@ -1,5 +1,6 @@
 package com.github.mengxianun.core.parser.info;
 
+import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -9,6 +10,14 @@ import com.google.auto.value.AutoValue;
 
 @AutoValue
 public abstract class FilterInfo {
+
+	public static FilterInfo create(@Nullable ConditionInfo conditionInfo) {
+		return create(Connector.AND, conditionInfo);
+	}
+
+	public static FilterInfo create(Connector connector, @Nullable ConditionInfo conditionInfo) {
+		return create(connector, conditionInfo, Collections.emptyList());
+	}
 
 	public static FilterInfo create(Connector connector, @Nullable ConditionInfo conditionInfo,
 			List<FilterInfo> subfilters) {

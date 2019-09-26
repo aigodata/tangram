@@ -1,15 +1,17 @@
 package com.github.mengxianun.core.permission;
 
-import com.github.mengxianun.core.Action;
+import javax.annotation.Nullable;
 
-public class ExpressionCondition implements Condition {
+import com.google.auto.value.AutoValue;
 
-	private String expression;
+@AutoValue
+public abstract class ExpressionCondition implements Condition {
 
-	@Override
-	public void process(Action action) {
-		// TODO Auto-generated method stub
-
+	public static ExpressionCondition create(@Nullable String expression) {
+		return new AutoValue_ExpressionCondition(expression);
 	}
+
+	@Nullable
+	public abstract String expression();
 
 }

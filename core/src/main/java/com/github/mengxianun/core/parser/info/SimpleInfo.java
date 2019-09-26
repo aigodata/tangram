@@ -51,8 +51,15 @@ public abstract class SimpleInfo {
 
 	public static Builder builder() {
 		return new AutoValue_SimpleInfo.Builder().columns(Collections.emptyList()).joins(Collections.emptyList())
+				.where(WhereInfo.create(Collections.emptyList()))
 				.groups(Collections.emptyList()).orders(Collections.emptyList())
 				.insertValues(Collections.emptyList()).simples(Collections.emptyList());
+	}
+
+	abstract Builder toBuilder();
+
+	public SimpleInfo withWhere(WhereInfo where) {
+		return toBuilder().where(where).build();
 	}
 
 	@AutoValue.Builder

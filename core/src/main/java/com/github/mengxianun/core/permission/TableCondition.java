@@ -1,69 +1,55 @@
 package com.github.mengxianun.core.permission;
 
-import com.github.mengxianun.core.Action;
-import com.github.mengxianun.core.request.Operator;
+import javax.annotation.Nullable;
 
-public class TableCondition implements Condition {
+import com.google.auto.value.AutoValue;
 
-	private String source;
-	private String table;
-	private String column;
-	private Object value;
-	private Operator op;
+@AutoValue
+public abstract class TableCondition implements Condition {
 
-	public TableCondition() {}
-
-	public TableCondition(String source, String table, String column, Object value) {
-		this.source = source;
-		this.table = table;
-		this.column = column;
-		this.value = value;
-		this.op = Operator.EQUAL;
+	public static TableCondition create(String table) {
+		return create(table, null, null);
 	}
 
-	@Override
-	public void process(Action action) {
-
+	public static TableCondition create(String table, String column) {
+		return create(table, column, null);
 	}
 
-	public String getSource() {
-		return source;
+	public static TableCondition create(String table, String column, @Nullable Object value) {
+		return create(null, table, column, value);
 	}
 
-	public void setSource(String source) {
-		this.source = source;
+	public static TableCondition create(@Nullable String source, String table, String column,
+			@Nullable Object value) {
+		return new AutoValue_TableCondition.Builder().source(source).table(table).column(column).value(value).build();
 	}
 
-	public String getTable() {
-		return table;
+	@Nullable
+	public abstract String source();
+
+	public abstract String table();
+
+	public abstract String column();
+
+	@Nullable
+	public abstract Object value();
+
+	public static Builder builder() {
+		return new AutoValue_TableCondition.Builder();
 	}
 
-	public void setTable(String table) {
-		this.table = table;
-	}
+	@AutoValue.Builder
+	public abstract static class Builder {
 
-	public String getColumn() {
-		return column;
-	}
+		public abstract Builder source(String source);
 
-	public void setColumn(String column) {
-		this.column = column;
-	}
+		public abstract Builder table(String table);
 
-	public Object getValue() {
-		return value;
-	}
+		public abstract Builder column(String column);
 
-	public void setValue(Object value) {
-		this.value = value;
-	}
+		public abstract Builder value(Object value);
 
-	public Operator getOp() {
-		return op;
-	}
-
-	public void setOp(Operator op) {
-		this.op = op;
+		public abstract TableCondition build();
 	}
 
 }

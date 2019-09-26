@@ -7,5 +7,6 @@
             "password": "123456"
         }
     },
-    "table_alias_expression": "$.replaceFirst(\"^ALIAS_\", \"\")"
+    "table_alias_expression": "$.replaceFirst(\"^ALIAS_\", \"\")",
+    "permission_policy":"weak"
 }

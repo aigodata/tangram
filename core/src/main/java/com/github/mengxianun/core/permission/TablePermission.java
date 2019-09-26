@@ -1,67 +1,77 @@
 package com.github.mengxianun.core.permission;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
-public class TablePermission {
+import javax.annotation.Nullable;
 
-	private String source;
-	private String table;
-	private Object id;
-	private Action action;
-	private List<Condition> conditions;
+import com.google.auto.value.AutoValue;
 
-	public TablePermission() {}
+@AutoValue
+public abstract class TablePermission {
 
-	public TablePermission(String source, String table, Object id, String action, List<Condition> conditions) {
-		this(source, table, id, Action.from(action), conditions);
+	public static TablePermission create(String table) {
+		return create(null, table);
 	}
 
-	public TablePermission(String source, String table, Object id, Action action, List<Condition> conditions) {
-		this.source = source;
-		this.table = table;
-		this.id = id;
-		this.action = action;
-		this.conditions = conditions;
+	public static TablePermission create(@Nullable String source, String table) {
+		return create(source, table, Action.ALL);
 	}
 
-	public String getSource() {
-		return source;
+	public static TablePermission create(@Nullable String source, String table, Action action) {
+		return create(source, table, null, action, Collections.emptyList());
 	}
 
-	public void setSource(String source) {
-		this.source = source;
+	public static TablePermission create(@Nullable String source, String table, @Nullable Object id, Action action,
+			List<TableCondition> conditions) {
+		return new AutoValue_TablePermission.Builder().source(source).table(table).id(id).action(action)
+				.conditions(conditions).build();
 	}
 
-	public String getTable() {
-		return table;
+	@Nullable
+	public abstract String source();
+
+	public abstract String table();
+
+	@Nullable
+	public abstract Object id();
+
+	public abstract Action action();
+
+	public abstract List<TableCondition> conditions();
+
+	public static Builder builder() {
+		return new AutoValue_TablePermission.Builder().conditions(Collections.emptyList());
 	}
 
-	public void setTable(String table) {
-		this.table = table;
-	}
+	@AutoValue.Builder
+	public abstract static class Builder {
 
-	public Object getId() {
-		return id;
-	}
+		public abstract Builder source(String source);
 
-	public void setId(Object id) {
-		this.id = id;
-	}
+		public abstract Builder table(String table);
 
-	public Action getAction() {
-		return action;
-	}
+		public abstract Builder id(Object id);
 
-	public void setAction(Action action) {
-		this.action = action;
-	}
+		public Builder action(String action) {
+			return action(Action.from(action));
+		}
 
-	public List<Condition> getConditions() {
-		return conditions;
-	}
+		public abstract Builder action(Action action);
 
-	public void setConditions(List<Condition> conditions) {
-		this.conditions = conditions;
+		abstract Optional<Action> action();
+
+		public abstract Builder conditions(List<TableCondition> conditions);
+
+		abstract TablePermission autoBuild();
+
+		public TablePermission build() {
+			if (!action().isPresent()) {
+				action(Action.ALL);
+			}
+			return autoBuild();
+		}
 	}
 
 }

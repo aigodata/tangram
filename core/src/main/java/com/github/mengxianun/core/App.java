@@ -1,5 +1,7 @@
 package com.github.mengxianun.core;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +21,7 @@ import com.github.mengxianun.core.config.ColumnConfig;
 import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.exception.DataException;
+import com.github.mengxianun.core.permission.AuthorizationInfo;
 import com.github.mengxianun.core.permission.PermissionPolicy;
 import com.github.mengxianun.core.permission.TablePermission;
 import com.github.mengxianun.core.schema.Column;
@@ -26,7 +29,6 @@ import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
-import com.google.common.collect.HashBasedTable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -48,12 +50,14 @@ public final class App {
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 	private static Injector injector = Guice.createInjector(Stage.PRODUCTION, new AppModule());
 	private static final Gson gson = new GsonBuilder().serializeNulls().create();
-
+	private static Configuration configuration;
 	private static final Map<String, DataContext> dataContexts = new ConcurrentHashMap<>();
 	// DataContext for the current thread
 	private static final ThreadLocal<DataContext> currentDataContext = new ThreadLocal<>();
-	// Permissions <datasource, table, conditions>
-	private static HashBasedTable<String, String, List<TablePermission>> tablePermissions = HashBasedTable.create();
+	// AuthorizationInfo
+	private static AuthorizationInfo authorizationInfo;
+	// <source, <table, TablePermissions>>
+	private static final Map<String, Map<String, List<TablePermission>>> permissions = new ConcurrentHashMap<>();
 
 	private App() {
 		throw new AssertionError();
@@ -131,13 +135,88 @@ public final class App {
 		return currentDataContext.get();
 	}
 
-	public static HashBasedTable<String, String, List<TablePermission>> getTablePermissions() {
-		return tablePermissions;
+	public static Configuration getConfiguration() {
+		return configuration;
+	}
+
+	public static void setConfiguration(Configuration configuration) {
+		App.configuration = configuration;
+	}
+
+	public static AuthorizationInfo getAuthorizationInfo() {
+		return authorizationInfo;
+	}
+
+	public static void setAuthorizationInfo(AuthorizationInfo authorizationInfo) {
+		App.authorizationInfo = authorizationInfo;
+		List<TablePermission> tablePermissions = authorizationInfo.getTablePermissionsSupplier().get();
+		if (tablePermissions != null && !tablePermissions.isEmpty()) {
+			for (TablePermission tablePermission : tablePermissions) {
+				String source = tablePermission.source();
+				String table = tablePermission.table();
+				if (Strings.isNullOrEmpty(source)) {
+					source = getDefaultDataSource();
+				}
+				if (hasSourcePermissions(source)) {
+					Map<String, List<TablePermission>> sourcePermissions = getSourcePermissions(source);
+					if (sourcePermissions.containsKey(table)) {
+						List<TablePermission> sourceTablePermissions = sourcePermissions.get(table);
+						sourceTablePermissions.add(tablePermission);
+					} else {
+						List<TablePermission> sourceTablePermissions = new ArrayList<>();
+						sourceTablePermissions.add(tablePermission);
+						sourcePermissions.put(table, sourceTablePermissions);
+					}
+				} else {
+					Map<String, List<TablePermission>> sourcePermissions = new HashMap<>();
+					List<TablePermission> sourceTablePermissions = new ArrayList<>();
+					sourceTablePermissions.add(tablePermission);
+					sourcePermissions.put(table, sourceTablePermissions);
+					permissions.put(source, sourcePermissions);
+				}
+			}
+		}
+	}
+
+	public static Table getUserTable() {
+		String userSource = getAuthorizationInfo().getUserSource();
+		if (Strings.isNullOrEmpty(userSource)) {
+			userSource = getDefaultDataSource();
+		}
+		String userTable = getAuthorizationInfo().getUserTable();
+		return getDataContext(userSource).getTable(userTable);
+	}
+
+	public static boolean hasSourcePermissions(String source) {
+		if (Strings.isNullOrEmpty(source)) {
+			source = getDefaultDataSource();
+		}
+		return permissions.containsKey(source) && !permissions.get(source).isEmpty();
+	}
+
+	public static Map<String, List<TablePermission>> getSourcePermissions(String source) {
+		if (Strings.isNullOrEmpty(source)) {
+			source = getDefaultDataSource();
+		}
+		return permissions.get(source);
+	}
+
+	public static boolean hasTablePermissions(String source, String table) {
+		if (hasSourcePermissions(source)) {
+			Map<String, List<TablePermission>> sourceTablePermissions = getSourcePermissions(source);
+			if (sourceTablePermissions.containsKey(table)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static List<TablePermission> getTablePermissions(String source, String table) {
+		return getSourcePermissions(source).get(table);
 	}
 
 	public static PermissionPolicy getPermissionPolicy() {
-		String permissionPolicy = Config.getString(GlobalConfig.PERMISSION_POLICY);
-		return PermissionPolicy.from(permissionPolicy);
+		return getConfiguration().permissionPolicy();
 	}
 
 	/**
@@ -184,7 +263,7 @@ public final class App {
 			// 初始化默认属性
 			configuration.addProperty(GlobalConfig.CONFIG_FILE, DEFAULT_CONFIG_FILE);
 			configuration.add(GlobalConfig.DATASOURCES, JsonNull.INSTANCE);
-			configuration.addProperty(GlobalConfig.UPSERT, false);
+			configuration.addProperty(GlobalConfig.SQL, false);
 			configuration.addProperty(GlobalConfig.NATIVE, false);
 			configuration.addProperty(GlobalConfig.DEFAULT_DATASOURCE, "");
 			configuration.addProperty(GlobalConfig.TABLE_CONFIG_PATH, DEFAULT_TABLE_CONFIG_PATH);
@@ -205,7 +284,13 @@ public final class App {
 		}
 
 		public static String getString(String key) {
-			return configuration.getAsJsonPrimitive(key).getAsString();
+			if (configuration.has(key)) {
+				JsonElement jsonElement = configuration.get(key);
+				if (!jsonElement.isJsonNull()) {
+					return jsonElement.getAsString();
+				}
+			}
+			return "";
 		}
 
 		public static void set(String key, Object value) {
