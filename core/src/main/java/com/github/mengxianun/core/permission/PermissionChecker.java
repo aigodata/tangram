@@ -137,7 +137,7 @@ public final class PermissionChecker {
 				if (value == null) { // session condition
 					AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
 					String userTable = authorizationInfo.getUserTable();
-					Object userId = authorizationInfo.getUserIdSupplier().get();
+					Object userId = authorizationInfo.getUserId();
 					if (userTable.equalsIgnoreCase(table)) {
 						value = userId;
 						FilterInfo filterInfo = FilterInfo.create(ConditionInfo
@@ -184,7 +184,7 @@ public final class PermissionChecker {
 		AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
 		String userTable = authorizationInfo.getUserTable();
 		String userIdColumn = authorizationInfo.getUserIdColumn();
-		Object userId = authorizationInfo.getUserIdSupplier().get();
+		Object userId = authorizationInfo.getUserId();
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty(Operation.SELECT.name().toLowerCase(), table);
 		jsonObject.addProperty(RequestKeyword.FIELDS.lowerName(), column);

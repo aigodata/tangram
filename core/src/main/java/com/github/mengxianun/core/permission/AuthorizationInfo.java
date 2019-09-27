@@ -1,7 +1,6 @@
 package com.github.mengxianun.core.permission;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 public interface AuthorizationInfo {
 
@@ -11,8 +10,10 @@ public interface AuthorizationInfo {
 
 	public String getUserIdColumn();
 
-	public Supplier<Object> getUserIdSupplier();
+	public Object getUserId();
 
-	public Supplier<List<TablePermission>> getTablePermissionsSupplier();
+	public List<TablePermission> getTablePermissions();
+
+	public void refreshTablePermissions();
 
 }

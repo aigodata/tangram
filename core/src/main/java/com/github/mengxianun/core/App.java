@@ -149,7 +149,7 @@ public final class App {
 
 	public static void setAuthorizationInfo(AuthorizationInfo authorizationInfo) {
 		App.authorizationInfo = authorizationInfo;
-		List<TablePermission> tablePermissions = authorizationInfo.getTablePermissionsSupplier().get();
+		List<TablePermission> tablePermissions = authorizationInfo.getTablePermissions();
 		if (tablePermissions != null && !tablePermissions.isEmpty()) {
 			for (TablePermission tablePermission : tablePermissions) {
 				String source = tablePermission.source();
@@ -217,6 +217,10 @@ public final class App {
 
 	public static PermissionPolicy getPermissionPolicy() {
 		return getConfiguration().permissionPolicy();
+	}
+
+	public static void refreshPermissions() {
+		getAuthorizationInfo().refreshTablePermissions();
 	}
 
 	/**
