@@ -1,0 +1,11 @@
+{
+  "columns":{
+    "condition_user_table2_id":{
+      "association": {
+        "target_table": "permission_condition_user_table2",
+        "target_column": "id",
+        "type":"n_1"
+      }
+    }
+  }
+}

@@ -91,7 +91,6 @@ public final class PermissionChecker {
 					configured = true;
 					if (action == permissionAction || permissionAction == Action.ALL) {
 						check = true;
-						//						applyConditions(simpleInfo, tablePermission.conditions());
 						permissionConditions.addAll(tablePermission.conditions());
 						break;
 					}
@@ -150,9 +149,13 @@ public final class PermissionChecker {
 				}
 			} else if (condition instanceof ExpressionCondition) {
 				ExpressionCondition expressionCondition = (ExpressionCondition) condition;
-				StatementConditionInfo statementConditionInfo = StatementConditionInfo
-						.create(expressionCondition.expression());
-				statementConditions.add(statementConditionInfo);
+				String expression = expressionCondition.expression();
+				ConditionInfo conditionInfo = new SimpleParser("").parseCondition(expression);
+				FilterInfo filterInfo = FilterInfo.create(conditionInfo);
+				newConditionFilters.add(filterInfo);
+				//				StatementConditionInfo statementConditionInfo = StatementConditionInfo
+				//						.create(expressionCondition.expression());
+				//				statementConditions.add(statementConditionInfo);
 			}
 		}
 		if (!newConditionFilters.isEmpty()) {

@@ -2,5 +2,5 @@ dependencies {
   implementation project(':core')
   implementation 'com.alibaba:druid:1.0.15'
   implementation 'commons-dbutils:commons-dbutils:1.7'
-  testImplementation 'com.h2database:h2:1.4.197'
+  testImplementation 'com.h2database:h2:1.4.199'
 }

@@ -1,0 +1,11 @@
+{
+  "columns":{
+    "user_id":{
+      "association": {
+        "target_table": "permission_user",
+        "target_column": "id",
+        "type":"n_1"
+      }
+    }
+  }
+}

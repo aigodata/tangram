@@ -8,11 +8,8 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class Configuration {
 
-	// 默认配置文件名
 	private static final String DEFAULT_CONFIG_FILE = "air.json";
-	// 默认数据表配置路径
 	private static final String DEFAULT_TABLE_CONFIG_PATH = "tables";
-	// 
 	private static final String DEFAULT_ASSOCIATION_CONNECTOR = "__";
 
 	public abstract String configFile();

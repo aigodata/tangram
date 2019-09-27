@@ -1,0 +1,6 @@
+{
+  "select":"permission_condition_user_table2",
+  "join":["permission_condition_user_table2_detail", "permission_user"],
+  "where":["name%=Ka%"],
+  "limit":[1, 2]
+}

@@ -303,7 +303,7 @@ public class SimpleParser {
 		}
 	}
 
-	private ConditionInfo parseCondition(String filterString) {
+	public ConditionInfo parseCondition(String filterString) {
 		Operator operator = null;
 		int pos = 0;
 		int length = filterString.length();

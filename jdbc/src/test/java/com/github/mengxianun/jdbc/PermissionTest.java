@@ -4,12 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.json.JSONException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.skyscreamer.jsonassert.JSONCompare;
-import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.skyscreamer.jsonassert.JSONCompareResult;
 
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.config.ResultAttributes;
@@ -100,6 +96,11 @@ public class PermissionTest extends TestSupport {
 	}
 
 	@Test
+	void testUpdateConditionUserTable() {
+		assertThrows(PermissionException.class, () -> run(JSON_PARENT_PATH + "update_condition_user_table.json"));
+	}
+
+	@Test
 	void testSelectConditionRoleTable() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_condition_role_table.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
@@ -115,47 +116,25 @@ public class PermissionTest extends TestSupport {
 		assertEquals(1, result.size());
 	}
 
-//	@Test
-	void testWhereAndOr() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_where_and_or.json");
+	@Test
+	void testSelectConditionUserTable2() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "condition_user_table2-select_with_condition.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertEquals(2, result.size());
+		assertEquals(2, result.get(0).getAsJsonObject().get("ID").getAsLong());
+		assertEquals(3, result.get(1).getAsJsonObject().get("ID").getAsLong());
 	}
 
-//	@Test
-	void testWhereComplex() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_where_complex.json");
-		JsonArray result = (JsonArray) dataResultSet.getJsonData();
-		assertEquals(2, result.size());
-	}
-
-//	@Test
-	void testGroup() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_group.json");
-		JsonArray result = (JsonArray) dataResultSet.getJsonData();
-		assertEquals(5, result.size());
-	}
-
-//	@Test
-	void testOrder() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_order.json");
-		JsonArray result = (JsonArray) dataResultSet.getJsonData();
-		assertEquals(result.size(), 6);
-		JsonObject firstElement = result.get(0).getAsJsonObject();
-		String maxAge = firstElement.get("AGE").getAsString();
-		assertEquals("99", maxAge);
-		JsonObject lastElement = result.get(result.size() - 1).getAsJsonObject();
-		String minAge = lastElement.get("AGE").getAsString();
-		assertEquals("10", minAge);
-	}
-
-//	@Test
-	void testAlias() throws JSONException {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_alias.json");
-		String result = dataResultSet.getJsonData().toString();
-		String excepted = readJson(JSON_PARENT_PATH + "select_alias_result.json");
-		JSONCompareResult compareJSON = JSONCompare.compareJSON(result, excepted, JSONCompareMode.LENIENT);
-		assertTrue(!compareJSON.failed());
+	@Test
+	void testSelectConditionUserTable2WithJoinLimit() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "condition_user_table2-select_with_join_limit.json");
+		JsonObject result = (JsonObject) dataResultSet.getJsonData();
+		assertTrue(result.has(ResultAttributes.TOTAL));
+		long total = result.get(ResultAttributes.TOTAL).getAsLong();
+		assertEquals(2, total);
+		JsonArray data = result.get(ResultAttributes.DATA).getAsJsonArray();
+		assertEquals(1, data.size());
+		assertEquals(3, data.get(0).getAsJsonObject().get("ID").getAsLong());
 	}
 
 }

@@ -199,7 +199,8 @@ public class SelectTest extends TestSupport {
 		JsonObject firstObject = data.get(0).getAsJsonObject();
 		assertTrue(firstObject.has("AGE"));
 		long age = firstObject.get("AGE").getAsLong();
-		assertEquals(99, age);
+		// h2database (1.4.199), group limit queries are sorted by group field by default
+		assertEquals(30, age);
 	}
 
 	@Test

@@ -1,0 +1,4 @@
+{
+  "select":"permission_condition_user_table2",
+  "where":["name%=Ka%"]
+}

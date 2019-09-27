@@ -438,7 +438,10 @@ public class SQLBuilder {
 	}
 
 	public String toStatementFilter(StatementFilterItem filterItem) {
-		return filterItem.getValue().toString();
+		StringBuilder filterBuilder = new StringBuilder();
+		filterBuilder.append(" ").append(filterItem.getConnector()).append(" ");
+		filterBuilder.append(filterItem.getValue().toString());
+		return filterBuilder.toString();
 	}
 
 	public String toGroups() {

@@ -1,0 +1,7 @@
+{
+  "update":"permission_condition_user_table",
+  "values":{
+    "name":"DEF"
+  },
+  "where":"id=1"
+}

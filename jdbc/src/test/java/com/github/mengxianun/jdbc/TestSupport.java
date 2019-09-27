@@ -85,6 +85,11 @@ public class TestSupport {
 		List<Condition> expressionConditions = Lists.newArrayList(ExpressionCondition.create("id>1"));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_expression_table")
 				.action(Action.QUERY).conditions(expressionConditions).build());
+		// complex condition
+		List<Condition> complexConditions = Lists.newArrayList(TableCondition.create("permission_role", "id"),
+				ExpressionCondition.create("id<5"));
+		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table2")
+				.action(Action.QUERY).conditions(complexConditions).build());
 		return tablePermissions;
 	}
 
