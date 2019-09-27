@@ -1,0 +1,4 @@
+{
+  "select":"permission_no_table",
+  "join":["permission_add_table"]
+}

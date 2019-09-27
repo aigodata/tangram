@@ -111,7 +111,6 @@ public final class PermissionChecker {
 		if (conditions.isEmpty()) {
 			return simpleInfo;
 		}
-		//		List<JoinInfo> joins = simpleInfo.joins();
 		List<FilterInfo> filters = simpleInfo.where().filters();
 		List<FilterInfo> newConditionFilters = new ArrayList<>();
 		List<StatementValueConditionInfo> statementValueConditions = new ArrayList<>();
@@ -124,7 +123,16 @@ public final class PermissionChecker {
 					source = App.getDefaultDataSource();
 				}
 				String table = tableCondition.table();
+				if (Strings.isNullOrEmpty(table)) {
+					continue;
+				}
 				String column = tableCondition.column();
+				if (Strings.isNullOrEmpty(column)) {
+					//////////////////
+					// optimize
+					//////////////////
+					column = App.getDefaultDataContext().getTable(table).getPrimaryKeys().get(0).getName();
+				}
 				Object value = tableCondition.value();
 				if (value == null) { // session condition
 					AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();

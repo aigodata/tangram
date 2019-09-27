@@ -74,11 +74,11 @@ public class TestSupport {
 		tablePermissions.add(TablePermission.create(null, "permission_update_table", Action.UPDATE));
 		tablePermissions.add(TablePermission.create(null, "permission_delete_table", Action.from("delete")));
 		// session user condition
-		List<Condition> userTableConditions = Lists.newArrayList(TableCondition.create("permission_user", "id"));
+		List<Condition> userTableConditions = Lists.newArrayList(TableCondition.create("permission_user"));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table").action(Action.QUERY)
 				.conditions(userTableConditions).build());
 		// session role condition
-		List<Condition> roleTableConditions = Lists.newArrayList(TableCondition.create("permission_role", "id"));
+		List<Condition> roleTableConditions = Lists.newArrayList(TableCondition.create("permission_role"));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_role_table").action(Action.QUERY)
 				.conditions(roleTableConditions).build());
 		// expression condition

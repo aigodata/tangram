@@ -137,4 +137,10 @@ public class PermissionTest extends TestSupport {
 		assertEquals(3, data.get(0).getAsJsonObject().get("ID").getAsLong());
 	}
 
+	@Test
+	void testSelectJoinPermissionTable() {
+		assertThrows(PermissionException.class,
+				() -> run(JSON_PARENT_PATH + "permission_no_table-select_join_permission_table.json"));
+	}
+
 }

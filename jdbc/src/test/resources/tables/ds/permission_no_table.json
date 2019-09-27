@@ -1,0 +1,10 @@
+{
+  "columns":{
+    "permission_add_table_id":{
+      "association": {
+        "target_table": "permission_add_table",
+        "target_column": "id"
+      }
+    }
+  }
+}
