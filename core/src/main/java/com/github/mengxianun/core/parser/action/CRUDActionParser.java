@@ -33,6 +33,8 @@ import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.RelationshipItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
+import com.github.mengxianun.core.item.extension.StatementFilterItem;
+import com.github.mengxianun.core.item.extension.StatementValueFilterItem;
 import com.github.mengxianun.core.parser.AbstractActionParser;
 import com.github.mengxianun.core.parser.info.ColumnInfo;
 import com.github.mengxianun.core.parser.info.ConditionInfo;
@@ -46,6 +48,8 @@ import com.github.mengxianun.core.parser.info.SimpleInfo;
 import com.github.mengxianun.core.parser.info.TableInfo;
 import com.github.mengxianun.core.parser.info.ValuesInfo;
 import com.github.mengxianun.core.parser.info.WhereInfo;
+import com.github.mengxianun.core.parser.info.extension.StatementConditionInfo;
+import com.github.mengxianun.core.parser.info.extension.StatementValueConditionInfo;
 import com.github.mengxianun.core.request.Connector;
 import com.github.mengxianun.core.request.JoinType;
 import com.github.mengxianun.core.request.Operation;
@@ -501,6 +505,7 @@ public class CRUDActionParser extends AbstractActionParser {
 		if (whereInfo != null) {
 			whereInfo.filters().forEach(e -> action.addFilterItem(parseFilter(e)));
 		}
+		parseStatementFilters();
 	}
 
 	/**
@@ -532,40 +537,39 @@ public class CRUDActionParser extends AbstractActionParser {
 		ColumnInfo columnInfo = conditionInfo.columnInfo();
 		Object value = conditionInfo.value();
 
-		// add where table to relation join tables when the where table does not exist in join tables
-		// the relation join tables is the table related but not in join tables
-
-		// not primary table
-		if (!Strings.isNullOrEmpty(columnInfo.table()) && !columnInfo.table().equals(simpleInfo.table().table())) {
-			boolean joinTableExist = simpleInfo.joins().parallelStream().allMatch(e -> {
-				boolean sameSource = (e.tableInfo().source() == null && columnInfo.source() == null)
-						|| (e.tableInfo().source() != null && e.tableInfo().source().equals(columnInfo.source()));
-				boolean sameTable = e.tableInfo().table().equals(columnInfo.table());
-				return sameSource && sameTable;
-			});
-			if (!joinTableExist) {
-
-			}
-		}
-
 		ColumnItem columnItem = findColumnItem(columnInfo);
 		// The column was not found in the requested tables (primary tables and join talbes)
 		if (columnItem == null) {
-			Table table = dataContext.getTable(columnInfo.table());
-			if (tempRelationTableItems.containsRow(table)) {
-				TableItem tableItem = tempRelationTableItems.values().iterator().next();
-				columnItem = new JoinColumnItem(findColumn(columnInfo), columnInfo.alias(), false, tableItem);
-			} else {
-				// 1. add join table
-				JoinElement joinElement = parseJoin(JoinType.LEFT,
-						TableInfo.create(columnInfo.source(), columnInfo.table(), null));
-				buildJoin(Lists.newArrayList(joinElement));
-				// 2. create join column item
-				TableItem tableItem = tempRelationTableItems.row(table).values().iterator().next();
-				columnItem = new JoinColumnItem(findColumn(columnInfo), columnInfo.alias(), false, tableItem);
-			}
+			columnItem = createScatteredColumnItem(columnInfo);
 		}
 		return new FilterItem(connector, columnItem, operator, value);
+	}
+
+	public void parseStatementFilters() {
+		List<StatementConditionInfo> statementConditions = simpleInfo.statementConditions();
+		for (StatementConditionInfo statementConditionInfo : statementConditions) {
+			Connector connector = statementConditionInfo.connector();
+			String statement = statementConditionInfo.statement();
+			StatementFilterItem statementFilterItem = new StatementFilterItem(connector, statement);
+			action.addFilterItem(statementFilterItem);
+		}
+		List<StatementValueConditionInfo> statementValueConditionInfos = simpleInfo.statementValueConditions();
+		for (StatementValueConditionInfo statementValueConditionInfo : statementValueConditionInfos) {
+			Connector connector = statementValueConditionInfo.connector();
+			Operator operator = statementValueConditionInfo.operator();
+			ColumnInfo columnInfo = statementValueConditionInfo.columnInfo();
+			String statement = statementValueConditionInfo.statement();
+
+			ColumnItem columnItem = findColumnItem(columnInfo);
+			// The column was not found in the requested tables (primary tables and join talbes)
+			if (columnItem == null) {
+				columnItem = createScatteredColumnItem(columnInfo);
+			}
+			StatementValueFilterItem statementValueFilterItem = new StatementValueFilterItem(connector, columnItem,
+					operator,
+					statement);
+			action.addFilterItem(statementValueFilterItem);
+		}
 	}
 
 	public void parseGroups() {
@@ -645,6 +649,29 @@ public class CRUDActionParser extends AbstractActionParser {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * The column was not found in the requested tables (primary tables and join
+	 * talbes)
+	 * 
+	 * @param columnInfo
+	 * @return
+	 */
+	private JoinColumnItem createScatteredColumnItem(ColumnInfo columnInfo) {
+		Table table = dataContext.getTable(columnInfo.table());
+		if (tempRelationTableItems.containsRow(table)) {
+			TableItem tableItem = tempRelationTableItems.values().iterator().next();
+			return new JoinColumnItem(findColumn(columnInfo), columnInfo.alias(), false, tableItem);
+		} else {
+			// 1. add join table
+			JoinElement joinElement = parseJoin(JoinType.LEFT,
+					TableInfo.create(columnInfo.source(), columnInfo.table(), null));
+			buildJoin(Lists.newArrayList(joinElement));
+			// 2. create join column item
+			TableItem tableItem = tempRelationTableItems.row(table).values().iterator().next();
+			return new JoinColumnItem(findColumn(columnInfo), columnInfo.alias(), false, tableItem);
+		}
 	}
 
 	private Column findColumn(ColumnInfo columnInfo) {

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,8 @@ import com.github.mengxianun.core.parser.info.JoinInfo;
 import com.github.mengxianun.core.parser.info.SimpleInfo;
 import com.github.mengxianun.core.parser.info.TableInfo;
 import com.github.mengxianun.core.parser.info.WhereInfo;
+import com.github.mengxianun.core.parser.info.extension.StatementConditionInfo;
+import com.github.mengxianun.core.parser.info.extension.StatementValueConditionInfo;
 import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.request.Operator;
 import com.github.mengxianun.core.request.RequestKeyword;
@@ -111,7 +114,9 @@ public final class PermissionChecker {
 		}
 		//		List<JoinInfo> joins = simpleInfo.joins();
 		List<FilterInfo> filters = simpleInfo.where().filters();
-		List<FilterInfo> newFilters = new ArrayList<>(filters);
+		List<FilterInfo> newConditionFilters = new ArrayList<>();
+		List<StatementValueConditionInfo> statementValueConditions = new ArrayList<>();
+		List<StatementConditionInfo> statementConditions = new ArrayList<>();
 		for (Condition condition : conditions) {
 			if (condition instanceof TableCondition) {
 				TableCondition tableCondition = (TableCondition) condition;
@@ -122,38 +127,46 @@ public final class PermissionChecker {
 				String table = tableCondition.table();
 				String column = tableCondition.column();
 				Object value = tableCondition.value();
-				//			joins.add(JoinInfo.create(JoinType.LEFT, TableInfo.create(source, table, null)));
-				FilterInfo filterInfo;
 				if (value == null) { // session condition
 					AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
 					String userTable = authorizationInfo.getUserTable();
-					String userIdColumn = authorizationInfo.getUserIdColumn();
 					Object userId = authorizationInfo.getUserIdSupplier().get();
 					if (userTable.equalsIgnoreCase(table)) {
 						value = userId;
-						filterInfo = FilterInfo.create(ConditionInfo
+						FilterInfo filterInfo = FilterInfo.create(ConditionInfo
 								.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
-					} else { // get value
-						JsonObject jsonObject = new JsonObject();
-						jsonObject.addProperty(Operation.SELECT.name(), table);
-						jsonObject.addProperty(RequestKeyword.FIELDS.name(), column);
-						jsonObject.addProperty(RequestKeyword.JOIN.name(), userTable);
-						jsonObject.addProperty(RequestKeyword.WHERE.name(),
-								userTable + "." + userIdColumn + "=" + userId);
+						newConditionFilters.add(filterInfo);
+					} else { // get statement value
 						String conditionSql = getConditionSql(table, column);
-						filterInfo = FilterInfo.create(ConditionInfo.create(
-								ColumnInfo.create(source, userTable, userIdColumn, null), Operator.IN, conditionSql));
+						StatementValueConditionInfo statementValueConditionInfo = StatementValueConditionInfo
+								.create(ColumnInfo.create(source, table, column, null), Operator.IN, conditionSql);
+						statementValueConditions.add(statementValueConditionInfo);
 					}
-				} else {
-					filterInfo = FilterInfo.create(ConditionInfo.create(ColumnInfo.create(source, table, column, null),
+				} else { // Specific conditions
+					FilterInfo filterInfo = FilterInfo
+							.create(ConditionInfo.create(ColumnInfo.create(source, table, column, null),
 							Operator.EQUAL, value));
+					newConditionFilters.add(filterInfo);
 				}
-				newFilters.add(filterInfo);
 			} else if (condition instanceof ExpressionCondition) {
-				//
+				ExpressionCondition expressionCondition = (ExpressionCondition) condition;
+				StatementConditionInfo statementConditionInfo = StatementConditionInfo
+						.create(expressionCondition.expression());
+				statementConditions.add(statementConditionInfo);
 			}
 		}
-		return simpleInfo.withWhere(WhereInfo.create(newFilters));
+		if (!newConditionFilters.isEmpty()) {
+			List<FilterInfo> newFilters = Stream.concat(filters.stream(), newConditionFilters.stream())
+					.collect(Collectors.toList());
+			simpleInfo = simpleInfo.withWhere(WhereInfo.create(newFilters));
+		}
+		if (!statementValueConditions.isEmpty()) {
+			simpleInfo = simpleInfo.withStatementValueConditions(statementValueConditions);
+		}
+		if (!statementConditions.isEmpty()) {
+			simpleInfo = simpleInfo.withStatementConditions(statementConditions);
+		}
+		return simpleInfo;
 	}
 
 	private static String getConditionSql(String table, String column) {
@@ -162,16 +175,17 @@ public final class PermissionChecker {
 		String userIdColumn = authorizationInfo.getUserIdColumn();
 		Object userId = authorizationInfo.getUserIdSupplier().get();
 		JsonObject jsonObject = new JsonObject();
-		jsonObject.addProperty(Operation.SELECT.name(), table);
-		jsonObject.addProperty(RequestKeyword.FIELDS.name(), column);
-		jsonObject.addProperty(RequestKeyword.JOIN.name(), userTable);
-		jsonObject.addProperty(RequestKeyword.WHERE.name(), userTable + "." + userIdColumn + "=" + userId);
+		jsonObject.addProperty(Operation.SELECT.name().toLowerCase(), table);
+		jsonObject.addProperty(RequestKeyword.FIELDS.lowerName(), column);
+		jsonObject.addProperty(RequestKeyword.JOIN.lowerName(), userTable);
+		jsonObject.addProperty(RequestKeyword.WHERE.lowerName(), userTable + "." + userIdColumn + "=" + userId);
 		DataContext dataContext = App.getDefaultDataContext();
 		SimpleInfo simpleInfo = SimpleParser.parse(jsonObject);
 		com.github.mengxianun.core.Action action = (com.github.mengxianun.core.Action) new CRUDActionParser(simpleInfo,
 				dataContext).parse();
+		action.build();
 		try {
-			return SQLParser.fill(action.getSql(), action.getParams());
+			return SQLParser.fill(action.getSql(), action.getParams().toArray());
 		} catch (SQLException e) {
 			throw new DataException("Condition sql build fail");
 		}

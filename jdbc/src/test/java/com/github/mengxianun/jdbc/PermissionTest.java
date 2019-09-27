@@ -99,6 +99,22 @@ public class PermissionTest extends TestSupport {
 		assertEquals(1, firstElement.get("ID").getAsLong());
 	}
 
+	@Test
+	void testSelectConditionRoleTable() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_condition_role_table.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(3, result.size());
+		JsonObject firstElement = result.get(0).getAsJsonObject();
+		assertEquals(1, firstElement.get("ID").getAsLong());
+	}
+
+	@Test
+	void testSelectConditionExpressionTable() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_condition_expression_table.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(1, result.size());
+	}
+
 //	@Test
 	void testWhereAndOr() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_where_and_or.json");

@@ -6,6 +6,13 @@
         "target_column": "id",
         "type":"n_1"
       }
+    },
+    "role_id":{
+      "association": {
+        "target_table": "permission_role",
+        "target_column": "id",
+        "type":"n_1"
+      }
     }
   }
 }

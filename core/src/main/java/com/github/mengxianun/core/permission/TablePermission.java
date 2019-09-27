@@ -24,7 +24,7 @@ public abstract class TablePermission {
 	}
 
 	public static TablePermission create(@Nullable String source, String table, @Nullable Object id, Action action,
-			List<TableCondition> conditions) {
+			List<Condition> conditions) {
 		return new AutoValue_TablePermission.Builder().source(source).table(table).id(id).action(action)
 				.conditions(conditions).build();
 	}
@@ -39,7 +39,7 @@ public abstract class TablePermission {
 
 	public abstract Action action();
 
-	public abstract List<TableCondition> conditions();
+	public abstract List<Condition> conditions();
 
 	public static Builder builder() {
 		return new AutoValue_TablePermission.Builder().conditions(Collections.emptyList());
@@ -62,7 +62,7 @@ public abstract class TablePermission {
 
 		abstract Optional<Action> action();
 
-		public abstract Builder conditions(List<TableCondition> conditions);
+		public abstract Builder conditions(List<Condition> conditions);
 
 		abstract TablePermission autoBuild();
 

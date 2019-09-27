@@ -16,6 +16,8 @@ import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.DefaultTranslator;
 import com.github.mengxianun.core.permission.Action;
+import com.github.mengxianun.core.permission.Condition;
+import com.github.mengxianun.core.permission.ExpressionCondition;
 import com.github.mengxianun.core.permission.SimpleAuthorizationInfo;
 import com.github.mengxianun.core.permission.TableCondition;
 import com.github.mengxianun.core.permission.TablePermission;
@@ -54,7 +56,8 @@ public class TestSupport {
 	}
 
 	static void initAuthorizationInfo() {
-		SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo("user", "id", () -> getUserId(),
+		SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo("permission_user", "id",
+				() -> getUserId(),
 				() -> geTablePermissions());
 		App.setAuthorizationInfo(simpleAuthorizationInfo);
 	}
@@ -71,9 +74,17 @@ public class TestSupport {
 		tablePermissions.add(TablePermission.create(null, "permission_update_table", Action.UPDATE));
 		tablePermissions.add(TablePermission.create(null, "permission_delete_table", Action.from("delete")));
 		// session user condition
-		List<TableCondition> userTableConditions = Lists.newArrayList(TableCondition.create("user", "id"));
+		List<Condition> userTableConditions = Lists.newArrayList(TableCondition.create("permission_user", "id"));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table").action(Action.QUERY)
 				.conditions(userTableConditions).build());
+		// session role condition
+		List<Condition> roleTableConditions = Lists.newArrayList(TableCondition.create("permission_role", "id"));
+		tablePermissions.add(TablePermission.builder().table("permission_condition_role_table").action(Action.QUERY)
+				.conditions(roleTableConditions).build());
+		// expression condition
+		List<Condition> expressionConditions = Lists.newArrayList(ExpressionCondition.create("id>1"));
+		tablePermissions.add(TablePermission.builder().table("permission_condition_expression_table")
+				.action(Action.QUERY).conditions(expressionConditions).build());
 		return tablePermissions;
 	}
 

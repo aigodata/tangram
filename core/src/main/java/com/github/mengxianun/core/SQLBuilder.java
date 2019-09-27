@@ -18,6 +18,8 @@ import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
+import com.github.mengxianun.core.item.extension.StatementFilterItem;
+import com.github.mengxianun.core.item.extension.StatementValueFilterItem;
 import com.github.mengxianun.core.request.Connector;
 import com.github.mengxianun.core.request.JoinType;
 import com.github.mengxianun.core.request.Operator;
@@ -323,7 +325,14 @@ public class SQLBuilder {
 		StringBuilder whereBuilder = new StringBuilder(PREFIX_WHERE);
 		boolean first = true;
 		for (FilterItem filterItem : filterItems) {
-			String filterSql = toFilter(filterItem, assignTableAlias);
+			String filterSql = null;
+			if (filterItem instanceof StatementValueFilterItem) {
+				filterSql = toStatementValueFilter((StatementValueFilterItem) filterItem, assignTableAlias);
+			} else if (filterItem instanceof StatementFilterItem) {
+				filterSql = toStatementFilter((StatementFilterItem) filterItem);
+			} else {
+				filterSql = toFilter(filterItem, assignTableAlias);
+			}
 			if (first) {
 				// 去掉开头的连接符
 				filterSql = deleteFirstConnector(filterSql, filterItem.getConnector());
@@ -334,10 +343,6 @@ public class SQLBuilder {
 		return whereBuilder.toString();
 	}
 
-	public String toFilter(FilterItem filterItem) {
-		return toFilter(filterItem, true);
-	}
-
 	public String toFilter(FilterItem filterItem, boolean assignTableAlias) {
 		StringBuilder filterBuilder = new StringBuilder();
 		filterBuilder.append(" ").append(filterItem.getConnector()).append(" ");
@@ -345,7 +350,7 @@ public class SQLBuilder {
 		List<FilterItem> subFilterItems = filterItem.getSubFilterItems();
 		if (!subFilterItems.isEmpty()) {
 			StringBuilder subFilterBuilder = new StringBuilder();
-			subFilterItems.forEach(f -> subFilterBuilder.append(toFilter(f)));
+			subFilterItems.forEach(f -> subFilterBuilder.append(toFilter(f, assignTableAlias)));
 			// 去掉开头的连接符
 			String subFilterSql = deleteFirstConnector(subFilterBuilder.toString(),
 					subFilterItems.get(0).getConnector());
@@ -396,6 +401,44 @@ public class SQLBuilder {
 		}
 
 		return filterBuilder.toString();
+	}
+
+	public String toStatementValueFilter(StatementValueFilterItem filterItem, boolean assignTableAlias) {
+		StringBuilder filterBuilder = new StringBuilder();
+		filterBuilder.append(" ").append(filterItem.getConnector()).append(" ");
+		ColumnItem columnItem = filterItem.getColumnItem();
+		filterBuilder.append(spliceColumn(columnItem, assignTableAlias));
+		filterBuilder.append(" ");
+		Object value = filterItem.getValue();
+		Operator operator = filterItem.getOperator();
+		switch (operator) {
+		case EQUAL:
+		case STRONG_EQUAL:
+		case NOT_EQUAL:
+		case LT:
+		case LTE:
+		case GT:
+		case GTE:
+		case LIKE:
+		case NOT_LIKE:
+			filterBuilder.append(operator.sql()).append(" ").append(value.toString());
+			params.add(value);
+			whereParams.add(value);
+			break;
+		case IN:
+		case NOT_IN:
+			filterBuilder.append(operator.sql()).append(" (").append(value.toString()).append(")");
+			break;
+
+		default:
+			break;
+		}
+
+		return filterBuilder.toString();
+	}
+
+	public String toStatementFilter(StatementFilterItem filterItem) {
+		return filterItem.getValue().toString();
 	}
 
 	public String toGroups() {

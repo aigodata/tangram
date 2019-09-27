@@ -5,6 +5,8 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.github.mengxianun.core.parser.info.extension.StatementConditionInfo;
+import com.github.mengxianun.core.parser.info.extension.StatementValueConditionInfo;
 import com.github.mengxianun.core.request.Operation;
 import com.google.auto.value.AutoValue;
 
@@ -47,19 +49,33 @@ public abstract class SimpleInfo {
 	@Nullable
 	public abstract FileInfo file();
 
+	public abstract List<StatementConditionInfo> statementConditions();
+
+	public abstract List<StatementValueConditionInfo> statementValueConditions();
+
 	public abstract List<SimpleInfo> simples();
 
 	public static Builder builder() {
 		return new AutoValue_SimpleInfo.Builder().columns(Collections.emptyList()).joins(Collections.emptyList())
 				.where(WhereInfo.create(Collections.emptyList()))
 				.groups(Collections.emptyList()).orders(Collections.emptyList())
-				.insertValues(Collections.emptyList()).simples(Collections.emptyList());
+				.insertValues(Collections.emptyList()).statementConditions(Collections.emptyList())
+				.statementValueConditions(Collections.emptyList())
+				.simples(Collections.emptyList());
 	}
 
 	abstract Builder toBuilder();
 
 	public SimpleInfo withWhere(WhereInfo where) {
 		return toBuilder().where(where).build();
+	}
+
+	public SimpleInfo withStatementConditions(List<StatementConditionInfo> statementConditions) {
+		return toBuilder().statementConditions(statementConditions).build();
+	}
+
+	public SimpleInfo withStatementValueConditions(List<StatementValueConditionInfo> statementValueConditions) {
+		return toBuilder().statementValueConditions(statementValueConditions).build();
 	}
 
 	@AutoValue.Builder
@@ -92,6 +108,10 @@ public abstract class SimpleInfo {
 		public abstract Builder nativeInfo(NativeInfo nativeInfo);
 
 		public abstract Builder file(FileInfo file);
+
+		public abstract Builder statementConditions(List<StatementConditionInfo> statementConditions);
+
+		public abstract Builder statementValueConditions(List<StatementValueConditionInfo> statementValueConditions);
 
 		public abstract Builder simples(List<SimpleInfo> simples);
 
