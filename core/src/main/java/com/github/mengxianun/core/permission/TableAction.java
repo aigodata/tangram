@@ -3,7 +3,7 @@ package com.github.mengxianun.core.permission;
 
 import com.google.common.base.Strings;
 
-public enum Action {
+public enum TableAction {
 
 	ALL("*"),
 	QUERY("query", "select", "get"),
@@ -14,7 +14,7 @@ public enum Action {
 
 	private String[] titles;
 
-	Action(String... titles) {
+	TableAction(String... titles) {
 		this.titles = titles;
 	}
 
@@ -22,12 +22,11 @@ public enum Action {
 		return titles;
 	}
 
-	public static Action from(String action) {
+	public static TableAction from(String action) {
 		if (Strings.isNullOrEmpty(action)) {
 			return ALL;
 		}
-		Action[] values = values();
-		for (Action value : values) {
+		for (TableAction value : values()) {
 			String[] titles = value.titles;
 			for (String title : titles) {
 				if (title.equalsIgnoreCase(action)) {

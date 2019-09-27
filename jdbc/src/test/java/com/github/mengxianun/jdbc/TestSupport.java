@@ -15,10 +15,10 @@ import org.h2.tools.RunScript;
 import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.DefaultTranslator;
-import com.github.mengxianun.core.permission.Action;
 import com.github.mengxianun.core.permission.Condition;
 import com.github.mengxianun.core.permission.ExpressionCondition;
 import com.github.mengxianun.core.permission.SimpleAuthorizationInfo;
+import com.github.mengxianun.core.permission.TableAction;
 import com.github.mengxianun.core.permission.TableCondition;
 import com.github.mengxianun.core.permission.TablePermission;
 import com.google.common.collect.Lists;
@@ -69,27 +69,29 @@ public class TestSupport {
 	static List<TablePermission> geTablePermissions() {
 		List<TablePermission> tablePermissions = new ArrayList<>();
 		tablePermissions.add(TablePermission.create(null, "permission_all_table"));
-		tablePermissions.add(TablePermission.create("ds", "permission_query_table", Action.QUERY));
-		tablePermissions.add(TablePermission.create(null, "permission_add_table", Action.from("add")));
-		tablePermissions.add(TablePermission.create(null, "permission_update_table", Action.UPDATE));
-		tablePermissions.add(TablePermission.create(null, "permission_delete_table", Action.from("delete")));
+		tablePermissions.add(TablePermission.create("ds", "permission_query_table", TableAction.QUERY));
+		tablePermissions.add(TablePermission.create(null, "permission_add_table", TableAction.from("add")));
+		tablePermissions.add(TablePermission.create(null, "permission_update_table", TableAction.UPDATE));
+		tablePermissions.add(TablePermission.create(null, "permission_delete_table", TableAction.from("delete")));
 		// session user condition
 		List<Condition> userTableConditions = Lists.newArrayList(TableCondition.create("permission_user"));
-		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table").action(Action.QUERY)
+		tablePermissions
+				.add(TablePermission.builder().table("permission_condition_user_table").action(TableAction.QUERY)
 				.conditions(userTableConditions).build());
 		// session role condition
 		List<Condition> roleTableConditions = Lists.newArrayList(TableCondition.create("permission_role"));
-		tablePermissions.add(TablePermission.builder().table("permission_condition_role_table").action(Action.QUERY)
+		tablePermissions.add(TablePermission.builder().table("permission_condition_role_table")
+				.action(TableAction.QUERY)
 				.conditions(roleTableConditions).build());
 		// expression condition
 		List<Condition> expressionConditions = Lists.newArrayList(ExpressionCondition.create("id>1"));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_expression_table")
-				.action(Action.QUERY).conditions(expressionConditions).build());
+				.action(TableAction.QUERY).conditions(expressionConditions).build());
 		// complex condition
 		List<Condition> complexConditions = Lists.newArrayList(TableCondition.create("permission_role", "id"),
 				ExpressionCondition.create("id<5"));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table2")
-				.action(Action.QUERY).conditions(complexConditions).build());
+				.action(TableAction.QUERY).conditions(complexConditions).build());
 		return tablePermissions;
 	}
 

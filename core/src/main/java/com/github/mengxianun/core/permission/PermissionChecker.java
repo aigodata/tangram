@@ -44,6 +44,10 @@ public final class PermissionChecker {
 	}
 
 	public static PermissionCheckResult checkWithResult(SimpleInfo simpleInfo) {
+		return checkTableWithResult(simpleInfo);
+	}
+
+	public static PermissionCheckResult checkTableWithResult(SimpleInfo simpleInfo) {
 		PermissionPolicy policy = App.getPermissionPolicy();
 		if (policy == null || policy == PermissionPolicy.ALLOW_ALL) {
 			return PermissionCheckResult.create(true, Collections.emptyList());
@@ -53,7 +57,7 @@ public final class PermissionChecker {
 		}
 		List<Condition> permissionConditions = new ArrayList<>();
 		String defaultSource = App.getDefaultDataSource();
-		Action action = getAction(simpleInfo.operation());
+		TableAction action = getTableAction(simpleInfo.operation());
 		TableInfo primaryTableInfo = simpleInfo.table();
 		List<TableInfo> joinTableInfos = simpleInfo.joins().stream().map(JoinInfo::tableInfo)
 				.collect(Collectors.toList());
@@ -86,10 +90,10 @@ public final class PermissionChecker {
 					permissionSource = defaultSource;
 				}
 				String permissionTable = tablePermission.table();
-				Action permissionAction = tablePermission.action();
+				TableAction permissionAction = tablePermission.action();
 				if (source.equalsIgnoreCase(permissionSource) && table.equalsIgnoreCase(permissionTable)) {
 					configured = true;
-					if (action == permissionAction || permissionAction == Action.ALL) {
+					if (action == permissionAction || permissionAction == TableAction.ALL) {
 						check = true;
 						permissionConditions.addAll(tablePermission.conditions());
 						break;
@@ -202,24 +206,24 @@ public final class PermissionChecker {
 		}
 	}
 
-	private static Action getAction(Operation operation) {
+	private static TableAction getTableAction(Operation operation) {
 		switch (operation) {
 		case DETAIL:
 		case SELECT:
 		case SELECT_DISTINCT:
 		case QUERY:
-			return Action.QUERY;
+			return TableAction.QUERY;
 		case INSERT:
-			return Action.ADD;
+			return TableAction.ADD;
 		case UPDATE:
-			return Action.UPDATE;
+			return TableAction.UPDATE;
 		case DELETE:
-			return Action.DELETE;
+			return TableAction.DELETE;
 
 		default:
 			break;
 		}
-		return Action.ALL;
+		return TableAction.ALL;
 	}
 
 }
