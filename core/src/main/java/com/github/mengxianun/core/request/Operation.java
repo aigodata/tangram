@@ -8,13 +8,13 @@ package com.github.mengxianun.core.request;
  */
 public enum Operation {
 
+	DETAIL("detail"),
 	QUERY("query"), 
 	SELECT("select"), 
 	SELECT_DISTINCT("select.distinct"), 
 	INSERT("insert"), 
 	UPDATE("update"), 
 	DELETE("delete"), 
-	DETAIL("detail"), 
 	TRANSACTION("transaction"), 
 	STRUCT("struct"), 
 	STRUCTS("structs"), 
@@ -29,6 +29,10 @@ public enum Operation {
 
 	public String value() {
 		return value;
+	}
+
+	public boolean isQuery() {
+		return this == QUERY || this == SELECT || this == SELECT_DISTINCT || this == DETAIL;
 	}
 
 }

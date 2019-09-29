@@ -15,6 +15,8 @@ import org.h2.tools.RunScript;
 import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.DefaultTranslator;
+import com.github.mengxianun.core.permission.ColumnAction;
+import com.github.mengxianun.core.permission.ColumnPermission;
 import com.github.mengxianun.core.permission.Condition;
 import com.github.mengxianun.core.permission.ExpressionCondition;
 import com.github.mengxianun.core.permission.SimpleAuthorizationInfo;
@@ -56,9 +58,9 @@ public class TestSupport {
 	}
 
 	static void initAuthorizationInfo() {
-		SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo("permission_user", "id",
+		SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo(null, "permission_user", "id",
 				() -> getUserId(),
-				() -> geTablePermissions());
+				() -> geTablePermissions(), () -> getColumnPermissions());
 		App.setAuthorizationInfo(simpleAuthorizationInfo);
 	}
 
@@ -93,6 +95,17 @@ public class TestSupport {
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table2")
 				.action(TableAction.QUERY).conditions(complexConditions).build());
 		return tablePermissions;
+	}
+
+	static List<ColumnPermission> getColumnPermissions() {
+		List<ColumnPermission> columnPermissions = new ArrayList<>();
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "all_column", ColumnAction.ALL));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "select_column", ColumnAction.READ));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "insert_column", ColumnAction.INSERT));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "update_column", ColumnAction.UPDATE));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "delete_column", ColumnAction.WRITE));
+		columnPermissions.add(ColumnPermission.create("permission_column_join_table", "name", ColumnAction.UPDATE));
+		return columnPermissions;
 	}
 
 	String readJson(String jsonFile) {

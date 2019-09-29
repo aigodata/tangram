@@ -13,45 +13,47 @@ import com.github.mengxianun.core.exception.PermissionException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-@DisplayName("Jdbc permission test")
-public class PermissionTest extends TestSupport {
+@DisplayName("Jdbc table permission test")
+public class TablePermissionTest extends TestSupport {
 
-	private static final String JSON_PARENT_PATH = "json/permission/";
+	private static final String JSON_PARENT_PATH = "json/permission/table/";
 
 	@Test
 	void testSelectAllTable() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_all_table.json");
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "all_table_select.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertTrue(result.size() > 0);
 	}
 
 	@Test
 	void testUpdateAllTable() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_all_table.json");
-		JsonArray result = (JsonArray) dataResultSet.getJsonData();
-		assertTrue(result.size() > 0);
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "all_table_update.json");
+		JsonObject result = (JsonObject) dataResultSet.getJsonData();
+		assertTrue(result.has(ResultAttributes.COUNT.toString().toLowerCase()));
+		int count = result.getAsJsonPrimitive(ResultAttributes.COUNT.toString().toLowerCase()).getAsInt();
+		assertEquals(1, count);
 	}
 
 	@Test
 	void testSelectQueryTable() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_query_table.json");
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "query_table_select.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertTrue(result.size() > 0);
 	}
 
 	@Test
 	void testUpdateQueryTable() {
-		assertThrows(PermissionException.class, () -> run(JSON_PARENT_PATH + "update_query_table.json"));
+		assertThrows(PermissionException.class, () -> run(JSON_PARENT_PATH + "query_table_update.json"));
 	}
 
 	@Test
 	void testSelectAddTable() {
-		assertThrows(PermissionException.class, () -> run(JSON_PARENT_PATH + "select_add_table.json"));
+		assertThrows(PermissionException.class, () -> run(JSON_PARENT_PATH + "add_table_select.json"));
 	}
 
 	@Test
 	void testInsertAddTable() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "insert_add_table.json");
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "add_table_insert.json");
 		JsonObject result = (JsonObject) dataResultSet.getJsonData();
 		assertTrue(result.has("ID"));
 		int primaryKey = result.getAsJsonPrimitive("ID").getAsInt();
@@ -60,12 +62,12 @@ public class PermissionTest extends TestSupport {
 
 	@Test
 	void testSelectUpdateTable() {
-		assertThrows(PermissionException.class, () -> run(JSON_PARENT_PATH + "select_update_table.json"));
+		assertThrows(PermissionException.class, () -> run(JSON_PARENT_PATH + "update_table_select.json"));
 	}
 
 	@Test
 	void testUpdateUpdateTable() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "update_update_table.json");
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "update_table_update.json");
 		JsonObject result = (JsonObject) dataResultSet.getJsonData();
 		assertTrue(result.has(ResultAttributes.COUNT.toString().toLowerCase()));
 		int count = result.getAsJsonPrimitive(ResultAttributes.COUNT.toString().toLowerCase()).getAsInt();
@@ -74,12 +76,12 @@ public class PermissionTest extends TestSupport {
 
 	@Test
 	void testSelectDeleteTable() {
-		assertThrows(PermissionException.class, () -> run(JSON_PARENT_PATH + "select_delete_table.json"));
+		assertThrows(PermissionException.class, () -> run(JSON_PARENT_PATH + "delete_table_select.json"));
 	}
 
 	@Test
 	void testDeleteDeleteTable() {
-		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "delete_delete_table.json");
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "delete_table_delete.json");
 		JsonObject result = (JsonObject) dataResultSet.getJsonData();
 		assertTrue(result.has(ResultAttributes.COUNT.toLowerCase()));
 		int count = result.getAsJsonPrimitive(ResultAttributes.COUNT.toLowerCase()).getAsInt();

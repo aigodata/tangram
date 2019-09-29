@@ -16,4 +16,8 @@ public interface AuthorizationInfo {
 
 	public void refreshTablePermissions();
 
+	public List<ColumnPermission> getColumnPermissions();
+
+	public void refreshColumnPermissions();
+
 }

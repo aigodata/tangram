@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 
 public enum ColumnAction {
 
-	ALL, READ, WRITE;
+	ALL, READ, WRITE, INSERT, UPDATE;
 
 	public static ColumnAction from(String action) {
 		if (Strings.isNullOrEmpty(action)) {

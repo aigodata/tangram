@@ -1,0 +1,4 @@
+{
+  "select":"permission_column_join_table",
+  "join":["permission_column_table"]
+}

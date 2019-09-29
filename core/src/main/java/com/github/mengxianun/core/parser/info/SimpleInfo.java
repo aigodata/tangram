@@ -23,6 +23,8 @@ public abstract class SimpleInfo {
 
 	public abstract List<ColumnInfo> columns();
 
+	public abstract List<ColumnInfo> excludeColumns();
+
 	public abstract List<JoinInfo> joins();
 
 	@Nullable
@@ -56,7 +58,8 @@ public abstract class SimpleInfo {
 	public abstract List<SimpleInfo> simples();
 
 	public static Builder builder() {
-		return new AutoValue_SimpleInfo.Builder().columns(Collections.emptyList()).joins(Collections.emptyList())
+		return new AutoValue_SimpleInfo.Builder().columns(Collections.emptyList())
+				.excludeColumns(Collections.emptyList()).joins(Collections.emptyList())
 				.where(WhereInfo.create(Collections.emptyList()))
 				.groups(Collections.emptyList()).orders(Collections.emptyList())
 				.insertValues(Collections.emptyList()).statementConditions(Collections.emptyList())
@@ -65,6 +68,14 @@ public abstract class SimpleInfo {
 	}
 
 	abstract Builder toBuilder();
+
+	public SimpleInfo withColumns(List<ColumnInfo> columns) {
+		return toBuilder().columns(columns).build();
+	}
+
+	public SimpleInfo withExcludeColumns(List<ColumnInfo> columns) {
+		return toBuilder().excludeColumns(columns).build();
+	}
 
 	public SimpleInfo withWhere(WhereInfo where) {
 		return toBuilder().where(where).build();
@@ -88,6 +99,8 @@ public abstract class SimpleInfo {
 		public abstract Builder table(TableInfo table);
 
 		public abstract Builder columns(List<ColumnInfo> columns);
+
+		public abstract Builder excludeColumns(List<ColumnInfo> columns);
 
 		public abstract Builder joins(List<JoinInfo> joins);
 

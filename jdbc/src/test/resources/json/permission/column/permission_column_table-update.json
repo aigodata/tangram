@@ -1,0 +1,7 @@
+{
+  "update":"permission_column_table",
+  "values":{
+    "select_column":1
+  },
+  "where":"id=1"
+}

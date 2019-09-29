@@ -1,0 +1,7 @@
+{
+  "insert":"permission_column_table",
+  "values":{
+    "insert_column":1,
+    "update_column":1
+  }
+}

@@ -392,8 +392,11 @@ public class CRUDActionParser extends AbstractActionParser {
 		if (columns.isEmpty() && action.isQuery()) {
 			columnItems.addAll(createAllColumns());
 		} else {
-			columns.forEach(e -> columnItems.addAll(parseColumn(e)));
+			for (ColumnInfo columnInfo : columns) {
+				columnItems.addAll(parseColumn(columnInfo));
+			}
 		}
+		columnItems = removeExcludeColumns(columnItems);
 		columnItems.forEach(e -> {
 			action.addColumnItem(e);
 			tempAliasColumnItems.put(e.getAlias(), e);
@@ -458,6 +461,26 @@ public class CRUDActionParser extends AbstractActionParser {
 				columnItems.addAll(tableItemColumns);
 			}
 		}
+		return columnItems;
+	}
+
+	private List<ColumnItem> removeExcludeColumns(List<ColumnItem> columnItems) {
+		List<ColumnInfo> excludeColumns = simpleInfo.excludeColumns();
+		List<ColumnItem> removeColumnItems = new ArrayList<>();
+		for (ColumnInfo columnInfo : excludeColumns) {
+			for (ColumnItem columnItem : columnItems) {
+				Column column = columnItem.getColumn();
+				if (column != null) {
+					String columnName = column.getName();
+					String tableName = column.getTable().getName();
+					if (columnName.equalsIgnoreCase(columnInfo.column())
+							&& tableName.equalsIgnoreCase(columnInfo.table())) {
+						removeColumnItems.add(columnItem);
+					}
+				}
+			}
+		}
+		columnItems.removeAll(removeColumnItems);
 		return columnItems;
 	}
 

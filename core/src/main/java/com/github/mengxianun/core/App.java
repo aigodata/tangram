@@ -1,6 +1,7 @@
 package com.github.mengxianun.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.permission.AuthorizationInfo;
+import com.github.mengxianun.core.permission.ColumnPermission;
 import com.github.mengxianun.core.permission.PermissionPolicy;
 import com.github.mengxianun.core.permission.TablePermission;
 import com.github.mengxianun.core.schema.Column;
@@ -29,6 +31,7 @@ import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -57,7 +60,9 @@ public final class App {
 	// AuthorizationInfo
 	private static AuthorizationInfo authorizationInfo;
 	// <source, <table, TablePermissions>>
-	private static final Map<String, Map<String, List<TablePermission>>> permissions = new ConcurrentHashMap<>();
+	private static final Map<String, Map<String, List<TablePermission>>> tablePermissionsMap = new ConcurrentHashMap<>();
+	// <source, <table, <column, ColumnPermission>>>
+	private static final Map<String, Map<String, Map<String, List<ColumnPermission>>>> columnPermissionsMap = new ConcurrentHashMap<>();
 
 	private App() {
 		throw new AssertionError();
@@ -149,31 +154,67 @@ public final class App {
 
 	public static void setAuthorizationInfo(AuthorizationInfo authorizationInfo) {
 		App.authorizationInfo = authorizationInfo;
+		initPermissions();
+	}
+
+	private static void initPermissions() {
+		tablePermissionsMap.clear();
+		columnPermissionsMap.clear();
 		List<TablePermission> tablePermissions = authorizationInfo.getTablePermissions();
-		if (tablePermissions != null && !tablePermissions.isEmpty()) {
-			for (TablePermission tablePermission : tablePermissions) {
-				String source = tablePermission.source();
-				String table = tablePermission.table();
-				if (Strings.isNullOrEmpty(source)) {
-					source = getDefaultDataSource();
-				}
-				if (hasSourcePermissions(source)) {
-					Map<String, List<TablePermission>> sourcePermissions = getSourcePermissions(source);
-					if (sourcePermissions.containsKey(table)) {
-						List<TablePermission> sourceTablePermissions = sourcePermissions.get(table);
-						sourceTablePermissions.add(tablePermission);
-					} else {
-						List<TablePermission> sourceTablePermissions = new ArrayList<>();
-						sourceTablePermissions.add(tablePermission);
-						sourcePermissions.put(table, sourceTablePermissions);
-					}
+		for (TablePermission tablePermission : tablePermissions) {
+			String source = tablePermission.source();
+			String table = tablePermission.table();
+			if (Strings.isNullOrEmpty(source)) {
+				source = getDefaultDataSource();
+			}
+			if (tablePermissionsMap.containsKey(source)) {
+				Map<String, List<TablePermission>> sourcePermissions = tablePermissionsMap.get(source);
+				if (sourcePermissions.containsKey(table)) {
+					List<TablePermission> sourceTablePermissions = sourcePermissions.get(table);
+					sourceTablePermissions.add(tablePermission);
 				} else {
-					Map<String, List<TablePermission>> sourcePermissions = new HashMap<>();
 					List<TablePermission> sourceTablePermissions = new ArrayList<>();
 					sourceTablePermissions.add(tablePermission);
 					sourcePermissions.put(table, sourceTablePermissions);
-					permissions.put(source, sourcePermissions);
 				}
+			} else {
+				Map<String, List<TablePermission>> sourcePermissions = new HashMap<>();
+				List<TablePermission> sourceTablePermissions = new ArrayList<>();
+				sourceTablePermissions.add(tablePermission);
+				sourcePermissions.put(table, sourceTablePermissions);
+				tablePermissionsMap.put(source, sourcePermissions);
+			}
+		}
+		List<ColumnPermission> columnPermissions = authorizationInfo.getColumnPermissions();
+		for (ColumnPermission columnPermission : columnPermissions) {
+			String source = columnPermission.source();
+			String table = columnPermission.table();
+			String column = columnPermission.column();
+			if (Strings.isNullOrEmpty(source)) {
+				source = getDefaultDataSource();
+			}
+			if (columnPermissionsMap.containsKey(source)) {
+				Map<String, Map<String, List<ColumnPermission>>> tableColumnPermissions = columnPermissionsMap
+						.get(source);
+				if (tableColumnPermissions.containsKey(table)) {
+					Map<String, List<ColumnPermission>> columnColumnPermissions = tableColumnPermissions.get(table);
+					if (columnColumnPermissions.containsKey(column)) {
+						List<ColumnPermission> existColumnPermissions = columnColumnPermissions.get(column);
+						existColumnPermissions.add(columnPermission);
+					} else {
+						columnColumnPermissions.put(column, Lists.newArrayList(columnPermission));
+					}
+				} else {
+					Map<String, List<ColumnPermission>> columnColumnPermissions = new HashMap<>();
+					columnColumnPermissions.put(column, Lists.newArrayList(columnPermission));
+					tableColumnPermissions.put(table, columnColumnPermissions);
+				}
+			} else {
+				Map<String, Map<String, List<ColumnPermission>>> tableColumnPermissions = new HashMap<>();
+				Map<String, List<ColumnPermission>> columnColumnPermissions = new HashMap<>();
+				columnColumnPermissions.put(column, Lists.newArrayList(columnPermission));
+				tableColumnPermissions.put(table, columnColumnPermissions);
+				columnPermissionsMap.put(source, tableColumnPermissions);
 			}
 		}
 	}
@@ -187,32 +228,79 @@ public final class App {
 		return getDataContext(userSource).getTable(userTable);
 	}
 
-	public static boolean hasSourcePermissions(String source) {
-		if (Strings.isNullOrEmpty(source)) {
-			source = getDefaultDataSource();
-		}
-		return permissions.containsKey(source) && !permissions.get(source).isEmpty();
-	}
-
-	public static Map<String, List<TablePermission>> getSourcePermissions(String source) {
-		if (Strings.isNullOrEmpty(source)) {
-			source = getDefaultDataSource();
-		}
-		return permissions.get(source);
+	public static boolean hasTablePermissions(String table) {
+		return hasTablePermissions(null, table);
 	}
 
 	public static boolean hasTablePermissions(String source, String table) {
-		if (hasSourcePermissions(source)) {
-			Map<String, List<TablePermission>> sourceTablePermissions = getSourcePermissions(source);
-			if (sourceTablePermissions.containsKey(table)) {
-				return true;
+		if (Strings.isNullOrEmpty(source)) {
+			source = getDefaultDataSource();
+		}
+		if (tablePermissionsMap.containsKey(source)) {
+			Map<String, List<TablePermission>> sourceTablePermissions = tablePermissionsMap.get(source);
+			if (!sourceTablePermissions.isEmpty()) {
+				if (sourceTablePermissions.containsKey(table) && !sourceTablePermissions.get(table).isEmpty()) {
+					return true;
+				}
 			}
 		}
 		return false;
 	}
 
+	public static Map<String, List<TablePermission>> getTablePermissionsInSource(String source) {
+		if (Strings.isNullOrEmpty(source)) {
+			source = getDefaultDataSource();
+		}
+		return tablePermissionsMap.get(source);
+	}
+
 	public static List<TablePermission> getTablePermissions(String source, String table) {
-		return getSourcePermissions(source).get(table);
+		return getTablePermissionsInSource(source).get(table);
+	}
+
+	public static boolean hasColumnPermissions(String source, String table, String column) {
+		if (Strings.isNullOrEmpty(source)) {
+			source = getDefaultDataSource();
+		}
+		if (columnPermissionsMap.containsKey(source)) {
+			Map<String, Map<String, List<ColumnPermission>>> tableColumnPermissions = columnPermissionsMap.get(source);
+			if (tableColumnPermissions.containsKey(table)) {
+				Map<String, List<ColumnPermission>> columnColumnPermissions = tableColumnPermissions.get(table);
+				if (columnColumnPermissions.containsKey(column)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public static List<ColumnPermission> getColumnPermissions(String source, String table, String column) {
+		if (Strings.isNullOrEmpty(source)) {
+			source = getDefaultDataSource();
+		}
+		if (columnPermissionsMap.containsKey(source)) {
+			Map<String, Map<String, List<ColumnPermission>>> tableColumnPermissions = columnPermissionsMap.get(source);
+			if (tableColumnPermissions.containsKey(table)) {
+				Map<String, List<ColumnPermission>> columnColumnPermissions = tableColumnPermissions.get(table);
+				if (columnColumnPermissions.containsKey(column)) {
+					return columnColumnPermissions.get(column);
+				}
+			}
+		}
+		return Collections.emptyList();
+	}
+
+	public static Map<String, List<ColumnPermission>> getColumnPermissionsInTable(String source, String table) {
+		if (Strings.isNullOrEmpty(source)) {
+			source = getDefaultDataSource();
+		}
+		if (columnPermissionsMap.containsKey(source)) {
+			Map<String, Map<String, List<ColumnPermission>>> tableColumnPermissions = columnPermissionsMap.get(source);
+			if (tableColumnPermissions.containsKey(table)) {
+				return tableColumnPermissions.get(table);
+			}
+		}
+		return Collections.emptyMap();
 	}
 
 	public static PermissionPolicy getPermissionPolicy() {
@@ -221,6 +309,8 @@ public final class App {
 
 	public static void refreshPermissions() {
 		getAuthorizationInfo().refreshTablePermissions();
+		getAuthorizationInfo().refreshColumnPermissions();
+		initPermissions();
 	}
 
 	/**
@@ -230,7 +320,6 @@ public final class App {
 	 *            获取别名的元素, 比如表或者列等
 	 * @return Alias
 	 */
-	@Deprecated
 	public static String getAliasKey(String element) {
 		JexlEngine jexl = new JexlBuilder().create();
 		String jexlExp = App.Config.getString(GlobalConfig.TABLE_ALIAS_EXPRESSION);
