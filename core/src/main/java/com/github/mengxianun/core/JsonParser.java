@@ -53,6 +53,7 @@ import com.google.gson.JsonObject;
  * @author mengxiangyun
  *
  */
+@Deprecated
 public class JsonParser {
 
 	// 表名或别名规则
