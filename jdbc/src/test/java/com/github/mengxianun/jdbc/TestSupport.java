@@ -16,6 +16,7 @@ import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.DefaultTranslator;
 import com.github.mengxianun.core.permission.ColumnAction;
+import com.github.mengxianun.core.permission.ColumnCondition;
 import com.github.mengxianun.core.permission.ColumnPermission;
 import com.github.mengxianun.core.permission.Condition;
 import com.github.mengxianun.core.permission.ExpressionCondition;
@@ -105,6 +106,15 @@ public class TestSupport {
 		columnPermissions.add(ColumnPermission.create("permission_column_table", "update_column", ColumnAction.UPDATE));
 		columnPermissions.add(ColumnPermission.create("permission_column_table", "delete_column", ColumnAction.WRITE));
 		columnPermissions.add(ColumnPermission.create("permission_column_join_table", "name", ColumnAction.UPDATE));
+		columnPermissions
+				.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_1",
+						ColumnAction.READ, Lists.newArrayList(ColumnCondition.create("user", "id", 1))));
+		columnPermissions.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_1",
+				ColumnAction.INSERT, Lists.newArrayList(ColumnCondition.create("user", "id", 1))));
+		columnPermissions.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_2",
+				ColumnAction.READ, Lists.newArrayList(ColumnCondition.create("user", "id", 2))));
+		columnPermissions.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_2",
+				ColumnAction.INSERT, Lists.newArrayList(ColumnCondition.create("user", "id", 2))));
 		return columnPermissions;
 	}
 

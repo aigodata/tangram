@@ -68,4 +68,29 @@ public class ColumnPermissionTest extends TestSupport {
 		assertTrue(!permissionColumnTable.has("DELETE_COLUMN"));
 	}
 
+	@Test
+	void testSelectPermissionColumnConditionTable() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "permission_column_condition_table-select.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertTrue(result.size() > 0);
+		JsonObject firstElement = result.get(0).getAsJsonObject();
+		assertTrue(firstElement.has("ID"));
+		assertTrue(firstElement.has("COLUMN_USER_1"));
+		assertTrue(!firstElement.has("COLUMN_USER_2"));
+	}
+
+	@Test
+	void testInsertPermissionColumnConditionTable() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "permission_column_condition_table-insert.json");
+		JsonObject result = (JsonObject) dataResultSet.getJsonData();
+		assertTrue(result.has("ID"));
+		assertEquals(2, result.getAsJsonPrimitive("ID").getAsInt());
+	}
+
+	@Test
+	void testInsertPermissionColumnConditionTable2() {
+		assertThrows(PermissionException.class,
+				() -> run(JSON_PARENT_PATH + "permission_column_condition_table-insert2.json"));
+	}
+
 }

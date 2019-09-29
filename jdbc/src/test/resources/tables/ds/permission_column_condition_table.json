@@ -1,0 +1,16 @@
+{
+  "columns":{
+    "column_user_1":{
+      "association": {
+        "target_table": "permission_user",
+        "target_column": "id"
+      }
+    },
+    "column_user_2":{
+      "association": {
+        "target_table": "permission_user",
+        "target_column": "id"
+      }
+    }
+  }
+}

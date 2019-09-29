@@ -1,0 +1,8 @@
+{
+  "insert":"permission_column_condition_table",
+  "values":{
+    "COLUMN_USER_1":1,
+    "COLUMN_USER_2":1,
+    "COLUMN_ROLE":1
+  }
+}
