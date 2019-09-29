@@ -170,6 +170,7 @@ public abstract class AbstractDataContext implements DataContext {
 		return new BasicSummary(getDefaultSchema().getInfo());
 	}
 
+	@Deprecated
 	private MultiSummary executeTransaction(Action action) {
 		JsonObject jsonData = action.getRequestData();
 		JsonArray transactionArray = jsonData.getAsJsonArray(Operation.TRANSACTION.name().toLowerCase());
