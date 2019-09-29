@@ -107,25 +107,28 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 			if (mappingNode.size() == 0) {
 				continue;
 			}
-			JsonObject properties = mappingNode.getAsJsonObject(mappingNode.keySet().iterator().next())
-					.getAsJsonObject("properties");
-
-			for (String columnName : properties.keySet()) {
-				JsonObject columnProperties = properties.getAsJsonObject(columnName);
-				if (columnProperties.has("properties")) { // object type
-					String typeName = ElasticsearchColumnType.OBJECT;
-					List<List<String>> paths = new ArrayList<>();
-					findAllColumns(Arrays.asList(columnName), paths, columnProperties);
-					for (List<String> list : paths) {
-						String objectColumnName = String.join(".", list);
+			JsonObject defaultTypeMapping = mappingNode.getAsJsonObject(mappingNode.keySet().iterator().next());
+			if (defaultTypeMapping.has("properties")) {
+				JsonObject properties = defaultTypeMapping.getAsJsonObject("properties");
+				for (String columnName : properties.keySet()) {
+					JsonObject columnProperties = properties.getAsJsonObject(columnName);
+					if (columnProperties.has("properties")) { // object type
+						String typeName = ElasticsearchColumnType.OBJECT;
+						List<List<String>> paths = new ArrayList<>();
+						findAllColumns(Arrays.asList(columnName), paths, columnProperties);
+						for (List<String> list : paths) {
+							String objectColumnName = String.join(".", list);
+							DefaultColumn column = new DefaultColumn(table, new ElasticsearchColumnType(typeName),
+									objectColumnName);
+							table.addColumn(column);
+						}
+					} else {
+						String typeName = columnProperties.has("type") ? columnProperties.get("type").getAsString()
+								: null;
 						DefaultColumn column = new DefaultColumn(table, new ElasticsearchColumnType(typeName),
-								objectColumnName);
+								columnName);
 						table.addColumn(column);
 					}
-				} else {
-					String typeName = columnProperties.has("type") ? columnProperties.get("type").getAsString() : null;
-					DefaultColumn column = new DefaultColumn(table, new ElasticsearchColumnType(typeName), columnName);
-					table.addColumn(column);
 				}
 			}
 		}
