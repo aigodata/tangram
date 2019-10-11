@@ -147,6 +147,11 @@ public class SelectTest extends TestSupport {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_group.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertEquals(5, result.size());
+		JsonObject firstElement = result.get(0).getAsJsonObject();
+		assertTrue(firstElement.has("age"));
+		assertEquals(10, firstElement.get("age").getAsLong());
+		assertTrue(firstElement.has("count"));
+		assertEquals(1, firstElement.get("count").getAsLong());
 	}
 
 	@Test
