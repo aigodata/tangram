@@ -173,44 +173,48 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 	@Override
 	protected QuerySummary select(Action action) {
-		// 说明: 6.8.2 以及之前的版本, SQL分页只支持 LIMIT, 不支持 OFFSET
-		// 所有在这里, 分页查询通过将 SQL translate, 再进行查询
-
 		// Build query
 		ElasticsearchSQLBuilder sqlBuilder = new ElasticsearchSQLBuilder(action);
 		sqlBuilder.toSelectWithoutLimit();
 		String sql = sqlBuilder.getSql();
 		Object[] params = sqlBuilder.getParams().toArray();
-		String fullSql = fill(sql, params);
-		// translate
-		String nativeQueryString = translateSQL(fullSql);
-		JsonObject query = App.gson().fromJson(nativeQueryString, JsonObject.class);
-
-		// aggregations
-		if (action.isGroup()) {
-			processAggrQuery(query);
-		}
-		// limit
 		if (action.isLimit()) {
-			LimitItem limitItem = action.getLimitItem();
-			long from = limitItem.getStart();
-			long size = limitItem.getLimit();
-			if (action.isGroup()) {
-				processAggrLimit(query, from, size);
-			} else {
-				query.addProperty(LIMIT_FROM, from);
-				query.addProperty(LIMIT_SIZE, size);
-			}
-		}
-		// Request
-		TableItem tableItem = action.getTableItems().get(0);
-		Table table = tableItem.getTable();
-		String index = table != null ? table.getName() : tableItem.getExpression();
-		String endpoint = REQUEST_ENDPOINT_ROOT + index + REQUEST_ENDPOINT_SEARCH;
-		String statement = query.toString();
-		String resultString = request(REQUEST_METHOD_GET, endpoint, statement);
+			// 说明: 6.8.2 以及之前的版本, SQL分页只支持 LIMIT, 不支持 OFFSET
+			// 所有在这里, 分页查询通过将 SQL translate, 再进行查询
 
-		return new ElasticsearchQuerySummary(action, resultString);
+			String fullSql = fill(sql, params);
+			// translate
+			String nativeQueryString = translateSQL(fullSql);
+			JsonObject query = App.gson().fromJson(nativeQueryString, JsonObject.class);
+
+			// aggregations
+			if (action.isGroup()) {
+				processAggrQuery(query);
+			}
+			// limit
+			if (action.isLimit()) {
+				LimitItem limitItem = action.getLimitItem();
+				long from = limitItem.getStart();
+				long size = limitItem.getLimit();
+				if (action.isGroup()) {
+					processAggrLimit(query, from, size);
+				} else {
+					query.addProperty(LIMIT_FROM, from);
+					query.addProperty(LIMIT_SIZE, size);
+				}
+			}
+			// Request
+			TableItem tableItem = action.getTableItems().get(0);
+			Table table = tableItem.getTable();
+			String index = table != null ? table.getName() : tableItem.getExpression();
+			String endpoint = REQUEST_ENDPOINT_ROOT + index + REQUEST_ENDPOINT_SEARCH;
+			String statement = query.toString();
+			String resultString = request(REQUEST_METHOD_GET, endpoint, statement);
+			return new ElasticsearchQuerySummary(action, resultString);
+		} else {
+			String resultString = runSQL(sql, params);
+			return new ElasticsearchSQLQuerySummary(action, resultString);
+		}
 	}
 
 	@Override
