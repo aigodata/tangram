@@ -7,12 +7,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.ParseException;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
+import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
@@ -118,6 +120,9 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 						findAllColumns(Arrays.asList(columnName), paths, columnProperties);
 						for (List<String> list : paths) {
 							String objectColumnName = String.join(".", list);
+							if ("query.match_all".equals(objectColumnName)) { // 跳过内置字段
+								continue;
+							}
 							DefaultColumn column = new DefaultColumn(table, new ElasticsearchColumnType(typeName),
 									objectColumnName);
 							table.addColumn(column);
@@ -187,21 +192,17 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 			String nativeQueryString = translateSQL(fullSql);
 			JsonObject query = App.gson().fromJson(nativeQueryString, JsonObject.class);
 
+			// limit
+			LimitItem limitItem = action.getLimitItem();
+			long from = limitItem.getStart();
+			long size = limitItem.getLimit();
 			// aggregations
 			if (action.isGroup()) {
 				processAggrQuery(query);
-			}
-			// limit
-			if (action.isLimit()) {
-				LimitItem limitItem = action.getLimitItem();
-				long from = limitItem.getStart();
-				long size = limitItem.getLimit();
-				if (action.isGroup()) {
-					processAggrLimit(query, from, size);
-				} else {
-					query.addProperty(LIMIT_FROM, from);
-					query.addProperty(LIMIT_SIZE, size);
-				}
+				processAggrLimit(query, from, size);
+			} else {
+				query.addProperty(LIMIT_FROM, from);
+				query.addProperty(LIMIT_SIZE, size);
 			}
 			// Request
 			TableItem tableItem = action.getTableItems().get(0);
@@ -327,7 +328,19 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		try {
 			Response response = client.getLowLevelClient().performRequest(request);
 			return EntityUtils.toString(response.getEntity());
-		} catch (ParseException | IOException e) {
+		} catch (ResponseException e) {
+			String message = e.getMessage();
+			Response response = e.getResponse();
+			HttpEntity entity = response.getEntity();
+			if (entity != null) {
+				try {
+					message = EntityUtils.toString(entity);
+				} catch (ParseException | IOException e1) {
+					throw new ElasticsearchException("Elasticsearch Request failed", e1);
+				}
+			}
+			throw new ElasticsearchException(message);
+		} catch (IOException e) {
 			throw new ElasticsearchException("Elasticsearch Request failed", e);
 		}
 	}
