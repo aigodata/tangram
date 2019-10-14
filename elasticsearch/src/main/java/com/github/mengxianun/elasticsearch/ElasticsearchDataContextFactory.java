@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.DataContextFactory;
-import com.github.mengxianun.elasticsearch.attributes.ElasticsearchDatasourceAttributes;
+import com.github.mengxianun.elasticsearch.attributes.ElasticsearchDatasourceConfig;
 import com.google.auto.service.AutoService;
 import com.google.gson.JsonObject;
 
@@ -26,7 +26,7 @@ public class ElasticsearchDataContextFactory implements DataContextFactory {
 
 	@Override
 	public ElasticsearchDataContext create(JsonObject dataSourceJsonObject) {
-		String multiUrl = dataSourceJsonObject.get(ElasticsearchDatasourceAttributes.URL).getAsString();
+		String multiUrl = dataSourceJsonObject.get(ElasticsearchDatasourceConfig.URL).getAsString();
 		List<HttpHost> httpHosts = createHttpHost(multiUrl);
 		return new ElasticsearchDataContext(httpHosts.stream().toArray(HttpHost[]::new));
 	}
