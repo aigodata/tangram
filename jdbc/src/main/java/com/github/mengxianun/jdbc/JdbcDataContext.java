@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.sql.DataSource;
 
@@ -92,10 +93,7 @@ public class JdbcDataContext extends AbstractDataContext {
 	}
 
 	public JdbcDataContext(DataSource dataSource, TableType[] tableTypes) {
-		if (dataSource == null) {
-			throw new IllegalArgumentException("DataSource cannot be null");
-		}
-		this.dataSource = dataSource;
+		this.dataSource = Objects.requireNonNull(dataSource);
 		this.tableTypes = tableTypes;
 		this.runner = new QueryRunner(dataSource);
 		closeConnection.set(true);
