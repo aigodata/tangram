@@ -85,7 +85,7 @@ public interface DataContext {
 	public Set<RelationshipPath> getRelationships(Table primaryTable, Table foreignTable);
 
 	/**
-	 * 获取2个表的关联关系类型. 多层关联的情况下, 以首尾的关系为最终关系. 如 A 一对多 B, B 多对一 C, 则 A 一对一 C
+	 * 获取2个表的关联关系类型. 多层关联的情况下, 以多的一端为最终关系. 如 A 一对多 B, B 多对一 C, 则 A 一对多 C
 	 * 
 	 * @param primaryTable
 	 * @param foreignTable
