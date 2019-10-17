@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -36,13 +37,13 @@ import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
-import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableType;
 import com.github.mengxianun.elasticsearch.data.ElasticsearchQuerySummary;
 import com.github.mengxianun.elasticsearch.data.ElasticsearchSQLQuerySummary;
 import com.github.mengxianun.elasticsearch.dialect.ElasticsearchDialect;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchColumnType;
+import com.github.mengxianun.elasticsearch.schema.ElasticsearchTable;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -57,6 +58,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	private static final String REQUEST_METHOD_POST = "POST";
 	private static final String REQUEST_ENDPOINT_ROOT = "/";
 	private static final String REQUEST_ENDPOINT_MAPPING = "/_mapping";
+	private static final String REQUEST_ENDPOINT_ALIAS = "/_alias";
 	private static final String REQUEST_ENDPOINT_SEARCH = "/_search";
 	private static final String REQUEST_ENDPOINT_SQL = "/_xpack/sql";
 	private static final String REQUEST_ENDPOINT_SQL_TRANSLATE = "/_xpack/sql/translate";
@@ -94,13 +96,18 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	}
 
 	private void loadMetadata(String schemaName, String tableName) {
+		loadMapping(schemaName, tableName);
+		loadAlias(schemaName, tableName);
+	}
+
+	private void loadMapping(String schemaName, String tableName) {
 		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaName);
 		String mappingString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_MAPPING);
 		JsonObject mappingObject = App.gson().fromJson(mappingString, JsonObject.class);
 		for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
 			String index = entry.getKey();
 			JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
-			DefaultTable table = new DefaultTable(index, TableType.TABLE, schema);
+			ElasticsearchTable table = new ElasticsearchTable(index, TableType.TABLE, schema);
 			schema.addTable(table);
 
 			logger.info("Find elasticsearch index [{}]", index);
@@ -136,6 +143,20 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 					}
 				}
 			}
+		}
+	}
+
+	private void loadAlias(String schemaName, String tableName) {
+		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaName);
+		String aliasString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_ALIAS);
+		JsonObject aliasObject = App.gson().fromJson(aliasString, JsonObject.class);
+		for (Entry<String, JsonElement> entry : aliasObject.entrySet()) {
+			String index = entry.getKey();
+			Set<String> aliases = entry.getValue().getAsJsonObject().getAsJsonObject("aliases").keySet();
+			ElasticsearchTable table = (ElasticsearchTable) schema.getTableByName(index);
+			table.addAliases(aliases);
+
+			logger.info("Find elasticsearch index [{}] alias [{}]", index, aliases);
 		}
 	}
 
