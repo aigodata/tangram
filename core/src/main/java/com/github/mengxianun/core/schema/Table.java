@@ -7,28 +7,26 @@ import com.google.gson.JsonObject;
 
 public interface Table extends Name {
 
-	public Schema getSchema();
+	Schema getSchema();
 
-	public TableType getType();
+	TableType getType();
 
-	public int getColumnCount();
+	int getColumnCount();
 
-	public List<Column> getColumns();
+	List<Column> getColumns();
 
-	public List<String> getColumnNames();
+	List<String> getColumnNames();
 
-	public Column getColumnByName(String columnName);
+	Column getColumnByName(String columnName);
 
-	public List<Column> getPrimaryKeys();
+	List<Column> getPrimaryKeys();
 
-	public String getRemarks();
+	String getDisplayName();
 
-	public String getDisplayName();
+	Map<String, Object> getInfo();
 
-	public Map<String, Object> getInfo();
+	JsonObject getConfig();
 
-	public JsonObject getConfig();
-
-	default void setConfig(JsonObject config) {}
+	void setConfig(JsonObject config);
 
 }

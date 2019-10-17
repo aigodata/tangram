@@ -9,43 +9,23 @@ import java.util.stream.Collectors;
 import com.github.mengxianun.core.config.TableConfig;
 import com.google.gson.JsonObject;
 
-@Deprecated
-public class DefaultTable implements Table {
+public abstract class AbstractTable implements Table {
 
-	private String name;
-	private TableType type;
-	private Schema schema;
-	private String remarks;
-	private List<Column> columns;
-	private List<Column> primaryKeys;
+	protected final String name;
+	protected final TableType type;
+	protected final Schema schema;
+	protected final List<Column> columns;
+	protected final List<Column> primaryKeys;
 
 	// 自定义配置信息
-	private JsonObject config = new JsonObject();
+	protected JsonObject config = new JsonObject();
 
-	public DefaultTable() {
+	public AbstractTable(String name, TableType type, Schema schema) {
+		this.name = name;
+		this.type = type;
+		this.schema = schema;
 		this.columns = new ArrayList<>();
 		this.primaryKeys = new ArrayList<>();
-	}
-
-	public DefaultTable(String name) {
-		this();
-		this.name = name;
-	}
-
-	public DefaultTable(String name, TableType type) {
-		this(name);
-		this.type = type;
-
-	}
-
-	public DefaultTable(String name, TableType type, Schema schema) {
-		this(name, type);
-		this.schema = schema;
-	}
-
-	public DefaultTable(String name, TableType type, Schema schema, String remarks) {
-		this(name, type, schema);
-		this.remarks = remarks;
 	}
 
 	@Override
@@ -75,7 +55,7 @@ public class DefaultTable implements Table {
 
 	@Override
 	public List<String> getColumnNames() {
-		return columns.stream().map(column -> column.getName()).collect(Collectors.toList());
+		return columns.stream().map(Column::getName).collect(Collectors.toList());
 	}
 
 	@Override
@@ -111,11 +91,6 @@ public class DefaultTable implements Table {
 		return primaryKeys;
 	}
 
-	//	@Override
-	public String getRemarks() {
-		return remarks;
-	}
-
 	@Override
 	public String getDisplayName() {
 		if (config != null && config.has(TableConfig.DISPLAY)) {
@@ -129,7 +104,6 @@ public class DefaultTable implements Table {
 		Map<String, Object> info = new HashMap<>();
 		info.put("name", name);
 		info.put("type", type.name());
-		info.put("remarks", remarks);
 
 		List<Map<String, Object>> columnsInfo = new ArrayList<>();
 		columns.forEach(e -> columnsInfo.add(e.getInfo()));
@@ -140,6 +114,11 @@ public class DefaultTable implements Table {
 	@Override
 	public JsonObject getConfig() {
 		return config;
+	}
+
+	@Override
+	public void setConfig(JsonObject config) {
+		this.config = config;
 	}
 
 	public void addColumn(Column column) {
@@ -161,34 +140,6 @@ public class DefaultTable implements Table {
 
 	public void addPrimaryKey(String columnName) {
 		addPrimaryKey(getColumnByName(columnName));
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public void setSchema(Schema schema) {
-		this.schema = schema;
-	}
-
-	public void setType(TableType type) {
-		this.type = type;
-	}
-
-	public void setRemarks(String remarks) {
-		this.remarks = remarks;
-	}
-
-	public void setColumns(List<Column> columns) {
-		this.columns = columns;
-	}
-
-	public void setPrimaryKeys(List<Column> primaryKeys) {
-		this.primaryKeys = primaryKeys;
-	}
-
-	public void setConfig(JsonObject config) {
-		this.config = config;
 	}
 
 }

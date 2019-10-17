@@ -35,7 +35,6 @@ import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
-import com.github.mengxianun.core.schema.DefaultTable;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableType;
@@ -47,6 +46,7 @@ import com.github.mengxianun.jdbc.dialect.JdbcDialect;
 import com.github.mengxianun.jdbc.dialect.MySQLDialect;
 import com.github.mengxianun.jdbc.dialect.PostgreSQLDialect;
 import com.github.mengxianun.jdbc.schema.JdbcColumnType;
+import com.github.mengxianun.jdbc.schema.JdbcTable;
 import com.google.common.base.Strings;
 
 public class JdbcDataContext extends AbstractDataContext {
@@ -174,7 +174,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			String tableTypeName = tablesResultSet.getString(4);
 			TableType tableType = TableType.getTableType(tableTypeName);
 			String remarks = tablesResultSet.getString(5);
-			schema.addTable(new DefaultTable(tableName, tableType, schema, remarks));
+			schema.addTable(new JdbcTable(tableName, tableType, schema, remarks));
 
 			logger.info("Find [{}] table [{}]", databaseProductName, tableName);
 		}
@@ -191,7 +191,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			Boolean columnNullable = columnsResultSet.getBoolean(11);
 			String columnRemarks = columnsResultSet.getString(12);
 
-			DefaultTable table = (DefaultTable) metadata.getTable(schemaPattern, columnTable);
+			JdbcTable table = (JdbcTable) metadata.getTable(schemaPattern, columnTable);
 			ColumnType columnType = new JdbcColumnType(Integer.parseInt(columnDataType), columnTypeName);
 			table.addColumn(
 					new DefaultColumn(table, columnType, columnName, columnNullable, columnRemarks, columnSize));
@@ -202,7 +202,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			ResultSet primaryKeysResultSet = databaseMetaData.getPrimaryKeys(catalog, schemaPattern, table.getName());
 			while (primaryKeysResultSet.next()) {
 				String columnName = primaryKeysResultSet.getString(4);
-				((DefaultTable) table).addPrimaryKey(columnName);
+				((JdbcTable) table).addPrimaryKey(columnName);
 			}
 		}
 	}
