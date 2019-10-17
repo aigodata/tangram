@@ -149,6 +149,9 @@ public class SQLBuilder {
 	}
 
 	public String toColumns(List<ColumnItem> columnItems) {
+		if (columnItems.isEmpty()) {
+			return "*";
+		}
 		StringBuilder columnsBuilder = new StringBuilder();
 		boolean comma = false;
 		for (ColumnItem columnItem : columnItems) {

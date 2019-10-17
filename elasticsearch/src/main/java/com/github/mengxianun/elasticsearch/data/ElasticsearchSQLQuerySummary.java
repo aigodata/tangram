@@ -7,9 +7,12 @@ import java.util.Map;
 
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.App;
+import com.github.mengxianun.core.data.DefaultHeader;
 import com.github.mengxianun.core.data.DefaultRow;
+import com.github.mengxianun.core.data.Header;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.data.summary.QuerySummary;
+import com.github.mengxianun.core.item.ColumnItem;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -27,12 +30,26 @@ public class ElasticsearchSQLQuerySummary extends QuerySummary {
 		this.resultString = resultString;
 	}
 
+	private Header createHeader(JsonObject resultObject) {
+		JsonArray columnsArray = resultObject.getAsJsonArray("columns");
+		List<ColumnItem> columnItems = new ArrayList<>();
+		columnsArray.forEach(c -> {
+			JsonObject columnObject = c.getAsJsonObject();
+			String column = columnObject.get("name").getAsString();
+			columnItems.add(new ColumnItem(column));
+		});
+		return new DefaultHeader(columnItems);
+	}
+
 	@Override
 	public List<Row> toRows() {
 		List<Row> rows = new ArrayList<>();
 		JsonObject jsonObject = App.gson().fromJson(resultString, JsonObject.class);
+		List<ColumnItem> columnItems = action.getColumnItems();
+		Header rowHeader = columnItems.isEmpty() ? createHeader(jsonObject) : header;
+
 		JsonArray rowsArray = jsonObject.getAsJsonArray("rows");
-		rowsArray.forEach(e -> rows.add(new DefaultRow(null, App.gson().fromJson(e, Object[].class))));
+		rowsArray.forEach(e -> rows.add(new DefaultRow(rowHeader, App.gson().fromJson(e, Object[].class))));
 		return rows;
 	}
 

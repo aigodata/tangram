@@ -35,6 +35,10 @@ public class SelectTest extends TestSupport {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_star_table.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertEquals(12, result.size());
+		JsonObject firstElement = result.get(0).getAsJsonObject();
+		assertTrue(firstElement.has("age"));
+		assertTrue(firstElement.has("info.birth"));
+		assertTrue(firstElement.has("name"));
 	}
 
 	@Test

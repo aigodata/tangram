@@ -7,18 +7,20 @@ import com.github.mengxianun.core.schema.Column;
 
 public interface Row {
 
-	public Object getValue(ColumnItem item);
+	Header getHeader();
 
-	public Object getValue(Column column);
+	Object getValue(ColumnItem item);
 
-	public Object getValue(String columnName);
+	Object getValue(Column column);
 
-	public Object getValue(int index);
+	Object getValue(String columnName);
 
-	public Object[] getValues();
+	Object getValue(int index);
 
-	public List<ColumnItem> getColumnItems();
+	Object[] getValues();
 
-	public int size();
+	List<ColumnItem> getColumnItems();
+
+	int size();
 
 }

@@ -156,7 +156,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 			ElasticsearchTable table = (ElasticsearchTable) schema.getTableByName(index);
 			table.addAliases(aliases);
 
-			logger.info("Find elasticsearch index [{}] alias [{}]", index, aliases);
+			logger.info("Find elasticsearch index [{}] alias {}", index, aliases);
 		}
 	}
 

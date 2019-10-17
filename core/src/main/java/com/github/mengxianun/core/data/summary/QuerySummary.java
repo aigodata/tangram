@@ -8,14 +8,14 @@ import java.util.Map;
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.config.ResultAttributes;
 import com.github.mengxianun.core.data.AbstractSummary;
-import com.github.mengxianun.core.data.DataSetHeader;
-import com.github.mengxianun.core.data.DefaultDataSetHeader;
+import com.github.mengxianun.core.data.DefaultHeader;
+import com.github.mengxianun.core.data.Header;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.item.LimitItem;
 
 public abstract class QuerySummary extends AbstractSummary {
 
-	protected DataSetHeader header;
+	protected Header header;
 	private List<Row> rows;
 	private int index;
 
@@ -29,7 +29,7 @@ public abstract class QuerySummary extends AbstractSummary {
 	public QuerySummary(Action action, List<Map<String, Object>> values, long total) {
 		super(action, values);
 		if (action != null) {
-			this.header = new DefaultDataSetHeader(action.getColumnItems());
+			this.header = new DefaultHeader(action.getColumnItems());
 		}
 		this.values = values;
 		this.total = total;

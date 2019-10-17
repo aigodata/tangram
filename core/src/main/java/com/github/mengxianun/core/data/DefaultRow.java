@@ -7,7 +7,7 @@ public class DefaultRow extends AbstractRow {
 
 	private final Object[] values;
 
-	public DefaultRow(DataSetHeader header, Object[] values) {
+	public DefaultRow(Header header, Object[] values) {
 		super(header);
 		this.values = values;
 	}

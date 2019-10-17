@@ -396,7 +396,7 @@ public class CRUDActionParser extends AbstractActionParser {
 				columnItems.addAll(parseColumn(columnInfo));
 			}
 		}
-		columnItems = removeExcludeColumns(columnItems);
+		removeExcludeColumns(columnItems);
 		columnItems.forEach(e -> {
 			action.addColumnItem(e);
 			tempAliasColumnItems.put(e.getAlias(), e);
@@ -464,7 +464,7 @@ public class CRUDActionParser extends AbstractActionParser {
 		return columnItems;
 	}
 
-	private List<ColumnItem> removeExcludeColumns(List<ColumnItem> columnItems) {
+	private void removeExcludeColumns(List<ColumnItem> columnItems) {
 		List<ColumnInfo> excludeColumns = simpleInfo.excludeColumns();
 		List<ColumnItem> removeColumnItems = new ArrayList<>();
 		for (ColumnInfo columnInfo : excludeColumns) {
@@ -481,7 +481,6 @@ public class CRUDActionParser extends AbstractActionParser {
 			}
 		}
 		columnItems.removeAll(removeColumnItems);
-		return columnItems;
 	}
 
 	/**
@@ -505,7 +504,7 @@ public class CRUDActionParser extends AbstractActionParser {
 	private List<ColumnItem> createMainTableItemColumns(TableItem tableItem) {
 		Table table = tableItem.getTable();
 		if (table == null) {
-			return Lists.newArrayList(new ColumnItem("*"));
+			return Collections.emptyList();
 		}
 		return table.getColumns().stream()
 				.map(e -> new ColumnItem(e, getColumnAlias(e), false, tableItem)).collect(Collectors.toList());

@@ -82,7 +82,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 	 * @return
 	 */
 	private Map<TableItem, JsonObject> parseTableItemValues(Row row) {
-		List<ColumnItem> columnItems = action.getColumnItems();
+		List<ColumnItem> columnItems = row.getHeader().getColumnItems();
 		Map<TableItem, JsonObject> tableItemValues = new LinkedHashMap<>();
 		// 获取每个表的数据
 		for (int x = 0; x < columnItems.size(); x++) {
@@ -232,7 +232,7 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			return UUID.randomUUID().toString();
 		}
 		StringBuilder uniqueKey = new StringBuilder();
-		List<ColumnItem> columnItems = action.getColumnItems();
+		List<ColumnItem> columnItems = row.getHeader().getColumnItems();
 		for (int i = 0; i < columnItems.size(); i++) {
 			ColumnItem columnItem = columnItems.get(i);
 			if (!(columnItem instanceof JoinColumnItem)) { // 主表列

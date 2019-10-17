@@ -8,10 +8,15 @@ import com.google.common.base.Strings;
 
 public abstract class AbstractRow implements Row {
 
-	private final DataSetHeader header;
+	private final Header header;
 
-	public AbstractRow(DataSetHeader header) {
+	public AbstractRow(Header header) {
 		this.header = header;
+	}
+
+	@Override
+	public Header getHeader() {
+		return header;
 	}
 
 	@Override

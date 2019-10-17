@@ -6,11 +6,11 @@ import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.schema.Column;
 import com.google.common.base.Strings;
 
-public class DefaultDataSetHeader implements DataSetHeader {
+public class DefaultHeader implements Header {
 
 	private final List<ColumnItem> items;
 
-	public DefaultDataSetHeader(List<ColumnItem> items) {
+	public DefaultHeader(List<ColumnItem> items) {
 		this.items = items;
 	}
 

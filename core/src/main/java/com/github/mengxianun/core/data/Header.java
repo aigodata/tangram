@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.github.mengxianun.core.item.ColumnItem;
 
-public interface DataSetHeader {
+public interface Header {
 
 	public List<ColumnItem> getColumnItems();
 
