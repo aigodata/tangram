@@ -128,6 +128,10 @@ public abstract class AbstractTable implements Table {
 		}
 	}
 
+	public void addColumns(List<Column> columns) {
+		columns.forEach(this::addColumn);
+	}
+
 	public void removeColumn(Column column) {
 		columns.remove(column);
 	}

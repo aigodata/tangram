@@ -44,6 +44,7 @@ import com.github.mengxianun.elasticsearch.data.ElasticsearchSQLQuerySummary;
 import com.github.mengxianun.elasticsearch.dialect.ElasticsearchDialect;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchColumnType;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchTable;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -104,49 +105,72 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaName);
 		String mappingString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_MAPPING);
 		JsonObject mappingObject = App.gson().fromJson(mappingString, JsonObject.class);
-		for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
-			String index = entry.getKey();
-			JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
-			ElasticsearchTable table = new ElasticsearchTable(index, TableType.TABLE, schema);
-			schema.addTable(table);
-
-			logger.info("Find elasticsearch index [{}]", index);
-
-			JsonObject mappingNode = mappingMetaData.getAsJsonObject("mappings");
-			if (mappingNode.size() == 0) {
-				continue;
+		int indexNum = mappingObject.keySet().size();
+		if (indexNum <= 0) {
+			return;
+		}
+		if (Strings.isNullOrEmpty(tableName)) { // all
+			for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
+				String index = entry.getKey();
+				JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
+				ElasticsearchTable table = createTable(schema, index, mappingMetaData);
+				schema.addTable(table);
+				logger.info("Find elasticsearch index [{}]", index);
 			}
-			JsonObject defaultTypeMapping = mappingNode.getAsJsonObject(mappingNode.keySet().iterator().next());
-			if (defaultTypeMapping.has("properties")) {
-				JsonObject properties = defaultTypeMapping.getAsJsonObject("properties");
-				for (String columnName : properties.keySet()) {
-					JsonObject columnProperties = properties.getAsJsonObject(columnName);
-					if (columnProperties.has("properties")) { // object type
-						String typeName = ElasticsearchColumnType.OBJECT;
-						List<List<String>> paths = new ArrayList<>();
-						findAllColumns(Arrays.asList(columnName), paths, columnProperties);
-						for (List<String> list : paths) {
-							String objectColumnName = String.join(".", list);
-							if ("query.match_all".equals(objectColumnName)) { // 跳过内置字段
-								continue;
-							}
-							DefaultColumn column = new DefaultColumn(objectColumnName,
-									new ElasticsearchColumnType(typeName), table);
-							table.addColumn(column);
+		} else {
+			ElasticsearchTable esTable = new ElasticsearchTable(tableName, TableType.TABLE, schema);
+			for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
+				String index = entry.getKey();
+				JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
+				ElasticsearchTable table = createTable(schema, index, mappingMetaData);
+				esTable.addColumns(table.getColumns());
+			}
+			schema.addTable(esTable);
+			logger.info("Find elasticsearch index [{}]", tableName);
+		}
+	}
+	
+	private ElasticsearchTable createTable(DefaultSchema schema, String index, JsonObject mappingMetaData) {
+		ElasticsearchTable table = new ElasticsearchTable(index, TableType.TABLE, schema);
+
+		JsonObject mappingNode = mappingMetaData.getAsJsonObject("mappings");
+		if (mappingNode.size() == 0) {
+			return table;
+		}
+		JsonObject defaultTypeMapping = mappingNode.getAsJsonObject(mappingNode.keySet().iterator().next());
+		if (defaultTypeMapping.has("properties")) {
+			JsonObject properties = defaultTypeMapping.getAsJsonObject("properties");
+			for (String columnName : properties.keySet()) {
+				JsonObject columnProperties = properties.getAsJsonObject(columnName);
+				if (columnProperties.has("properties")) { // object type
+					String typeName = ElasticsearchColumnType.OBJECT;
+					List<List<String>> paths = new ArrayList<>();
+					findAllColumns(Arrays.asList(columnName), paths, columnProperties);
+					for (List<String> list : paths) {
+						String objectColumnName = String.join(".", list);
+						if ("query.match_all".equals(objectColumnName)) { // skip built-in column
+							continue;
 						}
-					} else {
-						String typeName = columnProperties.has("type") ? columnProperties.get("type").getAsString()
-								: null;
-						DefaultColumn column = new DefaultColumn(columnName,
+						DefaultColumn column = new DefaultColumn(objectColumnName,
 								new ElasticsearchColumnType(typeName), table);
 						table.addColumn(column);
 					}
+				} else {
+					String typeName = columnProperties.has("type") ? columnProperties.get("type").getAsString()
+							: null;
+					DefaultColumn column = new DefaultColumn(columnName,
+							new ElasticsearchColumnType(typeName), table);
+					table.addColumn(column);
 				}
 			}
 		}
+		return table;
 	}
 
 	private void loadAlias(String schemaName, String tableName) {
+		if (Strings.isNullOrEmpty(tableName)) {
+			return;
+		}
 		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaName);
 		String aliasString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_ALIAS);
 		JsonObject aliasObject = App.gson().fromJson(aliasString, JsonObject.class);
