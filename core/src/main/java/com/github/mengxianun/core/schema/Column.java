@@ -6,19 +6,11 @@ import com.google.gson.JsonObject;
 
 public interface Column extends Name {
 
-	public Table getTable();
-
 	public ColumnType getType();
 
-	public Boolean isNullable();
-
-	public String getRemarks();
-
-	public Integer getColumnSize();
+	public Table getTable();
 
 	public boolean isPrimaryKey();
-
-	public Column getRelationColumn();
 
 	public Map<String, Object> getInfo();
 

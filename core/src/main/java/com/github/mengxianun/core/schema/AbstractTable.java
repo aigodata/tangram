@@ -17,7 +17,7 @@ public abstract class AbstractTable implements Table {
 	protected final List<Column> columns;
 	protected final List<Column> primaryKeys;
 
-	// 自定义配置信息
+	// custom config
 	protected JsonObject config = new JsonObject();
 
 	public AbstractTable(String name, TableType type, Schema schema) {

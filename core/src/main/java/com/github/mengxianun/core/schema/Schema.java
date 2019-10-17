@@ -5,8 +5,6 @@ import java.util.Map;
 
 public interface Schema extends Name {
 
-	public String getCatalog();
-
 	public int getTableCount();
 
 	public List<Table> getTables();

@@ -33,8 +33,6 @@ import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
-import com.github.mengxianun.core.schema.DefaultColumn;
-import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableType;
@@ -45,7 +43,9 @@ import com.github.mengxianun.jdbc.dialect.H2Dialect;
 import com.github.mengxianun.jdbc.dialect.JdbcDialect;
 import com.github.mengxianun.jdbc.dialect.MySQLDialect;
 import com.github.mengxianun.jdbc.dialect.PostgreSQLDialect;
+import com.github.mengxianun.jdbc.schema.JdbcColumn;
 import com.github.mengxianun.jdbc.schema.JdbcColumnType;
+import com.github.mengxianun.jdbc.schema.JdbcSchema;
 import com.github.mengxianun.jdbc.schema.JdbcTable;
 import com.google.common.base.Strings;
 
@@ -146,7 +146,7 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	public void initMetadata() {
-		DefaultSchema schema = new DefaultSchema(defaultSchema, catalog);
+		JdbcSchema schema = new JdbcSchema(defaultSchema, catalog);
 		metadata.addSchema(schema);
 		// Init all tables metadata
 		loadMetadata(defaultSchema, "%");
@@ -167,7 +167,7 @@ public class JdbcDataContext extends AbstractDataContext {
 	private void loadMetadata(DatabaseMetaData databaseMetaData, String catalog, String schemaPattern,
 			String tableNamePattern, String[] types, String columnNamePattern) throws SQLException {
 		// table metadata
-		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaPattern);
+		JdbcSchema schema = (JdbcSchema) metadata.getSchema(schemaPattern);
 		ResultSet tablesResultSet = databaseMetaData.getTables(catalog, schemaPattern, tableNamePattern, types);
 		while (tablesResultSet.next()) {
 			String tableName = tablesResultSet.getString(3);
@@ -194,7 +194,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			JdbcTable table = (JdbcTable) metadata.getTable(schemaPattern, columnTable);
 			ColumnType columnType = new JdbcColumnType(Integer.parseInt(columnDataType), columnTypeName);
 			table.addColumn(
-					new DefaultColumn(table, columnType, columnName, columnNullable, columnRemarks, columnSize));
+					new JdbcColumn(columnName, columnType, table, columnNullable, columnRemarks, columnSize));
 		}
 
 		// primary key

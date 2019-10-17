@@ -130,15 +130,15 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 							if ("query.match_all".equals(objectColumnName)) { // 跳过内置字段
 								continue;
 							}
-							DefaultColumn column = new DefaultColumn(table, new ElasticsearchColumnType(typeName),
-									objectColumnName);
+							DefaultColumn column = new DefaultColumn(objectColumnName,
+									new ElasticsearchColumnType(typeName), table);
 							table.addColumn(column);
 						}
 					} else {
 						String typeName = columnProperties.has("type") ? columnProperties.get("type").getAsString()
 								: null;
-						DefaultColumn column = new DefaultColumn(table, new ElasticsearchColumnType(typeName),
-								columnName);
+						DefaultColumn column = new DefaultColumn(columnName,
+								new ElasticsearchColumnType(typeName), table);
 						table.addColumn(column);
 					}
 				}
