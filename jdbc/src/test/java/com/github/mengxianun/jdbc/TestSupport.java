@@ -15,13 +15,12 @@ import org.h2.tools.RunScript;
 import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.DefaultTranslator;
-import com.github.mengxianun.core.permission.ColumnAction;
+import com.github.mengxianun.core.permission.Action;
 import com.github.mengxianun.core.permission.ColumnCondition;
 import com.github.mengxianun.core.permission.ColumnPermission;
 import com.github.mengxianun.core.permission.ConnectorCondition;
 import com.github.mengxianun.core.permission.ExpressionCondition;
 import com.github.mengxianun.core.permission.SimpleAuthorizationInfo;
-import com.github.mengxianun.core.permission.TableAction;
 import com.github.mengxianun.core.permission.TableCondition;
 import com.github.mengxianun.core.permission.TablePermission;
 import com.google.common.collect.Lists;
@@ -72,53 +71,53 @@ public class TestSupport {
 	static List<TablePermission> geTablePermissions() {
 		List<TablePermission> tablePermissions = new ArrayList<>();
 		tablePermissions.add(TablePermission.create(null, "permission_all_table"));
-		tablePermissions.add(TablePermission.create("ds", "permission_query_table", TableAction.QUERY));
-		tablePermissions.add(TablePermission.create(null, "permission_add_table", TableAction.from("add")));
-		tablePermissions.add(TablePermission.create(null, "permission_update_table", TableAction.UPDATE));
-		tablePermissions.add(TablePermission.create(null, "permission_delete_table", TableAction.from("delete")));
+		tablePermissions.add(TablePermission.create("ds", "permission_query_table", Action.SELECT));
+		tablePermissions.add(TablePermission.create(null, "permission_add_table", Action.from(2)));
+		tablePermissions.add(TablePermission.create(null, "permission_update_table", Action.UPDATE));
+		tablePermissions.add(TablePermission.create(null, "permission_delete_table", Action.DELETE));
 		// session user condition
 		List<ConnectorCondition> userTableConditions = Lists.newArrayList(ConnectorCondition.create(TableCondition.create("permission_user")));
 		tablePermissions
-				.add(TablePermission.builder().table("permission_condition_user_table").action(TableAction.QUERY)
+				.add(TablePermission.builder().table("permission_condition_user_table").action(Action.SELECT)
 				.conditions(userTableConditions).build());
 		// session role condition
 		List<ConnectorCondition> roleTableConditions = Lists.newArrayList(ConnectorCondition.create(TableCondition.create("permission_role")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_role_table")
-				.action(TableAction.QUERY)
+				.action(Action.SELECT)
 				.conditions(roleTableConditions).build());
 		// expression condition
 		List<ConnectorCondition> expressionConditions = Lists.newArrayList(ConnectorCondition.create(ExpressionCondition.create("id>1")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_expression_table")
-				.action(TableAction.QUERY).conditions(expressionConditions).build());
+				.action(Action.SELECT).conditions(expressionConditions).build());
 		// complex condition
 		List<ConnectorCondition> complexConditions = Lists.newArrayList(
 				ConnectorCondition.create(TableCondition.create("permission_role", "id")),
 				ConnectorCondition.create(ExpressionCondition.create("id<5")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table2")
-				.action(TableAction.QUERY).conditions(complexConditions).build());
+				.action(Action.SELECT).conditions(complexConditions).build());
 		return tablePermissions;
 	}
 
 	static List<ColumnPermission> getColumnPermissions() {
 		List<ColumnPermission> columnPermissions = new ArrayList<>();
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "all_column", ColumnAction.ALL));
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "select_column", ColumnAction.READ));
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "insert_column", ColumnAction.INSERT));
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "update_column", ColumnAction.UPDATE));
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "delete_column", ColumnAction.WRITE));
-		columnPermissions.add(ColumnPermission.create("permission_column_join_table", "name", ColumnAction.UPDATE));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "all_column", Action.ALL));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "select_column", Action.SELECT));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "insert_column", Action.INSERT));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "update_column", Action.UPDATE));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "delete_column", Action.DELETE));
+		columnPermissions.add(ColumnPermission.create("permission_column_join_table", "name", Action.UPDATE));
 		columnPermissions
 				.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_1",
-						ColumnAction.READ,
+						Action.SELECT,
 						Lists.newArrayList(ConnectorCondition.create(ColumnCondition.create("user", "id", 1)))));
 		columnPermissions.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_1",
-				ColumnAction.INSERT,
+				Action.INSERT,
 				Lists.newArrayList(ConnectorCondition.create(ColumnCondition.create("user", "id", 1)))));
 		columnPermissions.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_2",
-				ColumnAction.READ,
+				Action.SELECT,
 				Lists.newArrayList(ConnectorCondition.create(ColumnCondition.create("user", "id", 2)))));
 		columnPermissions.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_2",
-				ColumnAction.INSERT,
+				Action.INSERT,
 				Lists.newArrayList(ConnectorCondition.create(ColumnCondition.create("user", "id", 2)))));
 		return columnPermissions;
 	}

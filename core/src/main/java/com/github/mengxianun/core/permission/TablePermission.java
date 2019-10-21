@@ -2,7 +2,6 @@ package com.github.mengxianun.core.permission;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import javax.annotation.Nullable;
 
@@ -16,14 +15,14 @@ public abstract class TablePermission {
 	}
 
 	public static TablePermission create(@Nullable String source, String table) {
-		return create(source, table, TableAction.ALL);
+		return create(source, table, Action.ALL);
 	}
 
-	public static TablePermission create(@Nullable String source, String table, TableAction action) {
+	public static TablePermission create(@Nullable String source, String table, Action action) {
 		return create(source, table, null, action, Collections.emptyList());
 	}
 
-	public static TablePermission create(@Nullable String source, String table, @Nullable Object id, TableAction action,
+	public static TablePermission create(@Nullable String source, String table, @Nullable Object id, Action action,
 			List<ConnectorCondition> conditions) {
 		return new AutoValue_TablePermission.Builder().source(source).table(table).id(id).action(action)
 				.conditions(conditions).build();
@@ -37,7 +36,7 @@ public abstract class TablePermission {
 	@Nullable
 	public abstract Object id();
 
-	public abstract TableAction action();
+	public abstract Action action();
 
 	public abstract List<ConnectorCondition> conditions();
 
@@ -54,24 +53,11 @@ public abstract class TablePermission {
 
 		public abstract Builder id(Object id);
 
-		public Builder action(String action) {
-			return action(TableAction.from(action));
-		}
-
-		public abstract Builder action(TableAction action);
-
-		abstract Optional<TableAction> action();
+		public abstract Builder action(Action action);
 
 		public abstract Builder conditions(List<ConnectorCondition> conditions);
 
-		abstract TablePermission autoBuild();
-
-		public TablePermission build() {
-			if (!action().isPresent()) {
-				action(TableAction.ALL);
-			}
-			return autoBuild();
-		}
+		public abstract TablePermission build();
 	}
 
 }

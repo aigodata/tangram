@@ -28,26 +28,26 @@ public class Permissions {
 	}
 
 	public static boolean hasTableSelectPermission(String table) {
-		return hasTableActionPermission(table, TableAction.QUERY);
+		return hasActionPermission(table, Action.SELECT);
 	}
 
 	public static boolean hasTableInsertPermission(String table) {
-		return hasTableActionPermission(table, TableAction.ADD);
+		return hasActionPermission(table, Action.INSERT);
 	}
 
 	public static boolean hasTableUpdatePermission(String table) {
-		return hasTableActionPermission(table, TableAction.UPDATE);
+		return hasActionPermission(table, Action.UPDATE);
 	}
 
 	public static boolean hasTableDeletePermission(String table) {
-		return hasTableActionPermission(table, TableAction.DELETE);
+		return hasActionPermission(table, Action.DELETE);
 	}
 
-	private static boolean hasTableActionPermission(String table, TableAction action) {
+	private static boolean hasActionPermission(String table, Action action) {
 		if (hasTablePermission(table)) {
 			List<TablePermission> tablePermissions = App.getTablePermissions(null, table);
 			return tablePermissions.parallelStream()
-					.anyMatch(e -> e.action() == TableAction.ALL || e.action() == action);
+					.anyMatch(e -> e.action() == Action.ALL || e.action() == action);
 		}
 		return false;
 	}
@@ -60,25 +60,25 @@ public class Permissions {
 	}
 
 	public static TablePermissions getTableSelectPermissions(String table) {
-		return getTableActionPermissions(table, TableAction.QUERY);
+		return getActionPermissions(table, Action.SELECT);
 	}
 
 	public static TablePermissions getTableInsertPermissions(String table) {
-		return getTableActionPermissions(table, TableAction.ADD);
+		return getActionPermissions(table, Action.INSERT);
 	}
 
 	public static TablePermissions getTableUpdatePermissions(String table) {
-		return getTableActionPermissions(table, TableAction.UPDATE);
+		return getActionPermissions(table, Action.UPDATE);
 	}
 
 	public static TablePermissions getTableDeletePermissions(String table) {
-		return getTableActionPermissions(table, TableAction.DELETE);
+		return getActionPermissions(table, Action.DELETE);
 	}
 
-	public static TablePermissions getTableActionPermissions(String table, TableAction action) {
+	public static TablePermissions getActionPermissions(String table, Action action) {
 		List<TablePermission> tablePermissions = App.getTablePermissions(null, table);
 		List<ConnectorCondition> conditions = tablePermissions.stream()
-				.filter(e -> e.action() == TableAction.ALL || e.action() == action)
+				.filter(e -> e.action() == Action.ALL || e.action() == action)
 				.flatMap(e -> e.conditions().stream())
 				.collect(Collectors.toList());
 		return new TablePermissions(null, table, conditions);

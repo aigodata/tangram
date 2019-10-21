@@ -67,7 +67,7 @@ public final class PermissionChecker {
 	private static PermissionCheckResult checkTableWithResult(SimpleInfo simpleInfo) {
 		PermissionPolicy policy = App.getPermissionPolicy();
 		List<ConnectorCondition> permissionConditions = new ArrayList<>();
-		TableAction action = getTableAction(simpleInfo.operation());
+		Action action = getAction(simpleInfo.operation());
 		TableInfo primaryTableInfo = simpleInfo.table();
 		List<TableInfo> joinTableInfos = simpleInfo.joins().stream().map(JoinInfo::tableInfo)
 				.collect(Collectors.toList());
@@ -92,8 +92,8 @@ public final class PermissionChecker {
 			boolean configured = false;
 			for (TablePermission tablePermission : tablePermissions) {
 				configured = true;
-				TableAction permissionAction = tablePermission.action();
-				if (action == permissionAction || permissionAction == TableAction.ALL) {
+				Action permissionAction = tablePermission.action();
+				if (action == permissionAction || permissionAction == Action.ALL) {
 					check = true;
 					permissionConditions.addAll(tablePermission.conditions());
 					break;
@@ -215,7 +215,7 @@ public final class PermissionChecker {
 
 	private static PermissionCheckResult checkSelectColumnWithResult(SimpleInfo simpleInfo) {
 		PermissionPolicy policy = App.getPermissionPolicy();
-		ColumnAction action = getColumnAction(simpleInfo.operation());
+		Action action = getAction(simpleInfo.operation());
 		List<ColumnInfo> columns = simpleInfo.columns();
 		List<ColumnInfo> excludeColumns = new ArrayList<>();
 		if (columns.isEmpty()) { // add exclude columns
@@ -281,7 +281,7 @@ public final class PermissionChecker {
 
 	private static PermissionCheckResult checkUpdateColumnWithResult(SimpleInfo simpleInfo) {
 		PermissionPolicy policy = App.getPermissionPolicy();
-		ColumnAction action = getColumnAction(simpleInfo.operation());
+		Action action = getAction(simpleInfo.operation());
 		String source = simpleInfo.table().source();
 		String table = simpleInfo.table().table();
 		List<ColumnInfo> columns = new ArrayList<>();
@@ -318,7 +318,7 @@ public final class PermissionChecker {
 		return PermissionCheckResult.create(true, simpleInfo);
 	}
 
-	private static boolean checkColumn(ColumnInfo columnInfo, ColumnAction action,
+	private static boolean checkColumn(ColumnInfo columnInfo, Action action,
 			List<ColumnPermission> columnPermissions,
 			PermissionPolicy policy) {
 		String source = columnInfo.source();
@@ -327,8 +327,8 @@ public final class PermissionChecker {
 		boolean configured = !columnPermissions.isEmpty();
 		boolean check = false;
 		over: for (ColumnPermission columnPermission : columnPermissions) {
-			ColumnAction columnAction = columnPermission.action();
-			if (action == columnAction || columnAction == ColumnAction.ALL) {
+			Action columnAction = columnPermission.action();
+			if (action == columnAction || columnAction == Action.ALL) {
 				check = true;
 				for (ConnectorCondition connectorCondition : columnPermission.conditions()) {
 					Connector connector = connectorCondition.connector();
@@ -395,44 +395,24 @@ public final class PermissionChecker {
 		return data.parallelStream().map(e -> e.get(column)).collect(Collectors.toList());
 	}
 
-	private static TableAction getTableAction(Operation operation) {
+	private static Action getAction(Operation operation) {
 		switch (operation) {
 		case DETAIL:
 		case SELECT:
 		case SELECT_DISTINCT:
 		case QUERY:
-			return TableAction.QUERY;
+			return Action.SELECT;
 		case INSERT:
-			return TableAction.ADD;
+			return Action.INSERT;
 		case UPDATE:
-			return TableAction.UPDATE;
+			return Action.UPDATE;
 		case DELETE:
-			return TableAction.DELETE;
+			return Action.DELETE;
 
 		default:
 			break;
 		}
-		return TableAction.ALL;
-	}
-
-	private static ColumnAction getColumnAction(Operation operation) {
-		switch (operation) {
-		case DETAIL:
-		case SELECT:
-		case SELECT_DISTINCT:
-		case QUERY:
-			return ColumnAction.READ;
-		case INSERT:
-			return ColumnAction.INSERT;
-		case UPDATE:
-			return ColumnAction.UPDATE;
-		case DELETE:
-			return ColumnAction.WRITE;
-
-		default:
-			break;
-		}
-		return ColumnAction.ALL;
+		return Action.ALL;
 	}
 
 }
