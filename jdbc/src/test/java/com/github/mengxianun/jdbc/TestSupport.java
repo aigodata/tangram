@@ -76,12 +76,14 @@ public class TestSupport {
 		tablePermissions.add(TablePermission.create(null, "permission_update_table", Action.UPDATE));
 		tablePermissions.add(TablePermission.create(null, "permission_delete_table", Action.DELETE));
 		// session user condition
-		List<ConnectorCondition> userTableConditions = Lists.newArrayList(ConnectorCondition.create(TableCondition.create("permission_user")));
+		List<ConnectorCondition> userTableConditions = Lists
+				.newArrayList(ConnectorCondition.create(TableCondition.create("permission_user", "id", "$session")));
 		tablePermissions
 				.add(TablePermission.builder().table("permission_condition_user_table").action(Action.SELECT)
 				.conditions(userTableConditions).build());
 		// session role condition
-		List<ConnectorCondition> roleTableConditions = Lists.newArrayList(ConnectorCondition.create(TableCondition.create("permission_role")));
+		List<ConnectorCondition> roleTableConditions = Lists
+				.newArrayList(ConnectorCondition.create(TableCondition.create("permission_role", "id", "$session")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_role_table")
 				.action(Action.SELECT)
 				.conditions(roleTableConditions).build());
@@ -91,7 +93,7 @@ public class TestSupport {
 				.action(Action.SELECT).conditions(expressionConditions).build());
 		// complex condition
 		List<ConnectorCondition> complexConditions = Lists.newArrayList(
-				ConnectorCondition.create(TableCondition.create("permission_role", "id")),
+				ConnectorCondition.create(TableCondition.create("permission_role", "id", "$session")),
 				ConnectorCondition.create(ExpressionCondition.create("id<5")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table2")
 				.action(Action.SELECT).conditions(complexConditions).build());

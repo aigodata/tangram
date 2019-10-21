@@ -129,18 +129,9 @@ public final class PermissionChecker {
 					source = App.getDefaultDataSource();
 				}
 				String table = tableCondition.table();
-				if (Strings.isNullOrEmpty(table)) {
-					continue;
-				}
 				String column = tableCondition.column();
-				if (Strings.isNullOrEmpty(column)) {
-					//////////////////
-					// optimize
-					//////////////////
-					column = App.getDefaultDataContext().getTable(table).getPrimaryKeys().get(0).getName();
-				}
 				Object value = tableCondition.value();
-				if (value == null) { // session condition
+				if (value != null && "$session".equalsIgnoreCase(value.toString())) { // session condition
 					AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
 					String userTable = authorizationInfo.getUserTable();
 					Object userId = authorizationInfo.getUserId();

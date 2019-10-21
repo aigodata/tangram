@@ -100,7 +100,7 @@ public class Permissions {
 		return null;
 	}
 
-	static class TablePermissions {
+	public static class TablePermissions {
 
 		private String source;
 		private String table;
