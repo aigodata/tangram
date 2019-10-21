@@ -30,6 +30,7 @@ import com.github.mengxianun.core.parser.info.ValuesInfo;
 import com.github.mengxianun.core.parser.info.WhereInfo;
 import com.github.mengxianun.core.parser.info.extension.StatementConditionInfo;
 import com.github.mengxianun.core.parser.info.extension.StatementValueConditionInfo;
+import com.github.mengxianun.core.request.Connector;
 import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.request.Operator;
 import com.github.mengxianun.core.request.RequestKeyword;
@@ -65,8 +66,7 @@ public final class PermissionChecker {
 
 	private static PermissionCheckResult checkTableWithResult(SimpleInfo simpleInfo) {
 		PermissionPolicy policy = App.getPermissionPolicy();
-		List<Condition> permissionConditions = new ArrayList<>();
-		String defaultSource = App.getDefaultDataSource();
+		List<ConnectorCondition> permissionConditions = new ArrayList<>();
 		TableAction action = getTableAction(simpleInfo.operation());
 		TableInfo primaryTableInfo = simpleInfo.table();
 		List<TableInfo> joinTableInfos = simpleInfo.joins().stream().map(JoinInfo::tableInfo)
@@ -80,9 +80,6 @@ public final class PermissionChecker {
 		for (TableInfo tableInfo : actionTableInfos) {
 			String source = tableInfo.source();
 			String table = tableInfo.table();
-			if (Strings.isNullOrEmpty(source)) {
-				source = defaultSource;
-			}
 			if (!App.hasTablePermissions(source, table)) {
 				if (policy == PermissionPolicy.WEAK) {
 					continue;
@@ -114,7 +111,7 @@ public final class PermissionChecker {
 		return PermissionCheckResult.create(true, simpleInfo);
 	}
 
-	public static SimpleInfo applyTableConditions(SimpleInfo simpleInfo, List<Condition> conditions) {
+	public static SimpleInfo applyTableConditions(SimpleInfo simpleInfo, List<ConnectorCondition> conditions) {
 		if (conditions.isEmpty()) {
 			return simpleInfo;
 		}
@@ -122,7 +119,9 @@ public final class PermissionChecker {
 		List<FilterInfo> newConditionFilters = new ArrayList<>();
 		List<StatementValueConditionInfo> statementValueConditions = new ArrayList<>();
 		List<StatementConditionInfo> statementConditions = new ArrayList<>();
-		for (Condition condition : conditions) {
+		for (ConnectorCondition connectorCondition : conditions) {
+			Connector connector = connectorCondition.connector();
+			Condition condition = connectorCondition.condition();
 			if (condition instanceof TableCondition) {
 				TableCondition tableCondition = (TableCondition) condition;
 				String source = tableCondition.source();
@@ -230,12 +229,15 @@ public final class PermissionChecker {
 			actionTableInfos.addAll(joinTableInfos);
 
 			for (TableInfo tableInfo : actionTableInfos) {
-				String tableInfoSource = tableInfo.source();
-				final String source = Strings.isNullOrEmpty(tableInfoSource) ? App.getDefaultDataSource()
-						: tableInfoSource;
+				//				String tableInfoSource = tableInfo.source();
+				//				final String source = Strings.isNullOrEmpty(tableInfoSource) ? App.getDefaultDataSource()
+				//						: tableInfoSource;
+				final String source = tableInfo.source();
 				final String table = tableInfo.table();
-				Map<String, List<ColumnPermission>> columnPermissionsInTable = App.getColumnPermissionsInTable(source,
-						table);
+				//				Map<String, List<ColumnPermission>> columnPermissionsInTable = App.getColumnPermissions(source,
+				//						table);
+				Map<String, List<ColumnPermission>> columnPermissionsInTable = App.getColumnPermissions(source, table)
+						.stream().collect(Collectors.groupingBy(ColumnPermission::column));
 				for (Entry<String, List<ColumnPermission>> entry : columnPermissionsInTable.entrySet()) {
 					String column = entry.getKey();
 					List<ColumnPermission> columnPermissions = entry.getValue();
@@ -254,6 +256,11 @@ public final class PermissionChecker {
 					source = App.getDefaultDataSource();
 				}
 				String table = columnInfo.table();
+				// Default primary table
+				// Check here to avoid null exceptions
+				if (Strings.isNullOrEmpty(table)) {
+					table = simpleInfo.table().table();
+				}
 				String column = columnInfo.column();
 				if (!App.hasColumnPermissions(source, table, column)) {
 					if (policy == PermissionPolicy.WEAK) {
@@ -276,9 +283,6 @@ public final class PermissionChecker {
 		PermissionPolicy policy = App.getPermissionPolicy();
 		ColumnAction action = getColumnAction(simpleInfo.operation());
 		String source = simpleInfo.table().source();
-		if (Strings.isNullOrEmpty(source)) {
-			source = App.getDefaultDataSource();
-		}
 		String table = simpleInfo.table().table();
 		List<ColumnInfo> columns = new ArrayList<>();
 		if (simpleInfo.operation() == Operation.INSERT) {
@@ -326,7 +330,9 @@ public final class PermissionChecker {
 			ColumnAction columnAction = columnPermission.action();
 			if (action == columnAction || columnAction == ColumnAction.ALL) {
 				check = true;
-				for (Condition condition : columnPermission.conditions()) {
+				for (ConnectorCondition connectorCondition : columnPermission.conditions()) {
+					Connector connector = connectorCondition.connector();
+					Condition condition = connectorCondition.condition();
 					if (condition instanceof ColumnCondition) {
 						ColumnCondition columnCondition = (ColumnCondition) condition;
 						Object value = columnCondition.value();

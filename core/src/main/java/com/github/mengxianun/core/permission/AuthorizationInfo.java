@@ -12,12 +12,14 @@ public interface AuthorizationInfo {
 
 	public Object getUserId();
 
-	public List<TablePermission> getTablePermissions();
+	public List<TablePermission> getCurrentTablePermissions();
 
-	public void refreshTablePermissions();
+	public List<TablePermission> getCurrentTablePermissions(String source, String table);
 
-	public List<ColumnPermission> getColumnPermissions();
+	public List<ColumnPermission> getCurrentColumnPermissions();
 
-	public void refreshColumnPermissions();
+	public List<ColumnPermission> getCurrentColumnPermissions(String source, String table);
+
+	public void refresh();
 
 }

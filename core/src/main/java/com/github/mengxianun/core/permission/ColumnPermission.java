@@ -15,7 +15,7 @@ public abstract class ColumnPermission {
 	}
 
 	public static ColumnPermission create(@Nullable String source, String table, String column, ColumnAction action,
-			List<Condition> conditions) {
+			List<ConnectorCondition> conditions) {
 		return new AutoValue_ColumnPermission(source, table, column, action, conditions);
 	}
 
@@ -28,6 +28,6 @@ public abstract class ColumnPermission {
 
 	public abstract ColumnAction action();
 
-	public abstract List<Condition> conditions();
+	public abstract List<ConnectorCondition> conditions();
 
 }

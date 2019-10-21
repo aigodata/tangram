@@ -18,7 +18,7 @@ import com.github.mengxianun.core.DefaultTranslator;
 import com.github.mengxianun.core.permission.ColumnAction;
 import com.github.mengxianun.core.permission.ColumnCondition;
 import com.github.mengxianun.core.permission.ColumnPermission;
-import com.github.mengxianun.core.permission.Condition;
+import com.github.mengxianun.core.permission.ConnectorCondition;
 import com.github.mengxianun.core.permission.ExpressionCondition;
 import com.github.mengxianun.core.permission.SimpleAuthorizationInfo;
 import com.github.mengxianun.core.permission.TableAction;
@@ -77,22 +77,23 @@ public class TestSupport {
 		tablePermissions.add(TablePermission.create(null, "permission_update_table", TableAction.UPDATE));
 		tablePermissions.add(TablePermission.create(null, "permission_delete_table", TableAction.from("delete")));
 		// session user condition
-		List<Condition> userTableConditions = Lists.newArrayList(TableCondition.create("permission_user"));
+		List<ConnectorCondition> userTableConditions = Lists.newArrayList(ConnectorCondition.create(TableCondition.create("permission_user")));
 		tablePermissions
 				.add(TablePermission.builder().table("permission_condition_user_table").action(TableAction.QUERY)
 				.conditions(userTableConditions).build());
 		// session role condition
-		List<Condition> roleTableConditions = Lists.newArrayList(TableCondition.create("permission_role"));
+		List<ConnectorCondition> roleTableConditions = Lists.newArrayList(ConnectorCondition.create(TableCondition.create("permission_role")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_role_table")
 				.action(TableAction.QUERY)
 				.conditions(roleTableConditions).build());
 		// expression condition
-		List<Condition> expressionConditions = Lists.newArrayList(ExpressionCondition.create("id>1"));
+		List<ConnectorCondition> expressionConditions = Lists.newArrayList(ConnectorCondition.create(ExpressionCondition.create("id>1")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_expression_table")
 				.action(TableAction.QUERY).conditions(expressionConditions).build());
 		// complex condition
-		List<Condition> complexConditions = Lists.newArrayList(TableCondition.create("permission_role", "id"),
-				ExpressionCondition.create("id<5"));
+		List<ConnectorCondition> complexConditions = Lists.newArrayList(
+				ConnectorCondition.create(TableCondition.create("permission_role", "id")),
+				ConnectorCondition.create(ExpressionCondition.create("id<5")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table2")
 				.action(TableAction.QUERY).conditions(complexConditions).build());
 		return tablePermissions;
@@ -108,13 +109,17 @@ public class TestSupport {
 		columnPermissions.add(ColumnPermission.create("permission_column_join_table", "name", ColumnAction.UPDATE));
 		columnPermissions
 				.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_1",
-						ColumnAction.READ, Lists.newArrayList(ColumnCondition.create("user", "id", 1))));
+						ColumnAction.READ,
+						Lists.newArrayList(ConnectorCondition.create(ColumnCondition.create("user", "id", 1)))));
 		columnPermissions.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_1",
-				ColumnAction.INSERT, Lists.newArrayList(ColumnCondition.create("user", "id", 1))));
+				ColumnAction.INSERT,
+				Lists.newArrayList(ConnectorCondition.create(ColumnCondition.create("user", "id", 1)))));
 		columnPermissions.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_2",
-				ColumnAction.READ, Lists.newArrayList(ColumnCondition.create("user", "id", 2))));
+				ColumnAction.READ,
+				Lists.newArrayList(ConnectorCondition.create(ColumnCondition.create("user", "id", 2)))));
 		columnPermissions.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_2",
-				ColumnAction.INSERT, Lists.newArrayList(ColumnCondition.create("user", "id", 2))));
+				ColumnAction.INSERT,
+				Lists.newArrayList(ConnectorCondition.create(ColumnCondition.create("user", "id", 2)))));
 		return columnPermissions;
 	}
 
