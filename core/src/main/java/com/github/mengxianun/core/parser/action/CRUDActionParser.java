@@ -643,7 +643,9 @@ public class CRUDActionParser extends AbstractActionParser {
 			String columnName = entry.getKey();
 			Object value = entry.getValue();
 			Column column = getColumn(simpleInfo.table().table(), columnName);
-			valueItems.add(new ValueItem(column, value));
+			if (column != null) { // Ignore incorrect column
+				valueItems.add(new ValueItem(column, value));
+			}
 		}
 		return valueItems;
 	}
