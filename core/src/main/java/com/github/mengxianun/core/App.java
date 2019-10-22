@@ -7,26 +7,18 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.apache.commons.jexl3.JexlBuilder;
-import org.apache.commons.jexl3.JexlContext;
-import org.apache.commons.jexl3.JexlEngine;
-import org.apache.commons.jexl3.JexlExpression;
-import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.config.AssociationType;
-import com.github.mengxianun.core.config.ColumnConfig;
 import com.github.mengxianun.core.config.GlobalConfig;
-import com.github.mengxianun.core.config.TableConfig;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.permission.AuthorizationInfo;
 import com.github.mengxianun.core.permission.ColumnPermission;
 import com.github.mengxianun.core.permission.PermissionPolicy;
 import com.github.mengxianun.core.permission.TablePermission;
 import com.github.mengxianun.core.schema.Column;
-import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
@@ -200,22 +192,6 @@ public final class App {
 		getAuthorizationInfo().refresh();
 	}
 
-	/**
-	 * 获取表或者列等的别名, 根据配置的别名表达式
-	 * 
-	 * @param element
-	 *            获取别名的元素, 比如表或者列等
-	 * @return Alias
-	 */
-	public static String getAliasKey(String element) {
-		JexlEngine jexl = new JexlBuilder().create();
-		String jexlExp = App.Config.getString(GlobalConfig.TABLE_ALIAS_EXPRESSION);
-		JexlExpression e = jexl.createExpression(jexlExp);
-		JexlContext jc = new MapContext();
-		jc.set("$", element);
-		return e.evaluate(jc).toString();
-	}
-
 	public static Injector injector() {
 		return injector;
 	}
@@ -302,89 +278,6 @@ public final class App {
 		
 		public static boolean columnAliasEnabled() {
 			return dialect().columnAliasEnabled();
-		}
-
-		public static Schema defaultSchema() {
-			return currentDataContext().getDefaultSchema();
-		}
-
-		public static Schema getSchema(String schemaName) {
-			return currentDataContext().getSchema(schemaName);
-		}
-
-		@Deprecated
-		public static Table getTable(String nameOrAlias) {
-			// 1 根据别名查询
-			Schema schema = currentDataContext().getDefaultSchema();
-			List<Table> tables = schema.getTables();
-			for (Table table : tables) {
-				if (table.getConfig().has(TableConfig.ALIAS)) { // 表配置文件配置的表别名
-					String alias = table.getConfig().get(TableConfig.ALIAS).getAsString();
-					if (alias.equals(nameOrAlias)) {
-						return table;
-					}
-				} else if (Config.has(GlobalConfig.TABLE_ALIAS_EXPRESSION)) { // 全局配置的表别名
-					if (nameOrAlias.equalsIgnoreCase(getAliasKey(table.getName()))) {
-						return table;
-					}
-				}
-			}
-			// 2 根据实名查询
-			return currentDataContext().getTable(nameOrAlias);
-		}
-
-		public static Table getTable(String schemaName, String tableName) {
-			return currentDataContext().getTable(schemaName, tableName);
-		}
-
-		/**
-		 * Table key in the data structure. Input or output
-		 * 
-		 * @param table
-		 * @return Alias
-		 */
-		public static String getTableKey(Table table) {
-			if (table.getConfig().has(TableConfig.ALIAS)) { // 表配置文件配置的表别名
-				return table.getConfig().get(TableConfig.ALIAS).getAsString();
-			} else if (Config.has(GlobalConfig.TABLE_ALIAS_EXPRESSION)) { // 全局配置的表别名
-				return getAliasKey(table.getName());
-			} else {
-				return table.getName();
-			}
-		}
-
-		public static Column getColumn(String tableNameOrAlias, String columnNameOrAlias) {
-			return getColumn(getTable(tableNameOrAlias), columnNameOrAlias);
-		}
-
-		public static Column getColumn(Table table, String columnNameOrAlias) {
-			if (table == null) {
-				return null;
-			}
-			// 1 根据别名查询
-			List<Column> columns = table.getColumns();
-			for (Column column : columns) {
-				if (column.getConfig().has(ColumnConfig.ALIAS)) {
-					String alias = column.getConfig().get(ColumnConfig.ALIAS).getAsString();
-					if (alias.equals(columnNameOrAlias)) {
-						return column;
-					}
-				}
-			}
-			// 2 根据实名查询
-			return currentDataContext().getColumn(table.getName(), columnNameOrAlias);
-		}
-
-		public static Column getColumn(String schemaName, String tableName, String columnName) {
-			return currentDataContext().getColumn(schemaName, tableName, columnName);
-		}
-
-		public static String getColumnAlias(Column column) {
-			if (column.getConfig().has(ColumnConfig.ALIAS)) {
-				return column.getConfig().get(ColumnConfig.ALIAS).getAsString();
-			} else {
-				return column.getName();
-			}
 		}
 
 		public static void destroy() {

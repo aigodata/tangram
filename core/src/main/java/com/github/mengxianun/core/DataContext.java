@@ -29,17 +29,36 @@ public interface DataContext {
 
 	public boolean hasTable(Table table);
 
-	public Table getTable(String tableName);
+	/**
+	 * Get the table by table name and table alias
+	 * 
+	 * @param nameOrAlias
+	 * @return
+	 */
+	public Table getTable(String nameOrAlias);
 
-	public Table getTable(String schemaName, String tableName);
+	public Table getTable(String schemaName, String nameOrAlias);
 
+	/**
+	 * Get the table by table name
+	 * 
+	 * @param tableName
+	 * @return
+	 */
 	public Table loadTable(String tableName);
 
 	public Table loadTable(String schemaName, String tableName);
 
-	public Column getColumn(String tableName, String columnName);
+	/**
+	 * Get columns by table name or table alias and column name or column alias
+	 * 
+	 * @param tableNameOrAlias
+	 * @param columnNameOrAlias
+	 * @return
+	 */
+	public Column getColumn(String tableNameOrAlias, String columnNameOrAlias);
 
-	public Column getColumn(String schemaName, String tableName, String columnName);
+	public Column getColumn(String schemaName, String tableNameOrAlias, String columnNameOrAlias);
 
 	public Dialect getDialect();
 

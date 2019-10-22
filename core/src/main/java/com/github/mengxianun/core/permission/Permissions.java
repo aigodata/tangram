@@ -1,11 +1,22 @@
 package com.github.mengxianun.core.permission;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.github.mengxianun.core.App;
+import com.github.mengxianun.core.DataContext;
+import com.github.mengxianun.core.SQLParser;
+import com.github.mengxianun.core.exception.DataException;
+import com.github.mengxianun.core.parser.SimpleParser;
+import com.github.mengxianun.core.parser.action.CRUDActionParser;
+import com.github.mengxianun.core.parser.info.SimpleInfo;
 import com.github.mengxianun.core.request.Connector;
+import com.github.mengxianun.core.request.Operation;
+import com.github.mengxianun.core.request.RequestKeyword;
+import com.google.common.base.Strings;
+import com.google.gson.JsonObject;
 
 /**
  * 权限工具类, 基于当前用户
@@ -100,6 +111,70 @@ public class Permissions {
 		return null;
 	}
 
+	public static String getTableConditionSessionSql(String source, String table, String column) {
+		AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
+		String userTable = authorizationInfo.getUserTable();
+		String userIdColumn = authorizationInfo.getUserIdColumn();
+		Object userId = authorizationInfo.getUserId();
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty(Operation.SELECT.name().toLowerCase(), table);
+		jsonObject.addProperty(RequestKeyword.FIELDS.lowerName(), column);
+		jsonObject.addProperty(RequestKeyword.JOIN.lowerName(), userTable);
+		jsonObject.addProperty(RequestKeyword.WHERE.lowerName(), userTable + "." + userIdColumn + "=" + userId);
+		DataContext dataContext = Strings.isNullOrEmpty(source) ? App.getDefaultDataContext()
+				: App.getDataContext(source);
+		SimpleInfo simpleInfo = SimpleParser.parse(jsonObject);
+		com.github.mengxianun.core.Action action = (com.github.mengxianun.core.Action) new CRUDActionParser(simpleInfo,
+				dataContext).parse();
+		action.build();
+		try {
+			return SQLParser.fill(action.getSql(), action.getParams().toArray());
+		} catch (SQLException e) {
+			throw new DataException("Condition sql build fail");
+		}
+	}
+
+	private static String toConditionSQL(Condition condition) {
+		StringBuilder builder = new StringBuilder();
+		if (condition instanceof TableCondition) {
+			TableCondition tableCondition = (TableCondition) condition;
+			String source = tableCondition.source();
+			String table = tableCondition.table();
+			String column = tableCondition.column();
+			Object value = tableCondition.value();
+			if (value != null && "$session".equalsIgnoreCase(value.toString())) { // session condition
+				AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
+				String userTable = authorizationInfo.getUserTable();
+				Object userId = authorizationInfo.getUserId();
+				if (userTable.equalsIgnoreCase(table)) {
+					value = userId;
+					//					FilterInfo filterInfo = FilterInfo.create(ConditionInfo
+					//							.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
+					builder.append(tableCondition.table()).append('.').append(tableCondition.column()).append(" = ")
+							.append(value);
+				} else { // get statement value
+					value = getTableConditionSessionSql(source, table, column);
+					//					StatementValueConditionInfo statementValueConditionInfo = StatementValueConditionInfo
+					//							.create(ColumnInfo.create(source, table, column, null), Operator.IN, conditionSql);
+					builder.append(tableCondition.table()).append('.').append(tableCondition.column()).append(" in ")
+							.append('(').append(value).append(')');
+				}
+			} else { // Specific conditions
+				//				FilterInfo filterInfo = FilterInfo.create(ConditionInfo
+				//						.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
+				builder.append(tableCondition.table()).append('.').append(tableCondition.column()).append(" = ")
+						.append(value);
+			}
+		} else if (condition instanceof ExpressionCondition) {
+			//			ExpressionCondition expressionCondition = (ExpressionCondition) condition;
+			//			String expression = expressionCondition.expression();
+			//			ConditionInfo conditionInfo = new SimpleParser("").parseCondition(expression);
+			//			FilterInfo filterInfo = FilterInfo.create(conditionInfo);
+			builder.append(((ExpressionCondition) condition).expression());
+		}
+		return builder.toString();
+	}
+
 	public static class TablePermissions {
 
 		private String source;
@@ -107,7 +182,6 @@ public class Permissions {
 		private List<ConnectorCondition> tableConditions;
 
 		public TablePermissions(String source, String table, List<ConnectorCondition> tableConditions) {
-			super();
 			this.source = source;
 			this.table = table;
 			this.tableConditions = tableConditions;
@@ -135,11 +209,18 @@ public class Permissions {
 				Condition condition = connectorCondition.condition();
 
 				builder.append(" ").append(connector).append(" ");
-				if (condition instanceof TableCondition) {
-					// to do
-				} else if (condition instanceof ExpressionCondition) {
-					builder.append(((ExpressionCondition) condition).expression());
-				}
+				builder.append(toConditionSQL(condition));
+				//				if (condition instanceof TableCondition) {
+				//					TableCondition tableCondition = (TableCondition) condition;
+				//					Object value = tableCondition.value();
+				//					builder.append(tableCondition.table()).append('.').append(tableCondition.column()).append(" = ")
+				//							.append(value);
+				//					////////////////////////////////////////////////////
+				//					////////////////////////////////////////////////////
+				//					////////////////////////////////////////////////////
+				//				} else if (condition instanceof ExpressionCondition) {
+				//					builder.append(((ExpressionCondition) condition).expression());
+				//				}
 			}
 			return builder.toString();
 		}

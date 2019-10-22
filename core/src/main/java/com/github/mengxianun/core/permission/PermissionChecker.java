@@ -28,7 +28,6 @@ import com.github.mengxianun.core.parser.info.SimpleInfo;
 import com.github.mengxianun.core.parser.info.TableInfo;
 import com.github.mengxianun.core.parser.info.ValuesInfo;
 import com.github.mengxianun.core.parser.info.WhereInfo;
-import com.github.mengxianun.core.parser.info.extension.StatementConditionInfo;
 import com.github.mengxianun.core.parser.info.extension.StatementValueConditionInfo;
 import com.github.mengxianun.core.request.Connector;
 import com.github.mengxianun.core.request.Operation;
@@ -118,7 +117,6 @@ public final class PermissionChecker {
 		List<FilterInfo> filters = simpleInfo.where().filters();
 		List<FilterInfo> newConditionFilters = new ArrayList<>();
 		List<StatementValueConditionInfo> statementValueConditions = new ArrayList<>();
-		List<StatementConditionInfo> statementConditions = new ArrayList<>();
 		for (ConnectorCondition connectorCondition : conditions) {
 			Connector connector = connectorCondition.connector();
 			Condition condition = connectorCondition.condition();
@@ -166,9 +164,6 @@ public final class PermissionChecker {
 		}
 		if (!statementValueConditions.isEmpty()) {
 			simpleInfo = simpleInfo.withStatementValueConditions(statementValueConditions);
-		}
-		if (!statementConditions.isEmpty()) {
-			simpleInfo = simpleInfo.withStatementConditions(statementConditions);
 		}
 		return simpleInfo;
 	}

@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.github.mengxianun.core.Action;
-import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataContext;
 import com.github.mengxianun.core.NewAction;
 import com.github.mengxianun.core.ResultStatus;
@@ -175,7 +174,7 @@ public class CRUDActionParser extends AbstractActionParser {
 
 	private TableItem createTableItem(String tableName, String alias) {
 		TableItem tableItem;
-		Table table = getTable(tableName);
+		Table table = dataContext.getTable(tableName);
 		boolean customAlias = false;
 		if (Strings.isNullOrEmpty(alias) && action.isQuery()) { // Select specify alias, other operations do not specify alias
 			alias = getTableAlias(table);
@@ -243,7 +242,7 @@ public class CRUDActionParser extends AbstractActionParser {
 		Set<RelationshipPath> relationshipPaths = new LinkedHashSet<>();
 		for (JoinElement joinElement : joinElements) {
 			Table joinTable = joinElement.getJoinTableItem().getTable();
-			Set<RelationshipPath> tempRelationshipPaths = App.Context.getRelationships(table, joinTable);
+			Set<RelationshipPath> tempRelationshipPaths = dataContext.getRelationships(table, joinTable);
 			if (tempRelationshipPaths.isEmpty()) {
 				throw new DataException(String.format("Association relation not found for the table [%s] and [%s]",
 						table.getName(), joinTable.getName()));
@@ -492,7 +491,7 @@ public class CRUDActionParser extends AbstractActionParser {
 		if (Strings.isNullOrEmpty(tableName)) {
 			return Collections.emptyList();
 		}
-		Table table = getTable(tableName);
+		Table table = dataContext.getTable(tableName);
 		if (tempTableItems.containsKey(table)) {
 			return createMainTableItemColumns(tempTableItems.get(table));
 		} else if (tempJoinTableItems.containsKey(table)) {
@@ -642,7 +641,7 @@ public class CRUDActionParser extends AbstractActionParser {
 		for (Entry<String, Object> entry : values.entrySet()) {
 			String columnName = entry.getKey();
 			Object value = entry.getValue();
-			Column column = getColumn(simpleInfo.table().table(), columnName);
+			Column column = dataContext.getColumn(simpleInfo.table().table(), columnName);
 			if (column != null) { // Ignore incorrect column
 				valueItems.add(new ValueItem(column, value));
 			}
@@ -704,7 +703,7 @@ public class CRUDActionParser extends AbstractActionParser {
 		if (Strings.isNullOrEmpty(table)) { // Default primary table column
 			table = simpleInfo.table().table();
 		}
-		return getColumn(table, column);
+		return dataContext.getColumn(table, column);
 	}
 
 	/**

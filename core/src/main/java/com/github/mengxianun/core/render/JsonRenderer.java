@@ -130,12 +130,12 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 
 			JsonObject tableObject = tableItemValues.get(rightTableItem);
 
-			String primaryColumnAlias = App.Context.getColumnAlias(primaryColumn);
+			String primaryColumnAlias = primaryColumn.getAliasOrName();
 			// 如果该关联表不是请求中指定的关联表, 不构建关系结构
 			// 只构建请求中指定的关联表
 			if (action.isJoinTable(foreignTable)) {
 				// 关联表节点名称, 主表字段__关联表字段(或别名, 以别名为主)
-				String foreignTableKey = primaryColumnAlias + associationConnector + getTableKey(foreignTable);
+				String foreignTableKey = primaryColumnAlias + associationConnector + foreignTable.getAliasOrName();
 				if (currentTableObject.has(foreignTableKey)) { // 已经构建了关联表结构
 					JsonElement parentElement = currentTableObject.get(foreignTableKey);
 					if (parentElement.isJsonArray()) {
@@ -165,8 +165,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 							topColumn = primaryColumn;
 						}
 						// 有上级关联列, 即A-B-C, 查询A, join C的情况, 存在A列的情况, 即A-B_ID
-						primaryColumnAlias = App.Context.getColumnAlias(topColumn);
-						foreignTableKey = primaryColumnAlias + associationConnector + getTableKey(foreignTable);
+						primaryColumnAlias = topColumn.getAliasOrName();
+						foreignTableKey = primaryColumnAlias + associationConnector + foreignTable.getAliasOrName();
 						AssociationType indirectAssociationType = App.Context.getAssociationType(topColumn.getTable(),
 								foreignTable);
 						buildJoinTableObject(currentTableObject, indirectAssociationType, foreignTableKey, tableObject);
@@ -244,10 +244,6 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 
 		}
 		return uniqueKey.toString();
-	}
-
-	private String getTableKey(Table table) {
-		return App.Context.getTableKey(table);
 	}
 
 	private void addColumnValue(JsonObject record, ColumnItem columnItem, Object value) {

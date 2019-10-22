@@ -1,7 +1,6 @@
 package com.github.mengxianun.core.render;
 
 import com.github.mengxianun.core.Action;
-import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.schema.Column;
 
@@ -21,7 +20,7 @@ public abstract class AbstractRenderer<T> implements Renderer<T> {
 		} else if (column == null) { // 表达式, 如函数
 			columnKey = columnItem.getExpression();
 		} else {
-			columnKey = App.Context.getColumnAlias(column);
+			columnKey = column.getAliasOrName();
 		}
 		return columnKey;
 	}

@@ -17,6 +17,8 @@ public interface Table extends Name {
 
 	List<String> getColumnNames();
 
+	Column getColumn(String nameOrAlias);
+
 	Column getColumnByName(String columnName);
 
 	List<Column> getPrimaryKeys();
@@ -24,6 +26,8 @@ public interface Table extends Name {
 	String getDisplayName();
 
 	Map<String, Object> getInfo();
+
+	public String getAliasOrName();
 
 	JsonObject getConfig();
 

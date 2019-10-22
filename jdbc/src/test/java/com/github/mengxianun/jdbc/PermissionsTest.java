@@ -40,8 +40,12 @@ public class PermissionsTest extends TestSupport {
 
 	@Test
 	void testSelectPermissionTable() {
-		String sql = Permissions.getTableSelectPermissions("permission_condition_user_table").toSQL();
-		System.out.println(sql);
+		String conditionUserSQL = Permissions.getTableSelectPermissions("permission_condition_user_table").toSQL();
+		System.out.println(conditionUserSQL);
+		String conditionRoleSQL = Permissions.getTableSelectPermissions("permission_condition_role_table").toSQL();
+		System.out.println(conditionRoleSQL);
+		String expressionSQL = Permissions.getTableSelectPermissions("permission_condition_expression_table").toSQL();
+		System.out.println(expressionSQL);
 	}
 
 }

@@ -3,6 +3,7 @@ package com.github.mengxianun.core.schema;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.github.mengxianun.core.config.ColumnConfig;
 import com.google.gson.JsonObject;
 
 public abstract class AbstractColumn implements Column {
@@ -46,6 +47,15 @@ public abstract class AbstractColumn implements Column {
 		info.put("name", name);
 		info.put("type", columnType.getName());
 		return info;
+	}
+
+	@Override
+	public String getAliasOrName() {
+		if (config.has(ColumnConfig.ALIAS)) {
+			return config.get(ColumnConfig.ALIAS).getAsString();
+		} else {
+			return name;
+		}
 	}
 
 	@Override

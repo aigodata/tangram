@@ -18,28 +18,23 @@ import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.config.ResultAttributes;
 import com.github.mengxianun.core.data.Row;
 import com.github.mengxianun.core.data.Summary;
-import com.github.mengxianun.core.data.summary.BasicSummary;
 import com.github.mengxianun.core.data.summary.FileSummary;
 import com.github.mengxianun.core.data.summary.InsertSummary;
 import com.github.mengxianun.core.data.summary.MultiSummary;
 import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.exception.DataException;
-import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValuesItem;
 import com.github.mengxianun.core.render.FileRenderer;
 import com.github.mengxianun.core.render.JsonRenderer;
-import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.relationship.Relationship;
 import com.github.mengxianun.core.schema.relationship.RelationshipGraph;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
-import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 public abstract class AbstractDataContext implements DataContext {
@@ -158,33 +153,6 @@ public abstract class AbstractDataContext implements DataContext {
 		return parseValue;
 	}
 
-	@Deprecated
-	private Summary executeStruct(Action action) {
-		TableItem tableItem = action.getTableItems().get(0);
-		Table table = tableItem.getTable();
-		return new BasicSummary(table.getInfo());
-	}
-
-	@Deprecated
-	private Summary executeStructs(Action action) {
-		return new BasicSummary(getDefaultSchema().getInfo());
-	}
-
-	@Deprecated
-	private MultiSummary executeTransaction(Action action) {
-		JsonObject jsonData = action.getRequestData();
-		JsonArray transactionArray = jsonData.getAsJsonArray(Operation.TRANSACTION.name().toLowerCase());
-		List<Action> actions = new ArrayList<>();
-		for (int i = 0; i < transactionArray.size(); i++) {
-			JsonObject innerJsonData = transactionArray.get(i).getAsJsonObject();
-			JsonParser innerJsonParser = new JsonParser(innerJsonData);
-			Action innerAction = innerJsonParser.parse();
-			innerAction.build();
-			actions.add(innerAction);
-		}
-		return execute(actions.toArray(new Action[] {}));
-	}
-
 	protected Summary executeCRUD(Action action) {
 		logger.debug("SQL: {}", action.getSql());
 		logger.debug("Params: {}", action.getParams());
@@ -281,18 +249,16 @@ public abstract class AbstractDataContext implements DataContext {
 	}
 
 	@Override
-	public Table getTable(String tableName) {
-		return getTable(metadata.getDefaultSchemaName(), tableName);
+	public Table getTable(String nameOrAlias) {
+		return getTable(metadata.getDefaultSchemaName(), nameOrAlias);
 	}
 
 	@Override
-	public Table getTable(String schemaName, String tableName) {
-		if (Strings.isNullOrEmpty(tableName)) {
-			return null;
-		}
-		Table table = metadata.getTable(schemaName, tableName);
+	public Table getTable(String schemaName, String nameOrAlias) {
+		Schema schema = getSchema(schemaName);
+		Table table = schema.getTable(nameOrAlias);
 		if (table == null) {
-			table = loadTable(schemaName, tableName);
+			table = loadTable(schemaName, nameOrAlias);
 		}
 		return table;
 	}
@@ -303,13 +269,17 @@ public abstract class AbstractDataContext implements DataContext {
 	}
 
 	@Override
-	public Column getColumn(String tableName, String columnName) {
-		return metadata.getColumn(tableName, columnName);
+	public Column getColumn(String tableNameOrAlias, String columnNameOrAlias) {
+		return getColumn(metadata.getDefaultSchemaName(), tableNameOrAlias, columnNameOrAlias);
 	}
 
 	@Override
-	public Column getColumn(String schemaName, String tableName, String columnName) {
-		return metadata.getColumn(schemaName, tableName, columnName);
+	public Column getColumn(String schemaName, String tableNameOrAlias, String columnNameOrAlias) {
+		Table table = getTable(schemaName, tableNameOrAlias);
+		if (table == null) {
+			return null;
+		}
+		return table.getColumn(columnNameOrAlias);
 	}
 
 	public Dialect getDialect() {

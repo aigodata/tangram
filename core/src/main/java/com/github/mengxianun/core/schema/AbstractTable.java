@@ -6,7 +6,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.jexl3.JexlBuilder;
+import org.apache.commons.jexl3.JexlContext;
+import org.apache.commons.jexl3.JexlEngine;
+import org.apache.commons.jexl3.JexlExpression;
+import org.apache.commons.jexl3.MapContext;
+
+import com.github.mengxianun.core.App;
+import com.github.mengxianun.core.App.Config;
+import com.github.mengxianun.core.config.ColumnConfig;
+import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.config.TableConfig;
+import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 
 public abstract class AbstractTable implements Table {
@@ -56,6 +67,24 @@ public abstract class AbstractTable implements Table {
 	@Override
 	public List<String> getColumnNames() {
 		return columns.stream().map(Column::getName).collect(Collectors.toList());
+	}
+
+	@Override
+	public Column getColumn(String nameOrAlias) {
+		if (Strings.isNullOrEmpty(nameOrAlias)) {
+			return null;
+		}
+		// 1 根据别名查询
+		for (Column column : columns) {
+			if (column.getConfig().has(ColumnConfig.ALIAS)) {
+				String alias = column.getConfig().get(ColumnConfig.ALIAS).getAsString();
+				if (alias.equals(nameOrAlias)) {
+					return column;
+				}
+			}
+		}
+		// 2 根据实名查询
+		return getColumnByName(nameOrAlias);
 	}
 
 	@Override
@@ -109,6 +138,26 @@ public abstract class AbstractTable implements Table {
 		columns.forEach(e -> columnsInfo.add(e.getInfo()));
 		info.put("columns", columnsInfo);
 		return info;
+	}
+
+	@Override
+	public String getAliasOrName() {
+		if (config.has(TableConfig.ALIAS)) { // 表配置文件配置的表别名
+			return config.get(TableConfig.ALIAS).getAsString();
+		} else if (Config.has(GlobalConfig.TABLE_ALIAS_EXPRESSION)) { // 全局配置的表别名
+			return getAliasKey(name);
+		} else {
+			return name;
+		}
+	}
+
+	private String getAliasKey(String element) {
+		JexlEngine jexl = new JexlBuilder().create();
+		String jexlExp = App.Config.getString(GlobalConfig.TABLE_ALIAS_EXPRESSION);
+		JexlExpression e = jexl.createExpression(jexlExp);
+		JexlContext jc = new MapContext();
+		jc.set("$", element);
+		return e.evaluate(jc).toString();
 	}
 
 	@Override

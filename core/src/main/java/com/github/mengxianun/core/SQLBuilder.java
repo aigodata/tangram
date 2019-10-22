@@ -92,7 +92,7 @@ public class SQLBuilder {
 
 	public SQLBuilder(Action action) {
 		this.action = action;
-		this.dataContext = App.currentDataContext();
+		this.dataContext = action.getDataContext();
 		this.dialect = dataContext.getDialect();
 	}
 
@@ -749,7 +749,7 @@ public class SQLBuilder {
 			while (matcher.find()) {
 				String processExpression = matcher.group();
 				String tableName = matcher.group(MATCHER_GROUP_TABLE);
-				Table table = App.Context.getTable(tableName);
+				Table table = dataContext.getTable(tableName);
 				if (table != null) {
 					String tableAlias = getTableAlias(tableName);
 					if (!Strings.isNullOrEmpty(tableAlias)) {

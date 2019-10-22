@@ -11,6 +11,8 @@ public interface Schema extends Name {
 
 	public List<String> getTableNames();
 
+	public Table getTable(String nameOrAlias);
+
 	public Table getTableByName(String tableName);
 
 	public Map<String, Object> getInfo();

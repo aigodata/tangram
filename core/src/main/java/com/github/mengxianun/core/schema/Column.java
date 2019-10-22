@@ -14,6 +14,8 @@ public interface Column extends Name {
 
 	public Map<String, Object> getInfo();
 
+	public String getAliasOrName();
+
 	public JsonObject getConfig();
 
 	default void setConfig(JsonObject config) {
