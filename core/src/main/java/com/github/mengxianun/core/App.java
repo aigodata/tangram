@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -341,34 +340,6 @@ public final class App {
 
 		public static AssociationType getAssociationType(Table primaryTable, Table foreignTable) {
 			return currentDataContext().getAssociationType(primaryTable, foreignTable);
-		}
-
-	}
-
-	static class Action {
-
-		private Action() {}
-
-		public static String getTableAlias(Table table) {
-			return getAlias(table != null ? table.getName() + "_" : "");
-		}
-		
-		public static String getColumnAlias(Column column) {
-			return getAlias(column != null ? column.getName() + "_" : "");
-		}
-
-		public static String getAlias(String prefix) {
-			String alias = null;
-			Dialect dialect = Context.dialect();
-			if (dialect.tableAliasEnabled() && dialect.randomAliasEnabled()) {
-				alias = Strings.nullToEmpty(prefix) + randomString(6);
-			}
-			return alias;
-		}
-
-		private static String randomString(int length) {
-			RandomStringGenerator generator = new RandomStringGenerator.Builder().withinRange('a', 'z').build();
-			return generator.generate(length);
 		}
 
 	}

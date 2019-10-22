@@ -177,7 +177,7 @@ public class CRUDActionParser extends AbstractActionParser {
 		Table table = dataContext.getTable(tableName);
 		boolean customAlias = false;
 		if (Strings.isNullOrEmpty(alias) && action.isQuery()) { // Select specify alias, other operations do not specify alias
-			alias = getTableAlias(table);
+			alias = getAlias(table);
 		} else {
 			customAlias = true;
 		}
@@ -337,7 +337,7 @@ public class CRUDActionParser extends AbstractActionParser {
 				Column foreignColumn = relationship.getForeignColumn();
 				Table foreignTable = foreignColumn.getTable();
 
-				JoinTableItem foreignTableItem = new JoinTableItem(foreignTable, getTableAlias(foreignTable), false,
+				JoinTableItem foreignTableItem = new JoinTableItem(foreignTable, getAlias(foreignTable), false,
 						currentFixedRelationshipItems);
 				tempRelationTableItems.put(foreignTable, foreignTableItem.getAlias(), foreignTableItem);
 				// update JoinTableItems
@@ -506,7 +506,7 @@ public class CRUDActionParser extends AbstractActionParser {
 			return Collections.emptyList();
 		}
 		return table.getColumns().stream()
-				.map(e -> new ColumnItem(e, getColumnAlias(e), false, tableItem)).collect(Collectors.toList());
+				.map(e -> new ColumnItem(e, getAlias(e), false, tableItem)).collect(Collectors.toList());
 	}
 
 	private List<ColumnItem> createJoinTableItemColumns(TableItem tableItem) {
@@ -515,7 +515,7 @@ public class CRUDActionParser extends AbstractActionParser {
 			return Lists.newArrayList(new ColumnItem("*"));
 		}
 		return table.getColumns().stream()
-				.map(e -> new JoinColumnItem(e, getColumnAlias(e), false, tableItem)).collect(Collectors.toList());
+				.map(e -> new JoinColumnItem(e, getAlias(e), false, tableItem)).collect(Collectors.toList());
 	}
 
 	/**
@@ -721,7 +721,7 @@ public class CRUDActionParser extends AbstractActionParser {
 		} else if (tempJoinTableItems.containsKey(table)) {
 			tableItem = tempJoinTableItems.get(table);
 		} else {
-			tableItem = new TableItem(table, getTableAlias(table), false);
+			tableItem = new TableItem(table, getAlias(table), false);
 			tempRelationTableItems.put(table, tableItem.getAlias(), tableItem);
 		}
 		return tableItem;

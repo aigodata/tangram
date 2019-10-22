@@ -1,5 +1,6 @@
 package com.github.mengxianun.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
@@ -41,11 +42,11 @@ public class PermissionsTest extends TestSupport {
 	@Test
 	void testSelectPermissionTable() {
 		String conditionUserSQL = Permissions.getTableSelectPermissions("permission_condition_user_table").toSQL();
-		System.out.println(conditionUserSQL);
+		assertTrue(conditionUserSQL.startsWith(" AND permission_user.id = "));
 		String conditionRoleSQL = Permissions.getTableSelectPermissions("permission_condition_role_table").toSQL();
-		System.out.println(conditionRoleSQL);
+		assertTrue(conditionRoleSQL.startsWith(" AND permission_role.id in (SELECT"));
 		String expressionSQL = Permissions.getTableSelectPermissions("permission_condition_expression_table").toSQL();
-		System.out.println(expressionSQL);
+		assertEquals(" AND id>1", expressionSQL);
 	}
 
 }
