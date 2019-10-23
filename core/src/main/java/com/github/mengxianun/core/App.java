@@ -20,7 +20,6 @@ import com.github.mengxianun.core.permission.PermissionPolicy;
 import com.github.mengxianun.core.permission.TablePermission;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Table;
-import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -349,14 +348,6 @@ public final class App {
 			if (result) {
 				dataContext.cleanRelationshipCache();
 			}
-		}
-
-		public static Set<RelationshipPath> getRelationships(Table primaryTable, Table foreignTable) {
-			return currentDataContext().getRelationships(primaryTable, foreignTable);
-		}
-
-		public static AssociationType getAssociationType(Table primaryTable, Table foreignTable) {
-			return currentDataContext().getAssociationType(primaryTable, foreignTable);
 		}
 
 	}

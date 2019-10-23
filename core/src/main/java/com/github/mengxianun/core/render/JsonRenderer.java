@@ -167,7 +167,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 						// 有上级关联列, 即A-B-C, 查询A, join C的情况, 存在A列的情况, 即A-B_ID
 						primaryColumnAlias = topColumn.getAliasOrName();
 						foreignTableKey = primaryColumnAlias + associationConnector + foreignTable.getAliasOrName();
-						AssociationType indirectAssociationType = App.Context.getAssociationType(topColumn.getTable(),
+						AssociationType indirectAssociationType = action.getDataContext()
+								.getAssociationType(topColumn.getTable(),
 								foreignTable);
 						buildJoinTableObject(currentTableObject, indirectAssociationType, foreignTableKey, tableObject);
 						currentTableObject = tableObject;
