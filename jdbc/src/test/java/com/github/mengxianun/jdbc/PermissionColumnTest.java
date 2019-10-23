@@ -13,7 +13,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 @DisplayName("Jdbc column permission test")
-public class ColumnPermissionTest extends TestSupport {
+public class PermissionColumnTest extends TestSupport {
 
 	private static final String JSON_PARENT_PATH = "json/permission/column/";
 

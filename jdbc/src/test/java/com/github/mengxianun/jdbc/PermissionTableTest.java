@@ -14,7 +14,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 @DisplayName("Jdbc table permission test")
-public class TablePermissionTest extends TestSupport {
+public class PermissionTableTest extends TestSupport {
 
 	private static final String JSON_PARENT_PATH = "json/permission/table/";
 
