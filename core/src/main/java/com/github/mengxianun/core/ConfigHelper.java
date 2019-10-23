@@ -94,22 +94,28 @@ public final class ConfigHelper {
 				JsonObject columnsConfig = tableConfig.get(TableConfig.COLUMNS).getAsJsonObject();
 				for (String columnName : columnsConfig.keySet()) {
 					Column column = dataContext.getColumn(tableName, columnName);
-					if (column != null) {
-						JsonObject columnConfig = columnsConfig.get(columnName).getAsJsonObject();
-						column.setConfig(columnConfig);
-						// 添加 Relationship
-						if (columnConfig.has(TableConfig.COLUMN_ASSOCIATION)) {
-							JsonObject associationConfig = columnConfig.getAsJsonObject(TableConfig.COLUMN_ASSOCIATION);
-							String targetTableName = associationConfig
-									.getAsJsonPrimitive(TableConfig.ASSOCIATION_TARGET_TABLE).getAsString();
-							String targetColumnName = associationConfig
-									.getAsJsonPrimitive(TableConfig.ASSOCIATION_TARGET_COLUMN).getAsString();
-							AssociationType associationType = associationConfig.has(TableConfig.ASSOCIATION_TYPE)
-									? AssociationType.from(associationConfig
-											.getAsJsonPrimitive(TableConfig.ASSOCIATION_TYPE).getAsString())
-									: AssociationType.ONE_TO_ONE;
-							Column targetColumn = dataContext.getColumn(targetTableName, targetColumnName);
-							// 添加主外表的关联
+					if (column == null) {
+						logger.warn("Column [{}.{}] from [{}] does not exist", tableName, columnName, fileName);
+						continue;
+					}
+					JsonObject columnConfig = columnsConfig.get(columnName).getAsJsonObject();
+					column.setConfig(columnConfig);
+					// Relationship
+					if (columnConfig.has(TableConfig.COLUMN_ASSOCIATION)) {
+						JsonObject associationConfig = columnConfig.getAsJsonObject(TableConfig.COLUMN_ASSOCIATION);
+						String targetTableName = associationConfig
+								.getAsJsonPrimitive(TableConfig.ASSOCIATION_TARGET_TABLE).getAsString();
+						String targetColumnName = associationConfig
+								.getAsJsonPrimitive(TableConfig.ASSOCIATION_TARGET_COLUMN).getAsString();
+						AssociationType associationType = associationConfig.has(TableConfig.ASSOCIATION_TYPE)
+								? AssociationType.from(associationConfig
+										.getAsJsonPrimitive(TableConfig.ASSOCIATION_TYPE).getAsString())
+								: AssociationType.ONE_TO_ONE;
+						Column targetColumn = dataContext.getColumn(targetTableName, targetColumnName);
+						if (targetColumn == null) {
+							logger.warn("Column [{}.{}] from [{}] does not exist", targetTableName, targetColumnName,
+									fileName);
+						} else {
 							dataContext.addRelationship(column, targetColumn, associationType);
 						}
 					}
