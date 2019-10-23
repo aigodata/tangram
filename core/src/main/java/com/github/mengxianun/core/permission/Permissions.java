@@ -1,8 +1,9 @@
 package com.github.mengxianun.core.permission;
 
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.github.mengxianun.core.App;
@@ -15,6 +16,7 @@ import com.github.mengxianun.core.parser.info.SimpleInfo;
 import com.github.mengxianun.core.request.Connector;
 import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.request.RequestKeyword;
+import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 
@@ -39,24 +41,40 @@ public class Permissions {
 	}
 
 	public static boolean hasTableSelectPermission(String table) {
-		return hasActionPermission(table, Action.SELECT);
+		return hasTableSelectPermission(null, table);
+	}
+
+	public static boolean hasTableSelectPermission(String source, String table) {
+		return hasTableActionPermission(source, table, Action.SELECT);
 	}
 
 	public static boolean hasTableInsertPermission(String table) {
-		return hasActionPermission(table, Action.INSERT);
+		return hasTableInsertPermission(null, table);
+	}
+
+	public static boolean hasTableInsertPermission(String source, String table) {
+		return hasTableActionPermission(source, table, Action.INSERT);
 	}
 
 	public static boolean hasTableUpdatePermission(String table) {
-		return hasActionPermission(table, Action.UPDATE);
+		return hasTableUpdatePermission(null, table);
+	}
+	
+	public static boolean hasTableUpdatePermission(String source, String table) {
+		return hasTableActionPermission(source, table, Action.UPDATE);
 	}
 
 	public static boolean hasTableDeletePermission(String table) {
-		return hasActionPermission(table, Action.DELETE);
+		return hasTableDeletePermission(null, table);
 	}
 
-	private static boolean hasActionPermission(String table, Action action) {
-		if (hasTablePermission(table)) {
-			List<TablePermission> tablePermissions = App.getTablePermissions(null, table);
+	public static boolean hasTableDeletePermission(String source, String table) {
+		return hasTableActionPermission(source, table, Action.DELETE);
+	}
+
+	private static boolean hasTableActionPermission(String source, String table, Action action) {
+		if (hasTablePermission(source, table)) {
+			List<TablePermission> tablePermissions = App.getTablePermissions(source, table);
 			return tablePermissions.parallelStream()
 					.anyMatch(e -> e.action() == Action.ALL || e.action() == action);
 		}
@@ -64,51 +82,63 @@ public class Permissions {
 	}
 
 	public static TablePermissions getTablePermissions(String table) {
-		List<TablePermission> tablePermissions = App.getTablePermissions(null, table);
+		return getTablePermissions(null, table);
+	}
+
+	public static TablePermissions getTablePermissions(String source, String table) {
+		List<TablePermission> tablePermissions = App.getTablePermissions(source, table);
 		List<ConnectorCondition> conditions = tablePermissions.stream().flatMap(e -> e.conditions().stream())
 				.collect(Collectors.toList());
-		return new TablePermissions(null, table, conditions);
+		return new TablePermissions(source, table, conditions);
 	}
 
 	public static TablePermissions getTableSelectPermissions(String table) {
-		return getActionPermissions(table, Action.SELECT);
+		return getTableSelectPermissions(null, table);
+	}
+
+	public static TablePermissions getTableSelectPermissions(String source, String table) {
+		return getTableActionPermissions(source, table, Action.SELECT);
 	}
 
 	public static TablePermissions getTableInsertPermissions(String table) {
-		return getActionPermissions(table, Action.INSERT);
+		return getTableInsertPermissions(null, table);
+	}
+
+	public static TablePermissions getTableInsertPermissions(String source, String table) {
+		return getTableActionPermissions(source, table, Action.INSERT);
 	}
 
 	public static TablePermissions getTableUpdatePermissions(String table) {
-		return getActionPermissions(table, Action.UPDATE);
+		return getTableUpdatePermissions(null, table);
+	}
+
+	public static TablePermissions getTableUpdatePermissions(String source, String table) {
+		return getTableActionPermissions(source, table, Action.UPDATE);
 	}
 
 	public static TablePermissions getTableDeletePermissions(String table) {
-		return getActionPermissions(table, Action.DELETE);
+		return getTableDeletePermissions(null, table);
 	}
 
-	public static TablePermissions getActionPermissions(String table, Action action) {
-		List<TablePermission> tablePermissions = App.getTablePermissions(null, table);
+	public static TablePermissions getTableDeletePermissions(String source, String table) {
+		return getTableActionPermissions(source, table, Action.DELETE);
+	}
+
+	private static TablePermissions getTableActionPermissions(String source, String table, Action action) {
+		List<TablePermission> tablePermissions = App.getTablePermissions(source, table);
 		List<ConnectorCondition> conditions = tablePermissions.stream()
 				.filter(e -> e.action() == Action.ALL || e.action() == action)
 				.flatMap(e -> e.conditions().stream())
 				.collect(Collectors.toList());
-		return new TablePermissions(null, table, conditions);
+		return new TablePermissions(source, table, conditions);
 	}
 
 	public static String getWhere(String table) {
-		// to do
-		return null;
+		return getWhere(null, table);
 	}
 
-	/**
-	 * 获取可以查询的列
-	 * 
-	 * @param table
-	 * @return
-	 */
-	public static Set<String> getQueryColumns(String table) {
-		// to do
-		return null;
+	public static String getWhere(String source, String table) {
+		return getTablePermissions(source, table).toSQL();
 	}
 
 	public static String getTableConditionSessionSql(String source, String table, String column) {
@@ -148,28 +178,18 @@ public class Permissions {
 				Object userId = authorizationInfo.getUserId();
 				if (userTable.equalsIgnoreCase(table)) {
 					value = userId;
-					//					FilterInfo filterInfo = FilterInfo.create(ConditionInfo
-					//							.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
 					builder.append(tableCondition.table()).append('.').append(tableCondition.column()).append(" = ")
 							.append(value);
 				} else { // get statement value
 					value = getTableConditionSessionSql(source, table, column);
-					//					StatementValueConditionInfo statementValueConditionInfo = StatementValueConditionInfo
-					//							.create(ColumnInfo.create(source, table, column, null), Operator.IN, conditionSql);
 					builder.append(tableCondition.table()).append('.').append(tableCondition.column()).append(" in ")
 							.append('(').append(value).append(')');
 				}
 			} else { // Specific conditions
-				//				FilterInfo filterInfo = FilterInfo.create(ConditionInfo
-				//						.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
 				builder.append(tableCondition.table()).append('.').append(tableCondition.column()).append(" = ")
 						.append(value);
 			}
 		} else if (condition instanceof ExpressionCondition) {
-			//			ExpressionCondition expressionCondition = (ExpressionCondition) condition;
-			//			String expression = expressionCondition.expression();
-			//			ConditionInfo conditionInfo = new SimpleParser("").parseCondition(expression);
-			//			FilterInfo filterInfo = FilterInfo.create(conditionInfo);
 			builder.append(((ExpressionCondition) condition).expression());
 		}
 		return builder.toString();
@@ -210,21 +230,125 @@ public class Permissions {
 
 				builder.append(" ").append(connector).append(" ");
 				builder.append(toConditionSQL(condition));
-				//				if (condition instanceof TableCondition) {
-				//					TableCondition tableCondition = (TableCondition) condition;
-				//					Object value = tableCondition.value();
-				//					builder.append(tableCondition.table()).append('.').append(tableCondition.column()).append(" = ")
-				//							.append(value);
-				//					////////////////////////////////////////////////////
-				//					////////////////////////////////////////////////////
-				//					////////////////////////////////////////////////////
-				//				} else if (condition instanceof ExpressionCondition) {
-				//					builder.append(((ExpressionCondition) condition).expression());
-				//				}
 			}
 			return builder.toString();
 		}
 
+	}
+
+	public static boolean hasColumnPermission(String table, String column) {
+		return hasColumnPermission(null, table, column);
+	}
+
+	public static boolean hasColumnPermission(String source, String table, String column) {
+		return App.hasColumnPermissions(source, table, column);
+	}
+
+	public static boolean hasColumnSelectPermission(String table, String column) {
+		return hasColumnSelectPermission(null, table, column);
+	}
+
+	public static boolean hasColumnSelectPermission(String source, String table, String column) {
+		return hasColumnActionPermission(source, table, column, Action.SELECT);
+	}
+
+	public static boolean hasColumnInsertPermission(String table, String column) {
+		return hasColumnInsertPermission(null, table, column);
+	}
+
+	public static boolean hasColumnInsertPermission(String source, String table, String column) {
+		return hasColumnActionPermission(source, table, column, Action.INSERT);
+	}
+
+	public static boolean hasColumnUpdatePermission(String table, String column) {
+		return hasColumnUpdatePermission(null, table, column);
+	}
+
+	public static boolean hasColumnUpdatePermission(String source, String table, String column) {
+		return hasColumnActionPermission(source, table, column, Action.UPDATE);
+	}
+
+	public static boolean hasColumnDeletePermission(String table, String column) {
+		return hasColumnDeletePermission(null, table, column);
+	}
+
+	public static boolean hasColumnDeletePermission(String source, String table, String column) {
+		return hasColumnActionPermission(source, table, column, Action.DELETE);
+	}
+
+	private static boolean hasColumnActionPermission(String source, String table, String column, Action action) {
+		if (hasColumnPermission(source, table, column)) {
+			List<ColumnPermission> columnPermissions = App.getColumnPermissions(source, table, column);
+			return columnPermissions.parallelStream().anyMatch(e -> e.action() == Action.ALL || e.action() == action);
+		}
+		return false;
+	}
+
+	public static List<String> getPermissionColumns(String table) {
+		return getPermissionColumns(null, table);
+	}
+
+	public static List<String> getPermissionColumns(String source, String table) {
+		if (Strings.isNullOrEmpty(source)) {
+			source = App.getDefaultDataSource();
+		}
+		Table sourceTable = App.getDataContext(source).getTable(table);
+		if (sourceTable == null) {
+			return Collections.emptyList();
+		}
+		List<String> columnNames = sourceTable.getColumnNames();
+		Iterator<String> iterator = columnNames.iterator();
+		List<ColumnPermission> columnPermissions = App.getColumnPermissions(source, table);
+		PermissionPolicy permissionPolicy = App.getPermissionPolicy();
+		while (iterator.hasNext()) {
+			String column = iterator.next();
+			boolean match = columnPermissions.stream().anyMatch(e -> column.equals(e.column()));
+			if (!match && permissionPolicy != PermissionPolicy.WEAK) {
+				iterator.remove();
+			}
+		}
+		return columnNames;
+	}
+
+	public static List<String> getSelectColumns(String table) {
+		return getSelectColumns(null, table);
+	}
+
+	public static List<String> getSelectColumns(String source, String table) {
+		return getActionColumns(source, table, Action.SELECT);
+	}
+
+	public static List<String> getInsertColumns(String table) {
+		return getInsertColumns(null, table);
+	}
+
+	public static List<String> getInsertColumns(String source, String table) {
+		return getActionColumns(source, table, Action.INSERT);
+	}
+
+	public static List<String> getUpdateColumns(String table) {
+		return getUpdateColumns(null, table);
+	}
+
+	public static List<String> getUpdateColumns(String source, String table) {
+		return getActionColumns(source, table, Action.UPDATE);
+	}
+
+	public static List<String> getDeleteColumns(String table) {
+		return getDeleteColumns(null, table);
+	}
+
+	public static List<String> getDeleteColumns(String source, String table) {
+		return getActionColumns(source, table, Action.DELETE);
+	}
+
+	private static List<String> getActionColumns(String source, String table, Action action) {
+		Table sourceTable = App.getTable(source, table);
+		if (sourceTable == null) {
+			return Collections.emptyList();
+		}
+		return sourceTable.getColumnNames().stream()
+				.filter(e -> PermissionChecker.checkColumn(source, table, e, action)).collect(Collectors.toList());
 	}
 
 }

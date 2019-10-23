@@ -33,6 +33,7 @@ import com.github.mengxianun.core.request.Connector;
 import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.request.Operator;
 import com.github.mengxianun.core.request.RequestKeyword;
+import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -200,7 +201,6 @@ public final class PermissionChecker {
 	}
 
 	private static PermissionCheckResult checkSelectColumnWithResult(SimpleInfo simpleInfo) {
-		PermissionPolicy policy = App.getPermissionPolicy();
 		Action action = getAction(simpleInfo.operation());
 		List<ColumnInfo> columns = simpleInfo.columns();
 		List<ColumnInfo> excludeColumns = new ArrayList<>();
@@ -215,23 +215,13 @@ public final class PermissionChecker {
 			actionTableInfos.addAll(joinTableInfos);
 
 			for (TableInfo tableInfo : actionTableInfos) {
-				//				String tableInfoSource = tableInfo.source();
-				//				final String source = Strings.isNullOrEmpty(tableInfoSource) ? App.getDefaultDataSource()
-				//						: tableInfoSource;
 				final String source = tableInfo.source();
 				final String table = tableInfo.table();
-				//				Map<String, List<ColumnPermission>> columnPermissionsInTable = App.getColumnPermissions(source,
-				//						table);
-				Map<String, List<ColumnPermission>> columnPermissionsInTable = App.getColumnPermissions(source, table)
-						.stream().collect(Collectors.groupingBy(ColumnPermission::column));
-				for (Entry<String, List<ColumnPermission>> entry : columnPermissionsInTable.entrySet()) {
-					String column = entry.getKey();
-					List<ColumnPermission> columnPermissions = entry.getValue();
-
-					ColumnInfo columnInfo = ColumnInfo.create(source, table, column, null);
-					boolean check = checkColumn(columnInfo, action, columnPermissions, policy);
+				Table sourceTable = App.getTable(source, table);
+				for (String column : sourceTable.getColumnNames()) {
+					boolean check = checkColumn(source, table, column, action);
 					if (!check) {
-						excludeColumns.add(columnInfo);
+						excludeColumns.add(ColumnInfo.create(source, table, column, null));
 					}
 				}
 			}
@@ -249,13 +239,12 @@ public final class PermissionChecker {
 				}
 				String column = columnInfo.column();
 				if (!App.hasColumnPermissions(source, table, column)) {
-					if (policy == PermissionPolicy.WEAK) {
+					if (App.getPermissionPolicy() == PermissionPolicy.WEAK) {
 						continue;
 					}
 					return PermissionCheckResult.create(false, simpleInfo);
 				}
-				List<ColumnPermission> columnPermissions = App.getColumnPermissions(source, table, column);
-				boolean check = checkColumn(columnInfo, action, columnPermissions, policy);
+				boolean check = checkColumn(columnInfo.source(), columnInfo.table(), columnInfo.column(), action);
 				if (!check) {
 					excludeColumns.add(columnInfo);
 				}
@@ -266,7 +255,6 @@ public final class PermissionChecker {
 	}
 
 	private static PermissionCheckResult checkUpdateColumnWithResult(SimpleInfo simpleInfo) {
-		PermissionPolicy policy = App.getPermissionPolicy();
 		Action action = getAction(simpleInfo.operation());
 		String source = simpleInfo.table().source();
 		String table = simpleInfo.table().table();
@@ -288,13 +276,12 @@ public final class PermissionChecker {
 		for (ColumnInfo columnInfo : columns) {
 			String column = columnInfo.column();
 			if (!App.hasColumnPermissions(source, table, column)) {
-				if (policy == PermissionPolicy.WEAK) {
+				if (App.getPermissionPolicy() == PermissionPolicy.WEAK) {
 					continue;
 				}
 				return PermissionCheckResult.create(false, simpleInfo);
 			}
-			List<ColumnPermission> columnPermissions = App.getColumnPermissions(source, table, column);
-			boolean check = checkColumn(columnInfo, action, columnPermissions, policy);
+			boolean check = checkColumn(columnInfo.source(), columnInfo.table(), columnInfo.column(), action);
 			if (!check) {
 				String message = String.format("Column [%s.%s.%s] has no [%s] permission", source, table, column,
 						simpleInfo.operation());
@@ -304,12 +291,8 @@ public final class PermissionChecker {
 		return PermissionCheckResult.create(true, simpleInfo);
 	}
 
-	private static boolean checkColumn(ColumnInfo columnInfo, Action action,
-			List<ColumnPermission> columnPermissions,
-			PermissionPolicy policy) {
-		String source = columnInfo.source();
-		String table = columnInfo.table();
-		String column = columnInfo.column();
+	public static boolean checkColumn(String source, String table, String column, Action action) {
+		List<ColumnPermission> columnPermissions = App.getColumnPermissions(source, table, column);
 		boolean configured = !columnPermissions.isEmpty();
 		boolean check = false;
 		over: for (ColumnPermission columnPermission : columnPermissions) {
@@ -340,7 +323,7 @@ public final class PermissionChecker {
 			}
 		}
 		if (!check) {
-			if (policy == PermissionPolicy.WEAK && !configured) {
+			if (App.getPermissionPolicy() == PermissionPolicy.WEAK && !configured) {
 				check = true;
 			} else {
 				logger.warn("Column [{}.{}.{}] has no [{}] permissions", source, table, column, action);

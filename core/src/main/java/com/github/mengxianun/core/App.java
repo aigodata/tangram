@@ -1,5 +1,6 @@
 package com.github.mengxianun.core;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -133,6 +134,16 @@ public final class App {
 		App.configuration = configuration;
 	}
 
+	public static Table getTable(String source, String table) {
+		DataContext dataContext = Strings.isNullOrEmpty(source) ? getDefaultDataContext() : getDataContext(source);
+		return dataContext.getTable(table);
+	}
+
+	public static Column getColumn(String source, String table, String column) {
+		DataContext dataContext = Strings.isNullOrEmpty(source) ? getDefaultDataContext() : getDataContext(source);
+		return dataContext.getColumn(table, column);
+	}
+
 	public static AuthorizationInfo getAuthorizationInfo() {
 		return authorizationInfo;
 	}
@@ -155,6 +166,9 @@ public final class App {
 	}
 
 	public static List<TablePermission> getTablePermissions(String source, String table) {
+		if (Strings.isNullOrEmpty(table)) {
+			return Collections.emptyList();
+		}
 		List<TablePermission> tablePermissions = authorizationInfo.getCurrentTablePermissions(source, table);
 		if (tablePermissions.isEmpty() && Strings.isNullOrEmpty(source)) {
 			tablePermissions = getTablePermissions(getDefaultDataSource(), table);
@@ -167,15 +181,22 @@ public final class App {
 	}
 
 	public static List<ColumnPermission> getColumnPermissions(String source, String table, String column) {
+		if (Strings.isNullOrEmpty(table) || Strings.isNullOrEmpty(column)) {
+			return Collections.emptyList();
+		}
 		List<ColumnPermission> columnPermissions = authorizationInfo.getCurrentColumnPermissions(source, table);
 		if (columnPermissions.isEmpty() && Strings.isNullOrEmpty(source)) {
 			columnPermissions = getColumnPermissions(getDefaultDataSource(), table, column);
 		}
 		return columnPermissions.stream().filter(e -> Objects.equals(source, e.source())
-				&& Objects.equals(table, e.table()) && Objects.equals(column, e.column())).collect(Collectors.toList());
+				&& table.equalsIgnoreCase(e.table()) && column.equalsIgnoreCase(e.column()))
+				.collect(Collectors.toList());
 	}
 
 	public static List<ColumnPermission> getColumnPermissions(String source, String table) {
+		if (Strings.isNullOrEmpty(table)) {
+			return Collections.emptyList();
+		}
 		List<ColumnPermission> columnPermissions = authorizationInfo.getCurrentColumnPermissions(source, table);
 		if (columnPermissions.isEmpty() && Strings.isNullOrEmpty(source)) {
 			columnPermissions = getColumnPermissions(getDefaultDataSource(), table);
@@ -277,10 +298,6 @@ public final class App {
 		
 		public static boolean columnAliasEnabled() {
 			return dialect().columnAliasEnabled();
-		}
-
-		public static void destroy() {
-			currentDataContext().destroy();
 		}
 
 		public static boolean addRelationship(Column primaryColumn, Column foreignColumn,
