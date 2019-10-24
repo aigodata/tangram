@@ -22,11 +22,11 @@ public enum ResultStatus {
 	// -- 预留
 	DATASOURCE(10200, ""),
 	// 数据源不存在
-	DATASOURCE_NOT_EXIST(10201, "Data source [%s] does not exist"),
+	DATASOURCE_NOT_EXIST(10201, "Source [%s] does not exist"),
 	// 数据库表不存在
-	DATASOURCE_TABLE_NOT_EXIST(10202, "Database tables [%s] do not exist"),
+	DATASOURCE_TABLE_NOT_EXIST(10202, "Table [%s] does not exist"),
 	// 列不存在
-	DATASOURCE_COLUMN_NOT_EXIST(10203, "Column [%s] do not exist"),
+	DATASOURCE_COLUMN_NOT_EXIST(10203, "Column [%s] does not exist"),
 	// SQL 执行失败
 	DATASOURCE_SQL_FAILED(10204, "SQL statement execution failed. %s"),
 	// 关联关系不存在
