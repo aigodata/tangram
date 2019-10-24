@@ -409,6 +409,9 @@ public class SimpleParser {
 
 		String column = kv[0];
 		Object value = kv[1];
+		if (operator != Operator.STRONG_EQUAL) {
+			value = value.toString().trim();
+		}
 		// 多值条件时, 将多值字符串转换为数组
 		if (operator == Operator.IN || operator == Operator.NOT_IN || operator == Operator.BETWEEN) {
 			value = value.toString().split(operator.op());
