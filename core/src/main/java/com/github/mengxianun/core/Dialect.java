@@ -1,6 +1,8 @@
 package com.github.mengxianun.core;
 
 import com.github.mengxianun.core.dialect.Function;
+import com.github.mengxianun.core.request.Operator;
+import com.github.mengxianun.core.schema.ColumnType;
 
 public interface Dialect {
 
@@ -82,5 +84,7 @@ public interface Dialect {
 	public boolean hasFunction(String func);
 
 	public Function getFunction(String func);
+
+	public String getWhereColumn(String column, ColumnType columnType, Operator operator);
 
 }

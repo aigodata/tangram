@@ -1,0 +1,4 @@
+{
+  "select":"datetime_table",
+  "where":["date_col%=2010%", "time_col%=10%", {"or":"timestamp_col%=2015-02-01 12%"}]
+}

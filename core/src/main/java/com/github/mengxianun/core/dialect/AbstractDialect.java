@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.github.mengxianun.core.Dialect;
+import com.github.mengxianun.core.request.Operator;
+import com.github.mengxianun.core.schema.ColumnType;
 
 public abstract class AbstractDialect implements Dialect {
 
@@ -27,6 +29,18 @@ public abstract class AbstractDialect implements Dialect {
 	@Override
 	public Function getFunction(String func) {
 		return functions.get(func);
+	}
+
+	@Override
+	public String getWhereColumn(String column, ColumnType columnType, Operator operator) {
+		if ((operator == Operator.LIKE || operator == Operator.NOT_LIKE) && columnType.isTimeBased()) {
+			return getTimeLikeColumn(column);
+		}
+		return column;
+	}
+
+	protected String getTimeLikeColumn(String column) {
+		return column;
 	}
 
 }

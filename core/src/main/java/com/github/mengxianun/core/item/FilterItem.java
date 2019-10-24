@@ -56,6 +56,10 @@ public class FilterItem extends ValuesItem {
 	}
 
 	public Object getRealValue() {
+		// Like must be string
+		if (operator == Operator.LIKE) {
+			return value;
+		}
 		return getRealValue(columnItem.getColumn(), value);
 	}
 

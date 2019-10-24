@@ -21,4 +21,9 @@ public class PostgreSQLDialect extends JdbcDialect {
 		return "?::json";
 	}
 
+	@Override
+	protected String getTimeLikeColumn(String column) {
+		return column + "::text";
+	}
+
 }

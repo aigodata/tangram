@@ -74,6 +74,13 @@ public class SelectTest extends TestSupport {
 	}
 
 	@Test
+	void testWhereLikeTime() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_where_like_time.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(2, result.size());
+	}
+
+	@Test
 	void testWhereGreater() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_where_greater.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
