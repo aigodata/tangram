@@ -331,4 +331,13 @@ public abstract class AbstractDataContext implements DataContext {
 		initMetadata();
 	}
 
+	@Override
+	public void refreshTable(String name) {
+		Table table = schema.getTableByName(name);
+		if (table != null) {
+			schema.removeTable(table);
+		}
+		loadTable(name);
+	}
+
 }

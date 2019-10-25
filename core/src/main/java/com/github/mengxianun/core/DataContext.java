@@ -26,24 +26,24 @@ public interface DataContext {
 	 * Get the table by table name and table alias
 	 * 
 	 * @param nameOrAlias
-	 * @return
+	 * @return Table
 	 */
 	public Table getTable(String nameOrAlias);
 
 	/**
 	 * Get the table by table name
 	 * 
-	 * @param tableName
-	 * @return
+	 * @param name
+	 * @return Table
 	 */
-	public Table loadTable(String tableName);
+	public Table loadTable(String name);
 
 	/**
 	 * Get columns by table name or table alias and column name or column alias
 	 * 
 	 * @param tableNameOrAlias
 	 * @param columnNameOrAlias
-	 * @return
+	 * @return Column
 	 */
 	public Column getColumn(String tableNameOrAlias, String columnNameOrAlias);
 
@@ -100,8 +100,15 @@ public interface DataContext {
 	public AssociationType getAssociationType(Table primaryTable, Table foreignTable);
 
 	/**
-	 * Refresh metadata
+	 * Refresh schema metadata
 	 */
 	public void refresh();
+
+	/**
+	 * Refresh table metadata
+	 * 
+	 * @param name
+	 */
+	public void refreshTable(String name);
 
 }

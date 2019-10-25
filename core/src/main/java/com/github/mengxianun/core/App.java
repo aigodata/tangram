@@ -147,6 +147,14 @@ public final class App {
 		return dataContext.getColumn(table, column);
 	}
 
+	public static void refreshTable(String table) {
+		getDefaultDataContext().refreshTable(table);
+	}
+
+	public static void refreshTable(String source, String table) {
+		getDataContext(source).refreshTable(table);
+	}
+
 	public static AuthorizationInfo getAuthorizationInfo() {
 		return authorizationInfo;
 	}
