@@ -41,7 +41,7 @@ public abstract class AbstractDataContext implements DataContext {
 
 	private static final Logger logger = LoggerFactory.getLogger(AbstractDataContext.class);
 
-	protected final Metadata metadata = new Metadata();
+	protected Schema schema;
 
 	protected Dialect dialect;
 	protected SQLBuilder sqlBuilder;
@@ -229,53 +229,22 @@ public abstract class AbstractDataContext implements DataContext {
 	protected abstract UpdateSummary update(String sql);
 
 	@Override
-	public List<Schema> getSchemas() {
-		return metadata.getSchemas();
-	}
-
-	@Override
-	public Schema getDefaultSchema() {
-		return metadata.getDefaultSchema();
-	}
-
-	@Override
-	public Schema getSchema(String schemaName) {
-		return metadata.getSchema(schemaName);
-	}
-
-	@Override
-	public boolean hasTable(Table table) {
-		return metadata.hasTable(table);
+	public Schema getSchema() {
+		return schema;
 	}
 
 	@Override
 	public Table getTable(String nameOrAlias) {
-		return getTable(metadata.getDefaultSchemaName(), nameOrAlias);
-	}
-
-	@Override
-	public Table getTable(String schemaName, String nameOrAlias) {
-		Schema schema = getSchema(schemaName);
 		Table table = schema.getTable(nameOrAlias);
 		if (table == null) {
-			table = loadTable(schemaName, nameOrAlias);
+			table = loadTable(nameOrAlias);
 		}
 		return table;
 	}
 
 	@Override
-	public Table loadTable(String tableName) {
-		return loadTable(metadata.getDefaultSchemaName(), tableName);
-	}
-
-	@Override
 	public Column getColumn(String tableNameOrAlias, String columnNameOrAlias) {
-		return getColumn(metadata.getDefaultSchemaName(), tableNameOrAlias, columnNameOrAlias);
-	}
-
-	@Override
-	public Column getColumn(String schemaName, String tableNameOrAlias, String columnNameOrAlias) {
-		Table table = getTable(schemaName, tableNameOrAlias);
+		Table table = schema.getTable(tableNameOrAlias);
 		if (table == null) {
 			return null;
 		}
@@ -355,6 +324,11 @@ public abstract class AbstractDataContext implements DataContext {
 			}
 		}
 		return associationType;
+	}
+
+	@Override
+	public void refresh() {
+		initMetadata();
 	}
 
 }

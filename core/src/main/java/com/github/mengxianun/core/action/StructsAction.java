@@ -12,7 +12,7 @@ public class StructsAction extends AbstractAction {
 
 	@Override
 	public Summary execute() {
-		return new BasicSummary(dataContext.getDefaultSchema().getInfo());
+		return new BasicSummary(dataContext.getSchema().getInfo());
 	}
 
 }

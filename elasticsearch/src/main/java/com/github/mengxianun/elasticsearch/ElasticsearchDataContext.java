@@ -37,6 +37,7 @@ import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
+import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableType;
 import com.github.mengxianun.elasticsearch.data.ElasticsearchQuerySummary;
@@ -45,7 +46,6 @@ import com.github.mengxianun.elasticsearch.dialect.ElasticsearchDialect;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchColumnType;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchTable;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -91,18 +91,16 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 	@Override
 	public void initMetadata() {
-		DefaultSchema schema = new DefaultSchema(VIRTUAL_SCHEMA);
-		metadata.setSchemas(Lists.newArrayList(schema));
-		loadMetadata("", "");
+		schema = new DefaultSchema(VIRTUAL_SCHEMA);
+		loadMetadata("");
 	}
 
-	private void loadMetadata(String schemaName, String tableName) {
-		loadMapping(schemaName, tableName);
-		loadAlias(schemaName, tableName);
+	private void loadMetadata(String tableName) {
+		loadMapping(tableName);
+		loadAlias(tableName);
 	}
 
-	private void loadMapping(String schemaName, String tableName) {
-		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaName);
+	private void loadMapping(String tableName) {
 		String mappingString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_MAPPING);
 		JsonObject mappingObject = App.gson().fromJson(mappingString, JsonObject.class);
 		int indexNum = mappingObject.keySet().size();
@@ -130,7 +128,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		}
 	}
 	
-	private ElasticsearchTable createTable(DefaultSchema schema, String index, JsonObject mappingMetaData) {
+	private ElasticsearchTable createTable(Schema schema, String index, JsonObject mappingMetaData) {
 		ElasticsearchTable table = new ElasticsearchTable(index, TableType.TABLE, schema);
 
 		JsonObject mappingNode = mappingMetaData.getAsJsonObject("mappings");
@@ -167,11 +165,10 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		return table;
 	}
 
-	private void loadAlias(String schemaName, String tableName) {
+	private void loadAlias(String tableName) {
 		if (Strings.isNullOrEmpty(tableName)) {
 			return;
 		}
-		DefaultSchema schema = (DefaultSchema) metadata.getSchema(schemaName);
 		String aliasString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_ALIAS);
 		JsonObject aliasObject = App.gson().fromJson(aliasString, JsonObject.class);
 		for (Entry<String, JsonElement> entry : aliasObject.entrySet()) {
@@ -201,14 +198,14 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	public Table loadTable(String schemaName, String tableName) {
+	public Table loadTable(String tableName) {
 		try {
-			loadMetadata(schemaName, tableName);
+			loadMetadata(tableName);
 		} catch (Exception e) {
-			logger.error("Load table [{}].[{}] failed.", schemaName, tableName);
+			logger.error("Load table [{}].[{}] failed.", schema.getName(), tableName);
 			return null;
 		}
-		return metadata.getTable(schemaName, tableName);
+		return schema.getTableByName(tableName);
 	}
 
 	@Override

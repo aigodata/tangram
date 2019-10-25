@@ -15,6 +15,10 @@ public interface Schema extends Name {
 
 	public Table getTableByName(String tableName);
 
+	public void addTable(Table table);
+
+	public void removeTable(Table table);
+
 	public Map<String, Object> getInfo();
 
 }

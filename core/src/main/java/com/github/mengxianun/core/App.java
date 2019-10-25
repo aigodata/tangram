@@ -84,6 +84,10 @@ public final class App {
 		logger.info("Remove {} [{}]", dataContext.getClass().getSimpleName(), name);
 	}
 
+	public static void refreshDataContext(String name) {
+		getDataContext(name).refresh();
+	}
+
 	public static DataContext getDefaultDataContext() {
 		return dataContexts.get(getDefaultDataSource());
 	}

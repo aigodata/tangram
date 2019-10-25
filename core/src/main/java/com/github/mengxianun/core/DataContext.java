@@ -1,6 +1,5 @@
 package com.github.mengxianun.core;
 
-import java.util.List;
 import java.util.Set;
 
 import com.github.mengxianun.core.config.AssociationType;
@@ -21,13 +20,7 @@ public interface DataContext {
 
 	public Summary executeNative(String statement);
 
-	public List<Schema> getSchemas();
-
-	public Schema getDefaultSchema();
-
-	public Schema getSchema(String schemaName);
-
-	public boolean hasTable(Table table);
+	public Schema getSchema();
 
 	/**
 	 * Get the table by table name and table alias
@@ -37,8 +30,6 @@ public interface DataContext {
 	 */
 	public Table getTable(String nameOrAlias);
 
-	public Table getTable(String schemaName, String nameOrAlias);
-
 	/**
 	 * Get the table by table name
 	 * 
@@ -46,8 +37,6 @@ public interface DataContext {
 	 * @return
 	 */
 	public Table loadTable(String tableName);
-
-	public Table loadTable(String schemaName, String tableName);
 
 	/**
 	 * Get columns by table name or table alias and column name or column alias
@@ -57,8 +46,6 @@ public interface DataContext {
 	 * @return
 	 */
 	public Column getColumn(String tableNameOrAlias, String columnNameOrAlias);
-
-	public Column getColumn(String schemaName, String tableNameOrAlias, String columnNameOrAlias);
 
 	public Dialect getDialect();
 
@@ -111,5 +98,10 @@ public interface DataContext {
 	 * @return AssociationType
 	 */
 	public AssociationType getAssociationType(Table primaryTable, Table foreignTable);
+
+	/**
+	 * Refresh metadata
+	 */
+	public void refresh();
 
 }

@@ -18,6 +18,7 @@ import com.google.common.base.Strings;
  * @author mengxiangyun
  *
  */
+@Deprecated
 public class Metadata {
 
 	// public name attributes

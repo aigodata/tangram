@@ -33,7 +33,6 @@ import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
-import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableType;
 import com.github.mengxianun.jdbc.data.JdbcMapQuerySummary;
@@ -146,14 +145,12 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	public void initMetadata() {
-		JdbcSchema schema = new JdbcSchema(defaultSchema, catalog);
-		metadata.addSchema(schema);
+		schema = new JdbcSchema(defaultSchema, catalog);
 		// Init all tables metadata
 		loadMetadata(defaultSchema, "%");
 	}
 
 	private void loadMetadata(String schemaPattern, String tableNamePattern) {
-
 		try (final Connection connection = getConnection()) {
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
 
@@ -167,7 +164,6 @@ public class JdbcDataContext extends AbstractDataContext {
 	private void loadMetadata(DatabaseMetaData databaseMetaData, String catalog, String schemaPattern,
 			String tableNamePattern, String[] types, String columnNamePattern) throws SQLException {
 		// table metadata
-		JdbcSchema schema = (JdbcSchema) metadata.getSchema(schemaPattern);
 		ResultSet tablesResultSet = databaseMetaData.getTables(catalog, schemaPattern, tableNamePattern, types);
 		while (tablesResultSet.next()) {
 			String tableName = tablesResultSet.getString(3);
@@ -191,7 +187,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			Boolean columnNullable = columnsResultSet.getBoolean(11);
 			String columnRemarks = columnsResultSet.getString(12);
 
-			JdbcTable table = (JdbcTable) metadata.getTable(schemaPattern, columnTable);
+			JdbcTable table = (JdbcTable) schema.getTableByName(columnTable);
 			ColumnType columnType = new JdbcColumnType(Integer.parseInt(columnDataType), columnTypeName);
 			table.addColumn(
 					new JdbcColumn(columnName, columnType, table, columnNullable, columnRemarks, columnSize));
@@ -256,12 +252,12 @@ public class JdbcDataContext extends AbstractDataContext {
 	}
 
 	@Override
-	public Table loadTable(String schemaName, String tableName) {
+	public Table loadTable(String tableName) {
 		if (tableName.contains("%")) {
 			return null;
 		}
-		loadMetadata(schemaName, tableName);
-		return metadata.getTable(schemaName, tableName);
+		loadMetadata(schema.getName(), tableName);
+		return schema.getTableByName(tableName);
 	}
 
 	public Connection getDriverConnection(String url, String username, String password) throws SQLException {
@@ -470,11 +466,6 @@ public class JdbcDataContext extends AbstractDataContext {
 				}
 			}
 		}
-	}
-
-	@Override
-	public Schema getDefaultSchema() {
-		return getSchema(defaultSchema);
 	}
 
 	@Override

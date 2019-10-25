@@ -94,6 +94,19 @@ public abstract class AbstractSchema implements Schema {
 	}
 
 	@Override
+	public void addTable(Table table) {
+		boolean match = tables.parallelStream().anyMatch(e -> e.getName().equals(table.getName()));
+		if (!match) {
+			tables.add(table);
+		}
+	}
+
+	@Override
+	public void removeTable(Table table) {
+		tables.remove(table);
+	}
+
+	@Override
 	public Map<String, Object> getInfo() {
 		Map<String, Object> info = new HashMap<>();
 		info.put("schema", name);
@@ -102,17 +115,6 @@ public abstract class AbstractSchema implements Schema {
 		tables.stream().forEach(e -> tablesInfo.add(e.getInfo()));
 		info.put("tables", tablesInfo);
 		return info;
-	}
-
-	public void addTable(Table table) {
-		boolean match = tables.parallelStream().anyMatch(e -> e.getName().equals(table.getName()));
-		if (!match) {
-			tables.add(table);
-		}
-	}
-
-	public void removeTable(Table table) {
-		tables.remove(table);
 	}
 
 }
