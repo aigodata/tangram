@@ -95,6 +95,9 @@ public abstract class AbstractSchema implements Schema {
 
 	@Override
 	public void addTable(Table table) {
+		if (table == null) {
+			return;
+		}
 		boolean match = tables.parallelStream().anyMatch(e -> e.getName().equals(table.getName()));
 		if (!match) {
 			tables.add(table);

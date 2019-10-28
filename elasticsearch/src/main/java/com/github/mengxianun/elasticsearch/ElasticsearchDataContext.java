@@ -91,43 +91,79 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 
 	@Override
 	public void initMetadata() {
-		schema = new DefaultSchema(VIRTUAL_SCHEMA);
-		loadMetadata("");
+		schema = loadSchema();
+	}
+	
+	@Override
+	public Schema loadSchema() {
+		Schema elasticSchema = new DefaultSchema(VIRTUAL_SCHEMA);
+		// mapping
+		String mappingString = request(REQUEST_METHOD_GET, REQUEST_ENDPOINT_MAPPING);
+		JsonObject mappingObject = App.gson().fromJson(mappingString, JsonObject.class);
+		int indexNum = mappingObject.keySet().size();
+		if (indexNum <= 0) {
+			return elasticSchema;
+		}
+		for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
+			String index = entry.getKey();
+			JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
+			ElasticsearchTable table = createTable(elasticSchema, index, mappingMetaData);
+			elasticSchema.addTable(table);
+			logger.info("Find elasticsearch index [{}]", index);
+		}
+
+		// alias
+		String aliasString = request(REQUEST_METHOD_GET, REQUEST_ENDPOINT_ALIAS);
+		JsonObject aliasObject = App.gson().fromJson(aliasString, JsonObject.class);
+		for (Entry<String, JsonElement> entry : aliasObject.entrySet()) {
+			String index = entry.getKey();
+			Set<String> aliases = entry.getValue().getAsJsonObject().getAsJsonObject("aliases").keySet();
+			ElasticsearchTable table = (ElasticsearchTable) elasticSchema.getTableByName(index);
+			table.addAliases(aliases);
+
+			logger.info("Find elasticsearch index [{}] alias {}", index, aliases);
+		}
+		return elasticSchema;
 	}
 
-	private void loadMetadata(String tableName) {
-		loadMapping(tableName);
-		loadAlias(tableName);
+	@Override
+	public Table loadTable(String name) {
+		try {
+			return loadIndex(name);
+		} catch (Exception e) {
+			logger.error("Load table [{}].[{}] failed.", schema.getName(), name);
+			return null;
+		}
 	}
 
-	private void loadMapping(String tableName) {
+	public Table loadIndex(String tableName) {
+		if (Strings.isNullOrEmpty(tableName)) {
+			return null;
+		}
+		ElasticsearchTable table = null;
+
 		String mappingString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_MAPPING);
 		JsonObject mappingObject = App.gson().fromJson(mappingString, JsonObject.class);
 		int indexNum = mappingObject.keySet().size();
 		if (indexNum <= 0) {
-			return;
+			return table;
 		}
-		if (Strings.isNullOrEmpty(tableName)) { // all
-			for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
-				String index = entry.getKey();
-				JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
-				ElasticsearchTable table = createTable(schema, index, mappingMetaData);
-				schema.addTable(table);
-				logger.info("Find elasticsearch index [{}]", index);
-			}
-		} else {
-			ElasticsearchTable esTable = new ElasticsearchTable(tableName, TableType.TABLE, schema);
-			for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
-				String index = entry.getKey();
-				JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
-				ElasticsearchTable table = createTable(schema, index, mappingMetaData);
-				esTable.addColumns(table.getColumns());
-			}
-			schema.addTable(esTable);
-			logger.info("Find elasticsearch index [{}]", tableName);
-		}
+		Entry<String, JsonElement> indexEntry = mappingObject.entrySet().iterator().next();
+		JsonObject mappingMetaData = indexEntry.getValue().getAsJsonObject();
+		table = createTable(schema, tableName, mappingMetaData);
+		logger.info("Find elasticsearch index [{}]", tableName);
+
+		// alias
+		String aliasString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_ALIAS);
+		JsonObject aliasObject = App.gson().fromJson(aliasString, JsonObject.class);
+		Entry<String, JsonElement> aliasEntry = aliasObject.entrySet().iterator().next();
+		Set<String> aliases = aliasEntry.getValue().getAsJsonObject().getAsJsonObject("aliases").keySet();
+		table.addAliases(aliases);
+		logger.info("Find elasticsearch index [{}] alias {}", tableName, aliases);
+
+		return table;
 	}
-	
+
 	private ElasticsearchTable createTable(Schema schema, String index, JsonObject mappingMetaData) {
 		ElasticsearchTable table = new ElasticsearchTable(index, TableType.TABLE, schema);
 
@@ -165,22 +201,6 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		return table;
 	}
 
-	private void loadAlias(String tableName) {
-		if (Strings.isNullOrEmpty(tableName)) {
-			return;
-		}
-		String aliasString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_ALIAS);
-		JsonObject aliasObject = App.gson().fromJson(aliasString, JsonObject.class);
-		for (Entry<String, JsonElement> entry : aliasObject.entrySet()) {
-			String index = entry.getKey();
-			Set<String> aliases = entry.getValue().getAsJsonObject().getAsJsonObject("aliases").keySet();
-			ElasticsearchTable table = (ElasticsearchTable) schema.getTableByName(index);
-			table.addAliases(aliases);
-
-			logger.info("Find elasticsearch index [{}] alias {}", index, aliases);
-		}
-	}
-
 	private void findAllColumns(List<String> visited, List<List<String>> paths, JsonObject columnObjects) {
 		if (!columnObjects.has("properties")) {
 			paths.add(visited);
@@ -195,17 +215,6 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 			temp.add(column);
 			findAllColumns(temp, paths, columnObject);
 		}
-	}
-
-	@Override
-	public Table loadTable(String tableName) {
-		try {
-			loadMetadata(tableName);
-		} catch (Exception e) {
-			logger.error("Load table [{}].[{}] failed.", schema.getName(), tableName);
-			return null;
-		}
-		return schema.getTableByName(tableName);
 	}
 
 	@Override

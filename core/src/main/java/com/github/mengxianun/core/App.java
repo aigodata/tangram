@@ -177,7 +177,7 @@ public final class App {
 	}
 
 	public static List<TablePermission> getTablePermissions(String source, String table) {
-		if (Strings.isNullOrEmpty(table)) {
+		if (Strings.isNullOrEmpty(table) || authorizationInfo == null) {
 			return Collections.emptyList();
 		}
 		List<TablePermission> tablePermissions = authorizationInfo.getCurrentTablePermissions(source, table);
@@ -192,7 +192,7 @@ public final class App {
 	}
 
 	public static List<ColumnPermission> getColumnPermissions(String source, String table, String column) {
-		if (Strings.isNullOrEmpty(table) || Strings.isNullOrEmpty(column)) {
+		if (Strings.isNullOrEmpty(table) || Strings.isNullOrEmpty(column) || authorizationInfo == null) {
 			return Collections.emptyList();
 		}
 		List<ColumnPermission> columnPermissions = authorizationInfo.getCurrentColumnPermissions(source, table);
@@ -205,7 +205,7 @@ public final class App {
 	}
 
 	public static List<ColumnPermission> getColumnPermissions(String source, String table) {
-		if (Strings.isNullOrEmpty(table)) {
+		if (Strings.isNullOrEmpty(table) || authorizationInfo == null) {
 			return Collections.emptyList();
 		}
 		List<ColumnPermission> columnPermissions = authorizationInfo.getCurrentColumnPermissions(source, table);

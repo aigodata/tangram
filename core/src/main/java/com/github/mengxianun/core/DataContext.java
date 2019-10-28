@@ -22,6 +22,8 @@ public interface DataContext {
 
 	public Schema getSchema();
 
+	public Schema loadSchema();
+
 	/**
 	 * Get the table by table name and table alias
 	 * 

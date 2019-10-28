@@ -238,6 +238,7 @@ public abstract class AbstractDataContext implements DataContext {
 		Table table = schema.getTable(nameOrAlias);
 		if (table == null) {
 			table = loadTable(nameOrAlias);
+			schema.addTable(table);
 		}
 		return table;
 	}

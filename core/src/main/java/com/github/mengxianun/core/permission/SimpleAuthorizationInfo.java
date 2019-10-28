@@ -102,14 +102,22 @@ public class SimpleAuthorizationInfo implements AuthorizationInfo {
 
 	@Override
 	public List<TablePermission> getCurrentTablePermissions() {
-		return userTablePermissions.get(getUserId()).values().stream().flatMap(List::stream)
+		Object userId = getUserId();
+		if (!userTablePermissions.containsKey(userId)) {
+			initPermissions();
+		}
+		return userTablePermissions.get(userId).values().stream().flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
 	@Override
 	public List<TablePermission> getCurrentTablePermissions(String source, String table) {
+		Object userId = getUserId();
+		if (!userTablePermissions.containsKey(userId)) {
+			initPermissions();
+		}
+		Map<TableKey, List<TablePermission>> tableKeyPermissions = userTablePermissions.get(userId);
 		TableKey tableKey = TableKey.create(source, table);
-		Map<TableKey, List<TablePermission>> tableKeyPermissions = userTablePermissions.get(getUserId());
 		if (tableKeyPermissions.containsKey(tableKey)) {
 			return tableKeyPermissions.get(tableKey);
 		}
@@ -118,14 +126,22 @@ public class SimpleAuthorizationInfo implements AuthorizationInfo {
 
 	@Override
 	public List<ColumnPermission> getCurrentColumnPermissions() {
-		return userColumnPermissions.get(getUserId()).values().stream().flatMap(List::stream)
+		Object userId = getUserId();
+		if (!userTablePermissions.containsKey(userId)) {
+			initPermissions();
+		}
+		return userColumnPermissions.get(userId).values().stream().flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
 	@Override
 	public List<ColumnPermission> getCurrentColumnPermissions(String source, String table) {
+		Object userId = getUserId();
+		if (!userTablePermissions.containsKey(userId)) {
+			initPermissions();
+		}
+		Map<TableKey, List<ColumnPermission>> columnKeyPermissions = userColumnPermissions.get(userId);
 		TableKey tableKey = TableKey.create(source, table);
-		Map<TableKey, List<ColumnPermission>> columnKeyPermissions = userColumnPermissions.get(getUserId());
 		if (columnKeyPermissions.containsKey(tableKey)) {
 			return columnKeyPermissions.get(tableKey);
 		}

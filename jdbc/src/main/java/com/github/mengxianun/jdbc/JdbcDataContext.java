@@ -33,6 +33,7 @@ import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.github.mengxianun.core.data.summary.UpdateSummary;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
+import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableType;
 import com.github.mengxianun.jdbc.data.JdbcMapQuerySummary;
@@ -145,24 +146,24 @@ public class JdbcDataContext extends AbstractDataContext {
 
 	@Override
 	public void initMetadata() {
-		schema = new JdbcSchema(defaultSchema, catalog);
 		// Init all tables metadata
-		loadMetadata(defaultSchema, "%");
+		schema = loadSchema(defaultSchema, "%");
 	}
 
-	private void loadMetadata(String schemaPattern, String tableNamePattern) {
+	private JdbcSchema loadSchema(String schemaPattern, String tableNamePattern) {
 		try (final Connection connection = getConnection()) {
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
 
 			String[] types = Arrays.stream(tableTypes).map(TableType::name).toArray(String[]::new);
-			loadMetadata(databaseMetaData, catalog, schemaPattern, tableNamePattern, types, null);
+			return loadSchema(databaseMetaData, catalog, schemaPattern, tableNamePattern, types, null);
 		} catch (SQLException e) {
 			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 		}
 	}
 
-	private void loadMetadata(DatabaseMetaData databaseMetaData, String catalog, String schemaPattern,
+	private JdbcSchema loadSchema(DatabaseMetaData databaseMetaData, String catalog, String schemaPattern,
 			String tableNamePattern, String[] types, String columnNamePattern) throws SQLException {
+		JdbcSchema jdbcSchema = new JdbcSchema(defaultSchema, catalog);
 		// table metadata
 		ResultSet tablesResultSet = databaseMetaData.getTables(catalog, schemaPattern, tableNamePattern, types);
 		while (tablesResultSet.next()) {
@@ -170,7 +171,7 @@ public class JdbcDataContext extends AbstractDataContext {
 			String tableTypeName = tablesResultSet.getString(4);
 			TableType tableType = TableType.getTableType(tableTypeName);
 			String remarks = tablesResultSet.getString(5);
-			schema.addTable(new JdbcTable(tableName, tableType, schema, remarks));
+			jdbcSchema.addTable(new JdbcTable(tableName, tableType, jdbcSchema, remarks));
 
 			logger.info("Find [{}] table [{}]", databaseProductName, tableName);
 		}
@@ -187,19 +188,81 @@ public class JdbcDataContext extends AbstractDataContext {
 			Boolean columnNullable = columnsResultSet.getBoolean(11);
 			String columnRemarks = columnsResultSet.getString(12);
 
-			JdbcTable table = (JdbcTable) schema.getTableByName(columnTable);
+			JdbcTable table = (JdbcTable) jdbcSchema.getTableByName(columnTable);
 			ColumnType columnType = new JdbcColumnType(Integer.parseInt(columnDataType), columnTypeName);
-			table.addColumn(
-					new JdbcColumn(columnName, columnType, table, columnNullable, columnRemarks, columnSize));
+			table.addColumn(new JdbcColumn(columnName, columnType, table, columnNullable, columnRemarks, columnSize));
 		}
 
 		// primary key
-		for (Table table : schema.getTables()) {
+		for (Table table : jdbcSchema.getTables()) {
 			ResultSet primaryKeysResultSet = databaseMetaData.getPrimaryKeys(catalog, schemaPattern, table.getName());
 			while (primaryKeysResultSet.next()) {
 				String columnName = primaryKeysResultSet.getString(4);
 				((JdbcTable) table).addPrimaryKey(columnName);
 			}
+		}
+		return jdbcSchema;
+	}
+
+	private Table loadTable(DatabaseMetaData databaseMetaData, String catalog, String schemaName, String tableName,
+			String[] types) throws SQLException {
+		JdbcTable table = null;
+		ResultSet tablesResultSet = databaseMetaData.getTables(catalog, schemaName, tableName, types);
+		while (tablesResultSet.next()) {
+			tableName = tablesResultSet.getString(3);
+			String tableTypeName = tablesResultSet.getString(4);
+			TableType tableType = TableType.getTableType(tableTypeName);
+			String remarks = tablesResultSet.getString(5);
+			table = new JdbcTable(tableName, tableType, schema, remarks);
+
+			logger.info("Find [{}] table [{}]", databaseProductName, tableName);
+		}
+
+		if (table == null) {
+			return null;
+		}
+
+		// column metadata
+		ResultSet columnsResultSet = databaseMetaData.getColumns(catalog, schemaName, tableName, null);
+		while (columnsResultSet.next()) {
+			String columnName = columnsResultSet.getString(4);
+			String columnDataType = columnsResultSet.getString(5);
+			String columnTypeName = columnsResultSet.getString(6);
+			Integer columnSize = columnsResultSet.getInt(7);
+			Boolean columnNullable = columnsResultSet.getBoolean(11);
+			String columnRemarks = columnsResultSet.getString(12);
+
+			ColumnType columnType = new JdbcColumnType(Integer.parseInt(columnDataType), columnTypeName);
+			table.addColumn(new JdbcColumn(columnName, columnType, table, columnNullable, columnRemarks, columnSize));
+		}
+
+		// primary key
+		ResultSet primaryKeysResultSet = databaseMetaData.getPrimaryKeys(catalog, schemaName, table.getName());
+		while (primaryKeysResultSet.next()) {
+			String columnName = primaryKeysResultSet.getString(4);
+			table.addPrimaryKey(columnName);
+		}
+		return table;
+	}
+
+	@Override
+	public Schema loadSchema() {
+		return loadSchema(defaultSchema, "%");
+	}
+
+	@Override
+	public Table loadTable(String tableName) {
+		if (tableName.contains("%")) {
+			return null;
+		}
+
+		try (final Connection connection = getConnection()) {
+			DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+			String[] types = Arrays.stream(tableTypes).map(TableType::name).toArray(String[]::new);
+			return loadTable(databaseMetaData, catalog, schema.getName(), tableName, types);
+		} catch (SQLException e) {
+			throw new JdbcDataException(ResultStatus.DATASOURCE_EXCEPTION, e.getMessage());
 		}
 	}
 
@@ -249,15 +312,6 @@ public class JdbcDataContext extends AbstractDataContext {
 			}
 		}
 		return dialectTemp;
-	}
-
-	@Override
-	public Table loadTable(String tableName) {
-		if (tableName.contains("%")) {
-			return null;
-		}
-		loadMetadata(schema.getName(), tableName);
-		return schema.getTableByName(tableName);
 	}
 
 	public Connection getDriverConnection(String url, String username, String password) throws SQLException {
