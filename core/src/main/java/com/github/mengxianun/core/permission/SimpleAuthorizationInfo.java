@@ -42,7 +42,6 @@ public class SimpleAuthorizationInfo implements AuthorizationInfo {
 		this.userIdSupplier = userIdSupplier;
 		this.tablePermissionsSupplier = tablePermissionsSupplier;
 		this.columnPermissionsSupplier = columnPermissionsSupplier;
-		initPermissions();
 	}
 
 	private void initPermissions() {
