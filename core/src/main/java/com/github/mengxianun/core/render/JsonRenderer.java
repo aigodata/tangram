@@ -287,7 +287,8 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 			} else if (columnType.isLiteral()) {
 				record.addProperty(key, render(column, value.toString()));
 			} else if (columnType.isJson() || columnType.isArray()) {
-				record.add(key, App.gson().toJsonTree(value));
+				JsonElement jsonValue = action.getDataContext().getDialect().getJsonValue(value);
+				record.add(key, jsonValue);
 			} else {
 				record.addProperty(key, render(column, value.toString()));
 			}

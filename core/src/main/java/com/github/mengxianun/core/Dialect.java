@@ -3,6 +3,7 @@ package com.github.mengxianun.core;
 import com.github.mengxianun.core.dialect.Function;
 import com.github.mengxianun.core.request.Operator;
 import com.github.mengxianun.core.schema.ColumnType;
+import com.google.gson.JsonElement;
 
 public interface Dialect {
 
@@ -72,6 +73,16 @@ public interface Dialect {
 		return "?";
 	}
 	
+	/**
+	 * 解析数据源返回的 json 列值
+	 * 
+	 * @param value
+	 * @return
+	 */
+	default JsonElement getJsonValue(Object value) {
+		return App.gson().toJsonTree(value);
+	}
+
 	/**
 	 * 数据库记录起始位置, 默认从1开始
 	 * 
