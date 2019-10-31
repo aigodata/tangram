@@ -314,7 +314,9 @@ public class SQLBuilder {
 	}
 
 	public String toWhere() {
-		return whereString = joinLimit ? toWhere(joinLimitFilterItems) : toWhere(action.getFilterItems());
+		// return whereString = joinLimit ? toWhere(joinLimitFilterItems) : toWhere(action.getFilterItems());
+		// Inner join causes query records to increase
+		return whereString = toWhere(action.getFilterItems());
 	}
 
 	public String toWhere(List<FilterItem> filterItems) {
