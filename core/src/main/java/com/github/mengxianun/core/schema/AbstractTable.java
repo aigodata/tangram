@@ -25,6 +25,7 @@ public abstract class AbstractTable implements Table {
 	protected final String name;
 	protected final TableType type;
 	protected final Schema schema;
+	protected TableSettings settings = TableSettings.defaultSettings();
 	protected final List<Column> columns;
 	protected final List<Column> primaryKeys;
 
@@ -168,6 +169,16 @@ public abstract class AbstractTable implements Table {
 	@Override
 	public void setConfig(JsonObject config) {
 		this.config = config;
+	}
+
+	@Override
+	public TableSettings getSettings() {
+		return settings;
+	}
+
+	@Override
+	public void setSettings(TableSettings settings) {
+		this.settings = settings;
 	}
 
 	public void addColumn(Column column) {

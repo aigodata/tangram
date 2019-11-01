@@ -33,4 +33,8 @@ public interface Table extends Name {
 
 	void setConfig(JsonObject config);
 
+	TableSettings getSettings();
+
+	void setSettings(TableSettings settings);
+
 }

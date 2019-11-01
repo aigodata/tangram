@@ -33,9 +33,12 @@ public class StructTest extends TestSupport {
 	void testStructStar() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "struct_star.json");
 		JsonObject result = (JsonObject) dataResultSet.getJsonData();
+		assertTrue(result.has("test"));
+		assertTrue(result.has("test2"));
+		result = result.getAsJsonObject("test");
 		assertTrue(result.has("name"));
 		String tableName = result.get("name").getAsString();
-		assertEquals("test*", tableName);
+		assertEquals("test", tableName);
 		assertTrue(result.has("columns"));
 		JsonArray columns = result.getAsJsonArray("columns");
 		JsonObject columnObject = columns.get(0).getAsJsonObject();

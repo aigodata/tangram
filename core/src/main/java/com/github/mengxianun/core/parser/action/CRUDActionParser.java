@@ -56,6 +56,7 @@ import com.github.mengxianun.core.request.Operator;
 import com.github.mengxianun.core.request.Order;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Table;
+import com.github.mengxianun.core.schema.TableSettings;
 import com.github.mengxianun.core.schema.relationship.Relationship;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 import com.google.common.base.Strings;
@@ -396,6 +397,7 @@ public class CRUDActionParser extends AbstractActionParser {
 			}
 		}
 		removeExcludeColumns(columnItems);
+		removeMaxColumns(columnItems);
 		columnItems.forEach(e -> {
 			action.addColumnItem(e);
 			tempAliasColumnItems.put(e.getAlias(), e);
@@ -476,6 +478,32 @@ public class CRUDActionParser extends AbstractActionParser {
 							&& tableName.equalsIgnoreCase(columnInfo.table())) {
 						removeColumnItems.add(columnItem);
 					}
+				}
+			}
+		}
+		columnItems.removeAll(removeColumnItems);
+	}
+
+	/**
+	 * If the query column exceeds the maximum query column setting for the table,
+	 * delete the columns that exceed
+	 * 
+	 * @param columnItems
+	 */
+	private void removeMaxColumns(List<ColumnItem> columnItems) {
+		Table primaryTable = action.getPrimaryTable();
+		TableSettings settings = action.getPrimaryTable().getSettings();
+		int maxQueryFields = settings.maxQueryFields();
+
+		List<ColumnItem> removeColumnItems = new ArrayList<>();
+		int primaryColumnNum = 0;
+		for (ColumnItem columnItem : columnItems) {
+			Column column = columnItem.getColumn();
+			// Only process the primary table for now
+			if (column != null && column.getTable() == primaryTable) {
+				primaryColumnNum++;
+				if (primaryColumnNum > maxQueryFields) {
+					removeColumnItems.add(columnItem);
 				}
 			}
 		}

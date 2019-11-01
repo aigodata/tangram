@@ -3,10 +3,12 @@ package com.github.mengxianun.elasticsearch;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -39,13 +41,14 @@ import com.github.mengxianun.core.schema.DefaultColumn;
 import com.github.mengxianun.core.schema.DefaultSchema;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
+import com.github.mengxianun.core.schema.TableSettings;
 import com.github.mengxianun.core.schema.TableType;
+import com.github.mengxianun.core.schema.WildcardTable;
 import com.github.mengxianun.elasticsearch.data.ElasticsearchQuerySummary;
 import com.github.mengxianun.elasticsearch.data.ElasticsearchSQLQuerySummary;
 import com.github.mengxianun.elasticsearch.dialect.ElasticsearchDialect;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchColumnType;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchTable;
-import com.google.common.base.Strings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -60,6 +63,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	private static final String REQUEST_ENDPOINT_ROOT = "/";
 	private static final String REQUEST_ENDPOINT_MAPPING = "/_mapping";
 	private static final String REQUEST_ENDPOINT_ALIAS = "/_alias";
+	private static final String REQUEST_ENDPOINT_SETTINGS = "/_settings";
 	private static final String REQUEST_ENDPOINT_SEARCH = "/_search";
 	private static final String REQUEST_ENDPOINT_SQL = "/_xpack/sql";
 	private static final String REQUEST_ENDPOINT_SQL_TRANSLATE = "/_xpack/sql/translate";
@@ -97,71 +101,78 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	@Override
 	public Schema loadSchema() {
 		Schema elasticSchema = new DefaultSchema(VIRTUAL_SCHEMA);
-		// mapping
-		String mappingString = request(REQUEST_METHOD_GET, REQUEST_ENDPOINT_MAPPING);
-		JsonObject mappingObject = App.gson().fromJson(mappingString, JsonObject.class);
-		int indexNum = mappingObject.keySet().size();
-		if (indexNum <= 0) {
-			return elasticSchema;
-		}
-		for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
-			String index = entry.getKey();
-			JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
-			ElasticsearchTable table = createTable(elasticSchema, index, mappingMetaData);
-			elasticSchema.addTable(table);
-			logger.info("Find elasticsearch index [{}]", index);
-		}
-
-		// alias
-		String aliasString = request(REQUEST_METHOD_GET, REQUEST_ENDPOINT_ALIAS);
-		JsonObject aliasObject = App.gson().fromJson(aliasString, JsonObject.class);
-		for (Entry<String, JsonElement> entry : aliasObject.entrySet()) {
-			String index = entry.getKey();
-			Set<String> aliases = entry.getValue().getAsJsonObject().getAsJsonObject("aliases").keySet();
-			ElasticsearchTable table = (ElasticsearchTable) elasticSchema.getTableByName(index);
-			table.addAliases(aliases);
-
-			logger.info("Find elasticsearch index [{}] alias {}", index, aliases);
-		}
+		loadIndexes(elasticSchema, "");
 		return elasticSchema;
 	}
 
 	@Override
 	public Table loadTable(String name) {
 		try {
-			return loadIndex(name);
+			loadIndexes(schema, name);
+			return schema.getTableByName(name);
 		} catch (Exception e) {
 			logger.error("Load table [{}].[{}] failed.", schema.getName(), name);
 			return null;
 		}
 	}
 
-	public Table loadIndex(String tableName) {
-		if (Strings.isNullOrEmpty(tableName)) {
-			return null;
+	public void loadIndexes(Schema elasticSchema, String... indexes) {
+		if (indexes == null || indexes.length == 0) {
+			return;
 		}
-		ElasticsearchTable table = null;
+		String indexExpression = String.join(",", indexes);
 
-		String mappingString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_MAPPING);
+		// mapping
+		String mappingString = request(REQUEST_METHOD_GET, indexExpression + REQUEST_ENDPOINT_MAPPING);
 		JsonObject mappingObject = App.gson().fromJson(mappingString, JsonObject.class);
-		int indexNum = mappingObject.keySet().size();
+		int indexNum = mappingObject.size();
 		if (indexNum <= 0) {
-			return table;
+			return;
 		}
-		Entry<String, JsonElement> indexEntry = mappingObject.entrySet().iterator().next();
-		JsonObject mappingMetaData = indexEntry.getValue().getAsJsonObject();
-		table = createTable(schema, tableName, mappingMetaData);
-		logger.info("Find elasticsearch index [{}]", tableName);
+		Map<String, ElasticsearchTable> indexTableMap = new HashMap<>();
+		for (Entry<String, JsonElement> entry : mappingObject.entrySet()) {
+			String index = entry.getKey();
+			JsonObject mappingMetaData = entry.getValue().getAsJsonObject();
+			ElasticsearchTable table = createTable(elasticSchema, index, mappingMetaData);
+			elasticSchema.addTable(table);
+			indexTableMap.put(index, table);
+			logger.info("Find elasticsearch index [{}]", index);
+		}
 
 		// alias
-		String aliasString = request(REQUEST_METHOD_GET, tableName + REQUEST_ENDPOINT_ALIAS);
+		String aliasString = request(REQUEST_METHOD_GET, indexExpression + REQUEST_ENDPOINT_ALIAS);
 		JsonObject aliasObject = App.gson().fromJson(aliasString, JsonObject.class);
-		Entry<String, JsonElement> aliasEntry = aliasObject.entrySet().iterator().next();
-		Set<String> aliases = aliasEntry.getValue().getAsJsonObject().getAsJsonObject("aliases").keySet();
-		table.addAliases(aliases);
-		logger.info("Find elasticsearch index [{}] alias {}", tableName, aliases);
+		for (Entry<String, JsonElement> entry : aliasObject.entrySet()) {
+			String index = entry.getKey();
+			Set<String> aliases = entry.getValue().getAsJsonObject().getAsJsonObject("aliases").keySet();
+			ElasticsearchTable table = indexTableMap.get(index);
+			table.addAliases(aliases);
+			logger.info("Find elasticsearch index [{}] alias {}", index, aliases);
+		}
 
-		return table;
+		// setting
+		String settingsString = request(REQUEST_METHOD_GET, indexExpression + REQUEST_ENDPOINT_SETTINGS);
+		JsonObject settingsObject = App.gson().fromJson(settingsString, JsonObject.class);
+		for (Entry<String, JsonElement> entry : settingsObject.entrySet()) {
+			String index = entry.getKey();
+			JsonObject indexSettings = entry.getValue().getAsJsonObject().getAsJsonObject("settings")
+					.getAsJsonObject("index");
+			int maxDocvalueFieldsSearch = indexSettings.has("max_docvalue_fields_search")
+					? indexSettings.get("max_docvalue_fields_search").getAsInt()
+					: 100;
+			TableSettings settings = TableSettings.builder().maxQueryFields(maxDocvalueFieldsSearch).build();
+			ElasticsearchTable table = indexTableMap.get(index);
+			table.setSettings(settings);
+		}
+
+		// Wildcard index
+		if (indexNum > 1) {
+			List<Table> tables = mappingObject.keySet().stream().map(elasticSchema::getTableByName)
+					.collect(Collectors.toList());
+			WildcardTable wildcardTable = new WildcardTable(indexExpression, elasticSchema, tables);
+			elasticSchema.addTable(wildcardTable);
+		}
+
 	}
 
 	private ElasticsearchTable createTable(Schema schema, String index, JsonObject mappingMetaData) {
@@ -173,37 +184,23 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		}
 		JsonObject defaultTypeMapping = mappingNode.getAsJsonObject(mappingNode.keySet().iterator().next());
 		if (defaultTypeMapping.has("properties")) {
-			JsonObject properties = defaultTypeMapping.getAsJsonObject("properties");
-			for (String columnName : properties.keySet()) {
-				JsonObject columnProperties = properties.getAsJsonObject(columnName);
-				if (columnProperties.has("properties")) { // object type
-					String typeName = ElasticsearchColumnType.OBJECT;
-					List<List<String>> paths = new ArrayList<>();
-					findAllColumns(Arrays.asList(columnName), paths, columnProperties);
-					for (List<String> list : paths) {
-						String objectColumnName = String.join(".", list);
-						if ("query.match_all".equals(objectColumnName)) { // skip built-in column
-							continue;
-						}
-						DefaultColumn column = new DefaultColumn(objectColumnName,
-								new ElasticsearchColumnType(typeName), table);
-						table.addColumn(column);
-					}
-				} else {
-					String typeName = columnProperties.has("type") ? columnProperties.get("type").getAsString()
-							: null;
-					DefaultColumn column = new DefaultColumn(columnName,
-							new ElasticsearchColumnType(typeName), table);
-					table.addColumn(column);
-				}
-			}
+			createAllColumns(new ArrayList<>(), defaultTypeMapping, table);
 		}
 		return table;
 	}
 
-	private void findAllColumns(List<String> visited, List<List<String>> paths, JsonObject columnObjects) {
+	private void createAllColumns(List<String> visited, JsonObject columnObjects, ElasticsearchTable table) {
 		if (!columnObjects.has("properties")) {
-			paths.add(visited);
+			String columnName = String.join(".", visited);
+			String columnType = columnObjects.get("type").getAsString();
+			/**
+			 * skip object column
+			 * example: "nodes" : { "type" : "object" }
+			 */
+			if (!"object".equals(columnType)) {
+				DefaultColumn column = new DefaultColumn(columnName, new ElasticsearchColumnType(columnType), table);
+				table.addColumn(column);
+			}
 			return;
 		}
 		JsonObject columns = columnObjects.getAsJsonObject("properties");
@@ -213,7 +210,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 			List<String> temp = new ArrayList<>();
 			temp.addAll(visited);
 			temp.add(column);
-			findAllColumns(temp, paths, columnObject);
+			createAllColumns(temp, columnObject, table);
 		}
 	}
 

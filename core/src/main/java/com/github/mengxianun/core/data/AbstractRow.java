@@ -21,7 +21,11 @@ public abstract class AbstractRow implements Row {
 
 	@Override
 	public Object getValue(int index) {
-		return getValues()[index];
+		Object[] values = getValues();
+		if (index >= values.length) {
+			return null;
+		}
+		return values[index];
 	}
 
 	@Override
