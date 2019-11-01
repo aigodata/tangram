@@ -495,6 +495,10 @@ public class CRUDActionParser extends AbstractActionParser {
 		TableSettings settings = action.getPrimaryTable().getSettings();
 		int maxQueryFields = settings.maxQueryFields();
 
+		if (columnItems.size() <= maxQueryFields) {
+			return;
+		}
+
 		List<ColumnItem> removeColumnItems = new ArrayList<>();
 		int primaryColumnNum = 0;
 		for (ColumnItem columnItem : columnItems) {
