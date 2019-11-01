@@ -14,7 +14,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.ParseException;
 import org.apache.http.util.EntityUtils;
-import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
@@ -335,7 +334,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		try {
 			return SQLParser.fill(sql, params);
 		} catch (SQLException e) {
-			throw new ElasticsearchException("Elasticsearch SQL fill failed", e);
+			throw new ElasticsearchDataException("Elasticsearch SQL fill failed", e);
 		}
 	}
 
@@ -384,12 +383,12 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 				try {
 					message = EntityUtils.toString(entity);
 				} catch (ParseException | IOException e1) {
-					throw new ElasticsearchException("Elasticsearch Request failed", e1);
+					throw new ElasticsearchDataException("Elasticsearch request failed", e1);
 				}
 			}
-			throw new ElasticsearchException(message);
-		} catch (IOException e) {
-			throw new ElasticsearchException("Elasticsearch Request failed", e);
+			throw new ElasticsearchDataException(message);
+		} catch (Exception e) {
+			throw new ElasticsearchDataException("Elasticsearch error", e);
 		}
 	}
 
