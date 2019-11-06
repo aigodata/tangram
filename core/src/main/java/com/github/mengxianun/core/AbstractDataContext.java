@@ -295,6 +295,11 @@ public abstract class AbstractDataContext implements DataContext {
 	}
 
 	@Override
+	public Set<Relationship> getAllRelationships() {
+		return graph.getAllRelationships();
+	}
+
+	@Override
 	public Set<RelationshipPath> getRelationships(String primaryTable, String foreignTable) {
 		return getRelationships(getTable(primaryTable), getTable(foreignTable));
 	}

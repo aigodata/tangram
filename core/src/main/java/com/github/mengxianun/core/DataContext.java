@@ -8,6 +8,7 @@ import com.github.mengxianun.core.data.summary.MultiSummary;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
+import com.github.mengxianun.core.schema.relationship.Relationship;
 import com.github.mengxianun.core.schema.relationship.RelationshipPath;
 
 public interface DataContext {
@@ -62,6 +63,8 @@ public interface DataContext {
 	public boolean deleteRelationship(Table primaryTable, Table foreignTable);
 
 	public void cleanRelationshipCache();
+
+	public Set<Relationship> getAllRelationships();
 
 	public Set<RelationshipPath> getRelationships(String primaryTable, String foreignTable);
 

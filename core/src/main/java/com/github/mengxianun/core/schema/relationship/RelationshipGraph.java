@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,10 @@ public final class RelationshipGraph {
 					return paths;
 				}
 			});
+
+	public Set<Relationship> getAllRelationships() {
+		return relationships.cellSet().stream().flatMap(e -> e.getValue().stream()).collect(Collectors.toSet());
+	}
 
 	/**
 	 * 主表和外表为直接关联关系
