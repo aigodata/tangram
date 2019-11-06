@@ -23,7 +23,7 @@ public class PermissionColumnTest extends TestSupport {
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertTrue(result.size() > 0);
 		JsonObject firstElement = result.get(0).getAsJsonObject();
-		assertTrue(firstElement.has("ID"));
+		assertTrue(!firstElement.has("ID"));
 		assertTrue(firstElement.has("ALL_COLUMN"));
 		assertTrue(firstElement.has("SELECT_COLUMN"));
 		assertTrue(!firstElement.has("INSERT_COLUMN"));
@@ -55,12 +55,13 @@ public class PermissionColumnTest extends TestSupport {
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertTrue(result.size() > 0);
 		JsonObject firstElement = result.get(0).getAsJsonObject();
-		assertTrue(firstElement.has("ID"));
+		assertTrue(!firstElement.has("ID"));
 		assertTrue(!firstElement.has("NAME"));
-		assertTrue(firstElement.has("PERMISSION_COLUMN_TABLE_ID"));
+		assertTrue(!firstElement.has("PERMISSION_COLUMN_TABLE_ID"));
 		assertTrue(firstElement.has("PERMISSION_COLUMN_TABLE_ID__PERMISSION_COLUMN_TABLE"));
 		JsonObject permissionColumnTable = firstElement
 				.getAsJsonObject("PERMISSION_COLUMN_TABLE_ID__PERMISSION_COLUMN_TABLE");
+		assertTrue(!permissionColumnTable.has("ID"));
 		assertTrue(permissionColumnTable.has("ALL_COLUMN"));
 		assertTrue(permissionColumnTable.has("SELECT_COLUMN"));
 		assertTrue(!permissionColumnTable.has("INSERT_COLUMN"));
@@ -74,7 +75,7 @@ public class PermissionColumnTest extends TestSupport {
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertTrue(result.size() > 0);
 		JsonObject firstElement = result.get(0).getAsJsonObject();
-		assertTrue(firstElement.has("ID"));
+		assertTrue(!firstElement.has("ID"));
 		assertTrue(firstElement.has("COLUMN_USER_1"));
 		assertTrue(!firstElement.has("COLUMN_USER_2"));
 	}

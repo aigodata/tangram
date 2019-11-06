@@ -1,6 +1,5 @@
 package com.github.mengxianun.core.schema.relationship;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -8,6 +7,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.schema.Column;
@@ -19,12 +21,14 @@ import com.google.common.collect.HashBasedTable;
 
 public final class RelationshipGraph {
 
+	private static final Logger logger = LoggerFactory.getLogger(RelationshipGraph.class);
+
 	// 两个表之间的关联关系, 集合中存储的是直接的关联关系, 即A-B, B-C, 而不是A-C
 	private final com.google.common.collect.Table<Table, Table, Set<Relationship>> relationships = HashBasedTable
 			.create();
 
 	private final LoadingCache<RelationshipKey, Set<RelationshipPath>> relationshipsCache = CacheBuilder.newBuilder()
-			.maximumSize(1000).expireAfterAccess(7, TimeUnit.DAYS)
+			.maximumSize(10000).expireAfterAccess(24, TimeUnit.HOURS)
 			.build(new CacheLoader<RelationshipKey, Set<RelationshipPath>>() {
 
 				public Set<RelationshipPath> load(RelationshipKey key) throws Exception {
@@ -99,10 +103,17 @@ public final class RelationshipGraph {
 	}
 
 	public Set<RelationshipPath> getRelationships(Table primaryTable, Table foreignTable) {
+		RelationshipKey relationshipKey = new RelationshipKey(primaryTable, foreignTable);
 		try {
-			return relationshipsCache.get(new RelationshipKey(primaryTable, foreignTable));
+			return relationshipsCache.get(relationshipKey);
 		} catch (ExecutionException e) {
-			return Collections.emptySet();
+			String message = String.format("Get association relation error for the table [%s] and [%s]",
+					primaryTable.getName(), foreignTable.getName());
+			logger.error(message, e);
+			//			relationshipsCache.invalidate(relationshipKey);
+			Set<RelationshipPath> paths = new LinkedHashSet<>();
+			findAllPaths(new RelationshipPath(), paths, primaryTable, foreignTable, true);
+			return paths;
 		}
 	}
 

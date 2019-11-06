@@ -102,12 +102,12 @@ public class TestSupport {
 
 	static List<ColumnPermission> getColumnPermissions() {
 		List<ColumnPermission> columnPermissions = new ArrayList<>();
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "all_column", Action.ALL));
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "select_column", Action.SELECT));
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "insert_column", Action.INSERT));
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "update_column", Action.UPDATE));
-		columnPermissions.add(ColumnPermission.create("permission_column_table", "delete_column", Action.DELETE));
-		columnPermissions.add(ColumnPermission.create("permission_column_join_table", "name", Action.UPDATE));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "ALL_COLUMN", Action.ALL));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "SELECT_COLUMN", Action.SELECT));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "INSERT_COLUMN", Action.INSERT));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "UPDATE_COLUMN", Action.UPDATE));
+		columnPermissions.add(ColumnPermission.create("permission_column_table", "DELETE_COLUMN", Action.DELETE));
+		columnPermissions.add(ColumnPermission.create("permission_column_join_table", "NAME", Action.UPDATE));
 		columnPermissions
 				.add(ColumnPermission.create(null, "permission_column_condition_table", "COLUMN_USER_1",
 						Action.SELECT,

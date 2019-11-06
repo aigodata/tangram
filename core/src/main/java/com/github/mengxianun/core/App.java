@@ -197,11 +197,22 @@ public final class App {
 		}
 		List<ColumnPermission> columnPermissions = authorizationInfo.getCurrentColumnPermissions(source, table);
 		if (columnPermissions.isEmpty() && Strings.isNullOrEmpty(source)) {
-			columnPermissions = getColumnPermissions(getDefaultDataSource(), table, column);
+			return getColumnPermissions(getDefaultDataSource(), table, column);
 		}
 		return columnPermissions.stream().filter(e -> Objects.equals(source, e.source())
 				&& table.equalsIgnoreCase(e.table()) && column.equalsIgnoreCase(e.column()))
 				.collect(Collectors.toList());
+	}
+
+	public static boolean hasTableColumnPermissions(String source, String table) {
+		if (Strings.isNullOrEmpty(table) || authorizationInfo == null) {
+			return false;
+		}
+		List<ColumnPermission> columnPermissions = authorizationInfo.getCurrentColumnPermissions(source, table);
+		if (columnPermissions.isEmpty() && Strings.isNullOrEmpty(source)) {
+			return hasTableColumnPermissions(getDefaultDataSource(), table);
+		}
+		return !columnPermissions.isEmpty();
 	}
 
 	public static List<ColumnPermission> getColumnPermissions(String source, String table) {
@@ -210,7 +221,7 @@ public final class App {
 		}
 		List<ColumnPermission> columnPermissions = authorizationInfo.getCurrentColumnPermissions(source, table);
 		if (columnPermissions.isEmpty() && Strings.isNullOrEmpty(source)) {
-			columnPermissions = getColumnPermissions(getDefaultDataSource(), table);
+			return getColumnPermissions(getDefaultDataSource(), table);
 		}
 		return columnPermissions;
 	}

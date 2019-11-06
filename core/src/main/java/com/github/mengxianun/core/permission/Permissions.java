@@ -2,7 +2,6 @@ package com.github.mengxianun.core.permission;
 
 import java.sql.SQLException;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -562,25 +561,17 @@ public class Permissions {
 	 * @return
 	 */
 	public static List<String> getPermissionColumns(String source, String table) {
-		if (Strings.isNullOrEmpty(source)) {
-			source = App.getDefaultDataSource();
-		}
-		Table sourceTable = App.getDataContext(source).getTable(table);
-		if (sourceTable == null) {
-			return Collections.emptyList();
-		}
-		List<String> columnNames = sourceTable.getColumnNames();
-		Iterator<String> iterator = columnNames.iterator();
-		List<ColumnPermission> columnPermissions = App.getColumnPermissions(source, table);
-		PermissionPolicy permissionPolicy = App.getPermissionPolicy();
-		while (iterator.hasNext()) {
-			String column = iterator.next();
-			boolean match = columnPermissions.stream().anyMatch(e -> column.equals(e.column()));
-			if (!match && permissionPolicy != PermissionPolicy.WEAK) {
-				iterator.remove();
+		boolean configured = App.hasTableColumnPermissions(source, table);
+		if (!configured) {
+			String dataContextName = Strings.isNullOrEmpty(source) ? App.getDefaultDataSource() : source;
+			Table sourceTable = App.getTable(dataContextName, table);
+			if (sourceTable == null) {
+				return Collections.emptyList();
 			}
+			return sourceTable.getColumnNames();
 		}
-		return columnNames;
+		List<ColumnPermission> columnPermissions = App.getColumnPermissions(source, table);
+		return columnPermissions.stream().map(ColumnPermission::column).collect(Collectors.toList());
 	}
 
 	/**

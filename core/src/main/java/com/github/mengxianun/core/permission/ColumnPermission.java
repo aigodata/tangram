@@ -14,6 +14,10 @@ public abstract class ColumnPermission {
 		return create(null, table, column, action, Collections.emptyList());
 	}
 
+	public static ColumnPermission create(@Nullable String source, String table, String column, Action action) {
+		return create(source, table, column, action, Collections.emptyList());
+	}
+
 	public static ColumnPermission create(@Nullable String source, String table, String column, Action action,
 			List<ConnectorCondition> conditions) {
 		return new AutoValue_ColumnPermission(source, table, column, action, conditions);

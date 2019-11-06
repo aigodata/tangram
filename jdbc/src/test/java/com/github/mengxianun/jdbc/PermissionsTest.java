@@ -56,24 +56,24 @@ public class PermissionsTest extends TestSupport {
 	@Test
 	void testColumnPermissions() {
 		List<String> permissionColumns = Permissions.getPermissionColumns("permission_column_table");
-		List<String> expectedPermissionColumns = Arrays.asList("ID", "ALL_COLUMN", "SELECT_COLUMN", "INSERT_COLUMN",
+		List<String> expectedPermissionColumns = Arrays.asList("ALL_COLUMN", "SELECT_COLUMN", "INSERT_COLUMN",
 				"UPDATE_COLUMN", "DELETE_COLUMN");
 		assertIterableEquals(expectedPermissionColumns, permissionColumns);
 
 		List<String> selectColumns = Permissions.getSelectColumns("permission_column_table");
-		List<String> expectedSelectColumns = Arrays.asList("ID", "ALL_COLUMN", "SELECT_COLUMN");
+		List<String> expectedSelectColumns = Arrays.asList("ALL_COLUMN", "SELECT_COLUMN");
 		assertIterableEquals(expectedSelectColumns, selectColumns);
 
 		List<String> insertColumns = Permissions.getInsertColumns("permission_column_table");
-		List<String> expectedInsertColumns = Arrays.asList("ID", "ALL_COLUMN", "INSERT_COLUMN");
+		List<String> expectedInsertColumns = Arrays.asList("ALL_COLUMN", "INSERT_COLUMN");
 		assertIterableEquals(expectedInsertColumns, insertColumns);
 
 		List<String> updateColumns = Permissions.getUpdateColumns("permission_column_table");
-		List<String> expectedUpdateColumns = Arrays.asList("ID", "ALL_COLUMN", "UPDATE_COLUMN");
+		List<String> expectedUpdateColumns = Arrays.asList("ALL_COLUMN", "UPDATE_COLUMN");
 		assertIterableEquals(expectedUpdateColumns, updateColumns);
 
 		List<String> deleteColumns = Permissions.getDeleteColumns("permission_column_table");
-		List<String> expectedDeleteColumns = Arrays.asList("ID", "ALL_COLUMN", "DELETE_COLUMN");
+		List<String> expectedDeleteColumns = Arrays.asList("ALL_COLUMN", "DELETE_COLUMN");
 		assertIterableEquals(expectedDeleteColumns, deleteColumns);
 	}
 

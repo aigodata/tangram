@@ -292,9 +292,9 @@ public final class PermissionChecker {
 	}
 
 	public static boolean checkColumn(String source, String table, String column, Action action) {
-		List<ColumnPermission> columnPermissions = App.getColumnPermissions(source, table, column);
-		boolean configured = !columnPermissions.isEmpty();
+		boolean configured = App.hasTableColumnPermissions(source, table);
 		boolean check = false;
+		List<ColumnPermission> columnPermissions = App.getColumnPermissions(source, table, column);
 		over: for (ColumnPermission columnPermission : columnPermissions) {
 			Action columnAction = columnPermission.action();
 			if (action == columnAction || columnAction == Action.ALL) {

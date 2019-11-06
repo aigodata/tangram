@@ -152,9 +152,16 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 						currentTableObject = parentElement.getAsJsonObject();
 					}
 				} else { // 还未构建关联表的结构
-					if (currentTableObject.has(primaryColumnAlias)) { // 主表中包含关联表的列
+					// 主表中包含关联表的列
+					if (currentTableObject.has(primaryColumnAlias)) {
+						// 如果主表关联字段值为null, 说明主表该列的值没有关联的外表数据
 						if (currentTableObject.get(primaryColumnAlias).isJsonNull()) {
-							// 如果主表关联字段值为null, 说明主表该列的值没有关联的外表数据
+							if (associationType == AssociationType.ONE_TO_ONE
+									|| associationType == AssociationType.MANY_TO_ONE) {
+								// to do
+							} else {
+								// to do
+							}
 							break;
 						} else { // 构建关联表的结构
 							buildJoinTableObject(currentTableObject, associationType, foreignTableKey, tableObject);
