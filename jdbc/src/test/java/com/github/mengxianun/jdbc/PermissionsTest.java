@@ -45,11 +45,11 @@ public class PermissionsTest extends TestSupport {
 
 	@Test
 	void testSelectPermissionTable() {
-		String conditionUserSQL = Permissions.getTableSelectPermissions("permission_condition_user_table").toSQL();
+		String conditionUserSQL = Permissions.getWhere("permission_condition_user_table");
 		assertTrue(conditionUserSQL.startsWith(" AND permission_user.id = "));
-		String conditionRoleSQL = Permissions.getTableSelectPermissions("permission_condition_role_table").toSQL();
+		String conditionRoleSQL = Permissions.getWhere("permission_condition_role_table");
 		assertTrue(conditionRoleSQL.startsWith(" AND permission_role.id in (SELECT"));
-		String expressionSQL = Permissions.getTableSelectPermissions("permission_condition_expression_table").toSQL();
+		String expressionSQL = Permissions.getWhere("permission_condition_expression_table");
 		assertEquals(" AND id>1", expressionSQL);
 	}
 
