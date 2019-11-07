@@ -1,5 +1,6 @@
 package com.github.mengxianun.core;
 
+import java.io.IOException;
 import java.util.Set;
 
 import com.github.mengxianun.core.config.AssociationType;
@@ -115,5 +116,7 @@ public interface DataContext {
 	 * @param name
 	 */
 	public void refreshTable(String name);
+
+	public void loadTableConfigFromDir(String sourceTableConfigDir) throws IOException;
 
 }

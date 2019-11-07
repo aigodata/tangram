@@ -1,6 +1,7 @@
 package com.github.mengxianun.core;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -344,6 +345,11 @@ public abstract class AbstractDataContext implements DataContext {
 			schema.removeTable(table);
 		}
 		loadTable(name);
+	}
+
+	@Override
+	public void loadTableConfigFromDir(String sourceTableConfigDir) throws IOException {
+		ConfigHelper.parseSourceTableConfig(sourceTableConfigDir, this);
 	}
 
 }

@@ -1,5 +1,7 @@
 package com.github.mengxianun.core;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -70,8 +72,16 @@ public final class App {
 	}
 
 	public static void addDataContext(String name, DataContext dataContext) {
+		Objects.requireNonNull(dataContext);
 		dataContexts.put(name, dataContext);
 		logger.info("Add new {} [{}]", dataContext.getClass().getSimpleName(), name);
+		try {
+			String tableConfigPath = App.Config.getString(GlobalConfig.TABLE_CONFIG_PATH);
+			String sourceTableConfigDir = tableConfigPath + File.separator + name;
+			dataContext.loadTableConfigFromDir(sourceTableConfigDir);
+		} catch (IOException e) {
+			throw new DataException("DataContext config load failed", e);
+		}
 	}
 
 	public static void deleteDataContext(String name) {

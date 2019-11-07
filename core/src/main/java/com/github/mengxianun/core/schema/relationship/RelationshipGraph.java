@@ -5,7 +5,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -66,6 +65,9 @@ public final class RelationshipGraph {
 		}
 		ships.add(relationship);
 		relationships.put(primaryTable, foreignTable, ships);
+
+		logger.info("Add relationship [{}.{}] <-> [{}.{}]", primaryColumn.getTable().getName(), primaryColumn.getName(),
+				foreignColumn.getTable().getName(), foreignColumn.getName());
 		return true;
 	}
 
@@ -99,27 +101,37 @@ public final class RelationshipGraph {
 				}
 			}
 		}
+		logger.info("Delete relationship [{}.{}] <-> [{}.{}] {}", primaryColumn.getTable().getName(),
+				primaryColumn.getName(), foreignColumn.getTable().getName(), foreignColumn.getName(), result);
 		return result;
 	}
 
 	public boolean deleteRelationship(Table primaryTable, Table foreignTable) {
-		return relationships.remove(primaryTable, foreignTable) != null
+		boolean result = relationships.remove(primaryTable, foreignTable) != null
 				|| relationships.remove(foreignTable, primaryTable) != null;
+		logger.info("Delete relationship [{}] <-> [{}] {}", primaryTable.getName(), primaryTable.getName(), result);
+		return result;
 	}
 
 	public Set<RelationshipPath> getRelationships(Table primaryTable, Table foreignTable) {
-		RelationshipKey relationshipKey = new RelationshipKey(primaryTable, foreignTable);
-		try {
-			return relationshipsCache.get(relationshipKey);
-		} catch (ExecutionException e) {
-			String message = String.format("Get association relation error for the table [%s] and [%s]",
-					primaryTable.getName(), foreignTable.getName());
-			logger.error(message, e);
-			//			relationshipsCache.invalidate(relationshipKey);
-			Set<RelationshipPath> paths = new LinkedHashSet<>();
-			findAllPaths(new RelationshipPath(), paths, primaryTable, foreignTable, true);
-			return paths;
-		}
+		/**
+		 * temporarily
+		 */
+		Set<RelationshipPath> paths = new LinkedHashSet<>();
+		findAllPaths(new RelationshipPath(), paths, primaryTable, foreignTable, true);
+		return paths;
+		//		RelationshipKey relationshipKey = new RelationshipKey(primaryTable, foreignTable);
+		//		try {
+		//			return relationshipsCache.get(relationshipKey);
+		//		} catch (ExecutionException e) {
+		//			String message = String.format("Get association relation error for the table [%s] and [%s]",
+		//					primaryTable.getName(), foreignTable.getName());
+		//			logger.error(message, e);
+		//			//			relationshipsCache.invalidate(relationshipKey);
+		//			Set<RelationshipPath> paths = new LinkedHashSet<>();
+		//			findAllPaths(new RelationshipPath(), paths, primaryTable, foreignTable, true);
+		//			return paths;
+		//		}
 	}
 
 	private void findAllPaths(RelationshipPath visited, Set<RelationshipPath> paths, Table currentTable,

@@ -1,5 +1,7 @@
 package com.github.mengxianun.core.parser.action;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,9 +19,11 @@ import java.util.stream.Collectors;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.github.mengxianun.core.Action;
+import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataContext;
 import com.github.mengxianun.core.NewAction;
 import com.github.mengxianun.core.ResultStatus;
+import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.FilterItem;
@@ -245,8 +249,27 @@ public class CRUDActionParser extends AbstractActionParser {
 			Table joinTable = joinElement.getJoinTableItem().getTable();
 			Set<RelationshipPath> tempRelationshipPaths = dataContext.getRelationships(table, joinTable);
 			if (tempRelationshipPaths.isEmpty()) {
-				throw new DataException(String.format("Association relation not found for the table [%s] and [%s]",
-						table.getName(), joinTable.getName()));
+				///////////////
+				// optimize
+				///////////////
+				// reload config
+				String tableConfigPath = App.Config.getString(GlobalConfig.TABLE_CONFIG_PATH);
+				String source = simpleInfo.table().source();
+				if (Strings.isNullOrEmpty(source)) {
+					source = App.getDefaultDataSource();
+				}
+				String sourceTableConfigDir = tableConfigPath + File.separator + source;
+				try {
+					dataContext.loadTableConfigFromDir(sourceTableConfigDir);
+				} catch (IOException e) {
+					throw new DataException("DataContext config load failed", e);
+				}
+				tempRelationshipPaths = dataContext.getRelationships(table, joinTable);
+				if (tempRelationshipPaths.isEmpty()) {
+					throw new DataException(String.format("Association relation not found for the table [%s] and [%s]",
+							table.getName(), joinTable.getName()));
+				}
+
 			}
 			// 关联关系获取逻辑
 			// 1. 顺序一致, 如请求的join表为[B, C], 则关联关系只能是B-C, 不能是C-B, 否则会造成多层join
