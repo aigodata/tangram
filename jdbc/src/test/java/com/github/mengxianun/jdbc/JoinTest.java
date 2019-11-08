@@ -118,4 +118,13 @@ public class JoinTest extends TestSupport {
 		assertTrue(!compareJSON.failed());
 	}
 
+	@Test
+	void testJoinUserAndRoleAndGroup() throws JSONException {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "join_user_and_role_and_group.json");
+		String result = dataResultSet.getJsonData().toString();
+		String excepted = readJson(JSON_PARENT_PATH + "join_user_and_role_and_group_result.json");
+		JSONCompareResult compareJSON = JSONCompare.compareJSON(result, excepted, JSONCompareMode.LENIENT);
+		assertTrue(!compareJSON.failed());
+	}
+
 }

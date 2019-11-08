@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.github.mengxianun.core.Action;
@@ -140,14 +141,11 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 					JsonElement parentElement = currentTableObject.get(foreignTableKey);
 					if (parentElement.isJsonArray()) {
 						JsonArray parentArray = parentElement.getAsJsonArray();
-						if (i == relationshipItems.size() - 1) { // 最后
-							// 去重
-							if (!parentArray.contains(tableObject)) {
-								parentArray.add(tableObject);
-							}
-						} else {
-							currentTableObject = parentArray.get(parentArray.size() - 1).getAsJsonObject();
+						// 去重
+						if (!hasJsonObject(parentArray, tableObject)) {
+							parentArray.add(tableObject);
 						}
+						currentTableObject = parentArray.get(parentArray.size() - 1).getAsJsonObject();
 					} else {
 						currentTableObject = parentElement.getAsJsonObject();
 					}
@@ -195,7 +193,10 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 		} else {
 			if (currentTableObject.has(foreignTableKey)) {
 				JsonArray joinTableArray = currentTableObject.getAsJsonArray(foreignTableKey);
-				joinTableArray.add(tableObject);
+				// 去重
+				if (!hasJsonObject(joinTableArray, tableObject)) {
+					joinTableArray.add(tableObject);
+				}
 			} else {
 				JsonArray joinTableArray = new JsonArray();
 				joinTableArray.add(tableObject);
@@ -223,6 +224,27 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 				}
 			}
 			return true;
+		}
+		return false;
+	}
+
+	private boolean hasJsonObject(JsonArray jsonArray, JsonObject jsonObject) {
+		for (JsonElement jsonElement : jsonArray) {
+			if (!jsonElement.isJsonObject()) {
+				continue;
+			}
+			JsonObject element = jsonElement.getAsJsonObject();
+			boolean has = true;
+			for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+				String key = entry.getKey();
+				JsonElement value = entry.getValue();
+				if (!element.has(key) || !Objects.equals(value, element.get(key))) {
+					has = false;
+				}
+			}
+			if (has) {
+				return true;
+			}
 		}
 		return false;
 	}

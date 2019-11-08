@@ -1,0 +1,64 @@
+[
+  {
+    "ID": 1,
+    "NAME": "user1",
+    "DETAIL_ID": 1,
+    "ID__USER_ROLE": [
+      {
+        "USER_ID": 1,
+        "ROLE_ID": 1,
+        "ROLE_ID__ROLE": {
+          "ID": 1,
+          "NAME": "role1",
+          "DETAIL_ID": 1
+        }
+      },
+      {
+        "USER_ID": 1,
+        "ROLE_ID": 2,
+        "ROLE_ID__ROLE": {
+          "ID": 2,
+          "NAME": "role2",
+          "DETAIL_ID": 2
+        }
+      }
+    ],
+    "ID__GROUP": [
+      {
+        "ID": 1,
+        "NAME": "group1"
+      }
+    ]
+  },
+  {
+    "ID": 2,
+    "NAME": "user2",
+    "DETAIL_ID": 2,
+    "ID__USER_ROLE": [
+      {
+        "USER_ID": 2,
+        "ROLE_ID": 2,
+        "ROLE_ID__ROLE": {
+          "ID": 2,
+          "NAME": "role2",
+          "DETAIL_ID": 2
+        }
+      }
+    ],
+    "ID__GROUP": [
+      {
+        "ID": 1,
+        "NAME": "group1"
+      },
+      {
+        "ID": 2,
+        "NAME": "group2"
+      }
+    ]
+  },
+  {
+    "ID": 3,
+    "NAME": "user3",
+    "DETAIL_ID": null
+  }
+]
