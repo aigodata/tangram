@@ -299,8 +299,8 @@ public class CRUDActionParser extends AbstractActionParser {
 						preTable = primaryTable;
 					}
 					if (action.isJoinTable(foreignTable)) {
-						Integer preIndex = tableOrder.containsKey(preTable) ? tableOrder.get(preTable) : -1;
-						Integer nextIndex = tableOrder.get(foreignTable);
+						int preIndex = tableOrder.containsKey(preTable) ? tableOrder.get(preTable) : -1;
+						int nextIndex = tableOrder.containsKey(foreignTable) ? tableOrder.get(foreignTable) : -1;
 						if (preIndex > nextIndex) {
 							order = false;
 							break;
