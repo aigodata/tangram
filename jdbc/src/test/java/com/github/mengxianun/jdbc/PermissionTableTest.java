@@ -103,12 +103,32 @@ public class PermissionTableTest extends TestSupport {
 	}
 
 	@Test
+	void testSelectConditionUser2TableByUpdateId() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_condition_user2_table.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(2, result.size());
+		JsonObject firstElement = result.get(0).getAsJsonObject();
+		assertEquals(1, firstElement.get("ID").getAsLong());
+	}
+
+	@Test
 	void testSelectConditionRoleTable() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_condition_role_table.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
 		assertEquals(3, result.size());
 		JsonObject firstElement = result.get(0).getAsJsonObject();
 		assertEquals(1, firstElement.get("ID").getAsLong());
+	}
+
+	@Test
+	void testSelectConditionRole2Table() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_condition_role2_table.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(2, result.size());
+		JsonObject firstElement = result.get(0).getAsJsonObject();
+		assertEquals(1, firstElement.get("ID").getAsLong());
+		JsonObject secondElement = result.get(1).getAsJsonObject();
+		assertEquals(3, secondElement.get("ID").getAsLong());
 	}
 
 	@Test

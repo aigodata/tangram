@@ -75,22 +75,38 @@ public class TestSupport {
 		tablePermissions.add(TablePermission.create(null, "permission_add_table", Action.from(2)));
 		tablePermissions.add(TablePermission.create(null, "permission_update_table", Action.UPDATE));
 		tablePermissions.add(TablePermission.create(null, "permission_delete_table", Action.DELETE));
+
 		// session user condition
 		List<ConnectorCondition> userTableConditions = Lists
 				.newArrayList(ConnectorCondition.create(TableCondition.create("permission_user", "id", "$session")));
 		tablePermissions
 				.add(TablePermission.builder().table("permission_condition_user_table").action(Action.SELECT)
 				.conditions(userTableConditions).build());
+
+		List<ConnectorCondition> userTableConditionsByUserUpdateId = Lists.newArrayList(ConnectorCondition
+				.create(TableCondition.create(null, "permission_user", "id", "$session",
+						Lists.newArrayList("update_id"))));
+		tablePermissions.add(TablePermission.builder().table("permission_condition_user2_table").action(Action.SELECT)
+				.conditions(userTableConditionsByUserUpdateId).build());
+
 		// session role condition
 		List<ConnectorCondition> roleTableConditions = Lists
 				.newArrayList(ConnectorCondition.create(TableCondition.create("permission_role", "id", "$session")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_role_table")
 				.action(Action.SELECT)
 				.conditions(roleTableConditions).build());
+
+		List<ConnectorCondition> roleTableConditionsByUserCreateId = Lists.newArrayList(ConnectorCondition
+				.create(TableCondition.create(null, "permission_role", "id", "$session",
+						Lists.newArrayList("create_id"))));
+		tablePermissions.add(TablePermission.builder().table("permission_condition_role2_table").action(Action.SELECT)
+				.conditions(roleTableConditionsByUserCreateId).build());
+
 		// expression condition
 		List<ConnectorCondition> expressionConditions = Lists.newArrayList(ConnectorCondition.create(ExpressionCondition.create("id>1")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_expression_table")
 				.action(Action.SELECT).conditions(expressionConditions).build());
+
 		// complex condition
 		List<ConnectorCondition> complexConditions = Lists.newArrayList(
 				ConnectorCondition.create(TableCondition.create("permission_role", "id", "$session")),

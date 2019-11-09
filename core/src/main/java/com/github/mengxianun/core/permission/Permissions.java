@@ -411,6 +411,21 @@ public class Permissions {
 
 	}
 
+	public static String getTableSelectSQL(String table) {
+		return getTableSelectSQL(null, table);
+	}
+
+	public static String getTableSelectSQL(String source, String table) {
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty(Operation.SELECT.name().toLowerCase(), table);
+		DataContext dataContext = App.getDefaultDataContext();
+		SimpleInfo simpleInfo = SimpleParser.parse(jsonObject);
+		com.github.mengxianun.core.Action action = (com.github.mengxianun.core.Action) new CRUDActionParser(simpleInfo,
+				dataContext).parse();
+		// to do
+		return null;
+	}
+
 	/**
 	 * Whether the current user has column permissions
 	 * 
