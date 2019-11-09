@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.github.mengxianun.core.parser.info.RelationInfo;
 import com.google.auto.value.AutoValue;
 
 @AutoValue
@@ -19,9 +20,9 @@ public abstract class TableCondition implements Condition {
 	}
 
 	public static TableCondition create(@Nullable String source, String table, String column, Object value,
-			List<String> relationColumns) {
+			List<RelationInfo> relations) {
 		return new AutoValue_TableCondition.Builder().source(source).table(table).column(column).value(value)
-				.relationColumns(relationColumns).build();
+				.relations(relations).build();
 	}
 
 	@Nullable
@@ -39,7 +40,7 @@ public abstract class TableCondition implements Condition {
 	 * 
 	 * @return
 	 */
-	public abstract List<String> relationColumns();
+	public abstract List<RelationInfo> relations();
 
 	public static Builder builder() {
 		return new AutoValue_TableCondition.Builder();
@@ -56,7 +57,7 @@ public abstract class TableCondition implements Condition {
 
 		public abstract Builder value(Object value);
 
-		public abstract Builder relationColumns(List<String> relationColumns);
+		public abstract Builder relations(List<RelationInfo> relations);
 
 		public abstract TableCondition build();
 	}

@@ -14,6 +14,7 @@ import com.github.mengxianun.core.item.FilterItem;
 import com.github.mengxianun.core.item.GroupItem;
 import com.github.mengxianun.core.item.JoinColumnItem;
 import com.github.mengxianun.core.item.JoinItem;
+import com.github.mengxianun.core.item.JoinItem.SingleColumnJoinItem;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.TableItem;
@@ -202,7 +203,7 @@ public class SQLBuilder {
 		String tempAliasPrefix = "inner_";
 		tableItem.setAlias(tempAliasPrefix + tableItem.getAlias());
 		for (JoinItem joinItem : action.getJoinItems()) {
-			TableItem joinTableItem = joinItem.getRightColumn().getTableItem();
+			TableItem joinTableItem = joinItem.getJoinItems().get(0).getRightColumn().getTableItem();
 			joinTableItem.setAlias(tempAliasPrefix + joinTableItem.getAlias());
 		}
 		List<ColumnItem> innerColumnItems = ActionUtil.createColumnItems(tableItem, false);
@@ -219,7 +220,7 @@ public class SQLBuilder {
 		// 返回原始状态
 		tableItem.setAlias(tableItem.getAlias().replaceFirst(tempAliasPrefix, ""));
 		for (JoinItem joinItem : action.getJoinItems()) {
-			TableItem joinTableItem = joinItem.getRightColumn().getTableItem();
+			TableItem joinTableItem = joinItem.getJoinItems().get(0).getRightColumn().getTableItem();
 			joinTableItem.setAlias(joinTableItem.getAlias().replaceFirst(tempAliasPrefix, ""));
 		}
 		action.setColumnItems(originalColumnItems);
@@ -247,32 +248,38 @@ public class SQLBuilder {
 		}
 		StringBuilder joinsBuilder = new StringBuilder();
 		for (JoinItem joinItem : joinItems) {
-			// join left table
-			ColumnItem leftColumnItem = joinItem.getLeftColumn();
-			TableItem leftTableItem = leftColumnItem.getTableItem();
-			Table leftTable = leftTableItem.getTable();
-			String leftTableAlias = leftTableItem.getAlias();
-			// join right table
-			ColumnItem rightColumnItem = joinItem.getRightColumn();
-			TableItem rightTableItem = rightColumnItem.getTableItem();
-			Table rightTable = rightTableItem.getTable();
-			String rightTableAlias = rightTableItem.getAlias();
-			// join elements
-			String joinTable = spliceTable(rightTable);
-			String joinTableAlias = !Strings.isNullOrEmpty(rightTableAlias)
-					? rightTableAlias
-					: null;
-			String leftTableString = !Strings.isNullOrEmpty(leftTableAlias) ? leftTableAlias
-					: process(leftTable.getName());
-			String leftColumnString = process(leftColumnItem.getColumn().getName());
-			String rightTableString = !Strings.isNullOrEmpty(rightTableAlias) ? rightTableAlias
-					: process(rightTable.getName());
-			String rightColumnString = process(rightColumnItem.getColumn().getName());
 			JoinType joinType = joinItem.getJoinType();
+			List<SingleColumnJoinItem> innerJoinItemss = joinItem.getJoinItems();
+			boolean first = true;
+			for (SingleColumnJoinItem singleColumnJoinItem : innerJoinItemss) {
+				// join left table
+				ColumnItem leftColumnItem = singleColumnJoinItem.getLeftColumn();
+				TableItem leftTableItem = leftColumnItem.getTableItem();
+				Table leftTable = leftTableItem.getTable();
+				String leftTableAlias = leftTableItem.getAlias();
+				// join right table
+				ColumnItem rightColumnItem = singleColumnJoinItem.getRightColumn();
+				TableItem rightTableItem = rightColumnItem.getTableItem();
+				Table rightTable = rightTableItem.getTable();
+				String rightTableAlias = rightTableItem.getAlias();
+				// join elements
+				String joinTable = spliceTable(rightTable);
+				String joinTableAlias = !Strings.isNullOrEmpty(rightTableAlias) ? rightTableAlias : null;
+				String leftTableString = !Strings.isNullOrEmpty(leftTableAlias) ? leftTableAlias
+						: process(leftTable.getName());
+				String leftColumnString = process(leftColumnItem.getColumn().getName());
+				String rightTableString = !Strings.isNullOrEmpty(rightTableAlias) ? rightTableAlias
+						: process(rightTable.getName());
+				String rightColumnString = process(rightColumnItem.getColumn().getName());
 
-			String joinSpliceString = spliceJoin(joinTable, joinTableAlias, leftTableString, leftColumnString,
-					rightTableString, rightColumnString, joinType);
-			joinsBuilder.append(joinSpliceString);
+				String joinSpliceString = first
+						? spliceJoin(joinTable, joinTableAlias, leftTableString, leftColumnString, rightTableString,
+								rightColumnString, joinType)
+						: spliceJoin(leftTableString, leftColumnString, rightTableString, rightColumnString, DELIM_AND);
+				joinsBuilder.append(joinSpliceString);
+
+				first = false;
+			}
 
 		}
 		return joinString = joinsBuilder.toString();
@@ -304,7 +311,17 @@ public class SQLBuilder {
 		if (!Strings.isNullOrEmpty(joinTableAlias)) {
 			joinsBuilder.append(ALIAS_KEY).append(joinTableAlias);
 		}
-		joinsBuilder.append(JOIN_ON);
+		String joinExpression = spliceJoin(leftTableString, leftColumnString, rightTableString, rightColumnString,
+				JOIN_ON);
+		joinsBuilder.append(joinExpression);
+		return joinsBuilder.toString();
+
+	}
+
+	private String spliceJoin(String leftTableString, String leftColumnString, String rightTableString,
+			String rightColumnString, String prefix) {
+		StringBuilder joinsBuilder = new StringBuilder();
+		joinsBuilder.append(prefix);
 		joinsBuilder.append(leftTableString);
 		joinsBuilder.append(".").append(leftColumnString);
 		joinsBuilder.append(" = ");
@@ -781,7 +798,7 @@ public class SQLBuilder {
 			}
 		}
 		for (JoinItem joinItem : action.getJoinItems()) {
-			TableItem joinTableItem = joinItem.getRightColumn().getTableItem();
+			TableItem joinTableItem = joinItem.getJoinItems().get(0).getRightColumn().getTableItem();
 			if (joinTableItem.getTable() != null && joinTableItem.getTable().getName().equalsIgnoreCase(tableName)) {
 				return joinTableItem.getAlias();
 			}

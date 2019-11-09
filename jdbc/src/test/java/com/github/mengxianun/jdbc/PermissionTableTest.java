@@ -124,11 +124,13 @@ public class PermissionTableTest extends TestSupport {
 	void testSelectConditionRole2Table() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_condition_role2_table.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
-		assertEquals(2, result.size());
+		assertEquals(3, result.size());
 		JsonObject firstElement = result.get(0).getAsJsonObject();
 		assertEquals(1, firstElement.get("ID").getAsLong());
 		JsonObject secondElement = result.get(1).getAsJsonObject();
 		assertEquals(3, secondElement.get("ID").getAsLong());
+		JsonObject thirdElement = result.get(2).getAsJsonObject();
+		assertEquals(4, thirdElement.get("ID").getAsLong());
 	}
 
 	@Test

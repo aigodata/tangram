@@ -21,6 +21,7 @@ import com.github.mengxianun.core.parser.info.JoinInfo;
 import com.github.mengxianun.core.parser.info.LimitInfo;
 import com.github.mengxianun.core.parser.info.NativeInfo;
 import com.github.mengxianun.core.parser.info.OrderInfo;
+import com.github.mengxianun.core.parser.info.RelationInfo;
 import com.github.mengxianun.core.parser.info.SimpleInfo;
 import com.github.mengxianun.core.parser.info.SourceInfo;
 import com.github.mengxianun.core.parser.info.SqlInfo;
@@ -163,6 +164,7 @@ public class SimpleParser {
 	private void parseSelect() {
 		parsePrimaryTable();
 		parseJoin();
+		parseRelations();
 		parseFields();
 		parseWhere();
 		parseGroup();
@@ -215,6 +217,49 @@ public class SimpleParser {
 		}
 		TableInfo joinTableInfo = parseSourceTable(joinSourceTableString);
 		return JoinInfo.create(joinType, joinTableInfo);
+	}
+
+	private void parseRelations() {
+		if (!validAttribute(RequestKeyword.RELATIONS.lowerName())) {
+			return;
+		}
+		List<RelationInfo> relationInfos = new ArrayList<>();
+		JsonElement relationElements = jsonData.get(RequestKeyword.RELATIONS.lowerName());
+		if (relationElements.isJsonArray()) {
+			for (JsonElement relationElement : (JsonArray) relationElements) {
+				RelationInfo relationInfo = parseRelation(relationElement);
+				if (relationInfo != null) {
+					relationInfos.add(relationInfo);
+				}
+			}
+		} else if (relationElements.isJsonPrimitive()) {
+			relationInfos.add(parseRelation(relationElements.getAsString()));
+		}
+		builder.relations(relationInfos);
+	}
+
+	private RelationInfo parseRelation(JsonElement relationElement) {
+		if (relationElement.isJsonArray()) {
+			// to do
+		} else if (relationElement.isJsonObject()) {
+			// to do
+		} else if (relationElement.isJsonPrimitive()) {
+			return parseRelation(relationElement.getAsString());
+		}
+		return null;
+	}
+
+	private RelationInfo parseRelation(String relationString) {
+		String[] tables = relationString.split("=", 2);
+
+		String[] primaryTableColumn = tables[0].split("\\.", 2);
+		String primaryTable = primaryTableColumn[0];
+		String primaryColumn = primaryTableColumn[1];
+
+		String[] foreignTableColumn = tables[1].split("\\.", 2);
+		String foreignTable = foreignTableColumn[0];
+		String foreignColumn = foreignTableColumn[1];
+		return RelationInfo.create(primaryTable, primaryColumn, foreignTable, foreignColumn);
 	}
 
 	private void parseFields() {

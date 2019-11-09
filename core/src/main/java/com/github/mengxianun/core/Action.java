@@ -9,6 +9,7 @@ import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.FilterItem;
 import com.github.mengxianun.core.item.GroupItem;
 import com.github.mengxianun.core.item.JoinItem;
+import com.github.mengxianun.core.item.JoinItem.SingleColumnJoinItem;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
 import com.github.mengxianun.core.item.TableItem;
@@ -16,7 +17,9 @@ import com.github.mengxianun.core.item.ValueItem;
 import com.github.mengxianun.core.request.FileType;
 import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.request.Template;
+import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.Table;
+import com.github.mengxianun.core.schema.relationship.Relationship;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 
@@ -42,6 +45,8 @@ public class Action extends AbstractAction {
 
 	private final List<Table> tables;
 	private final List<Table> joinTables;
+	// 请求指定关联关系
+	private final List<Relationship> relationships;
 	// 是否处理 Join Limit 的情况
 	private boolean handleJoinLimit;
 
@@ -68,6 +73,7 @@ public class Action extends AbstractAction {
 		handleJoinLimit = true;
 		this.tables = new ArrayList<>();
 		this.joinTables = new ArrayList<>();
+		this.relationships = new ArrayList<>();
 		this.operation = operation;
 		this.sqlBuilder = dataContext.getSQLBuilder(this);
 	}
@@ -207,6 +213,10 @@ public class Action extends AbstractAction {
 		this.joinTables.add(join);
 	}
 
+	public void addRelationship(Relationship relationship) {
+		this.relationships.add(relationship);
+	}
+
 	public boolean isDetail() {
 		return operation != null && operation == Operation.DETAIL;
 	}
@@ -289,6 +299,52 @@ public class Action extends AbstractAction {
 
 	public List<Table> getJoinTables() {
 		return joinTables;
+	}
+
+	public List<Relationship> getRelationships() {
+		return relationships;
+	}
+
+	public List<Relationship> getRelationships(Table table1, Table table2) {
+		List<Relationship> tableRelationships = new ArrayList<>();
+		for (Relationship relationship : relationships) {
+			Column primaryColumn = relationship.getPrimaryColumn();
+			Table primaryTable = primaryColumn.getTable();
+			Column foreignColumn = relationship.getForeignColumn();
+			Table foreignTable = foreignColumn.getTable();
+			if (primaryTable == table1 && foreignTable == table2) {
+				tableRelationships.add(relationship);
+			} else if (primaryTable == table2 && foreignTable == table1) {
+				tableRelationships.add(new Relationship(foreignColumn, primaryColumn));
+			}
+		}
+		return tableRelationships;
+	}
+
+	public boolean hasJoinItem(Table primaryTable, Table foreignTable) {
+		for (JoinItem joinItem : joinItems) {
+			List<SingleColumnJoinItem> innerJoinItems = joinItem.getJoinItems();
+			SingleColumnJoinItem singleColumnJoinItem = innerJoinItems.get(0);
+			Table leftTable = singleColumnJoinItem.getLeftColumn().getColumn().getTable();
+			Table rightTable = singleColumnJoinItem.getRightColumn().getColumn().getTable();
+			if (leftTable == primaryTable && rightTable == foreignTable) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public JoinItem getJoinItem(Table primaryTable, Table foreignTable) {
+		for (JoinItem joinItem : joinItems) {
+			List<SingleColumnJoinItem> innerJoinItems = joinItem.getJoinItems();
+			SingleColumnJoinItem singleColumnJoinItem = innerJoinItems.get(0);
+			Table leftTable = singleColumnJoinItem.getLeftColumn().getColumn().getTable();
+			Table rightTable = singleColumnJoinItem.getRightColumn().getColumn().getTable();
+			if (leftTable == primaryTable && rightTable == foreignTable) {
+				return joinItem;
+			}
+		}
+		return null;
 	}
 
 	public String getFilename() {

@@ -24,6 +24,7 @@ import com.github.mengxianun.core.parser.info.ColumnInfo;
 import com.github.mengxianun.core.parser.info.ConditionInfo;
 import com.github.mengxianun.core.parser.info.FilterInfo;
 import com.github.mengxianun.core.parser.info.JoinInfo;
+import com.github.mengxianun.core.parser.info.RelationInfo;
 import com.github.mengxianun.core.parser.info.SimpleInfo;
 import com.github.mengxianun.core.parser.info.TableInfo;
 import com.github.mengxianun.core.parser.info.ValuesInfo;
@@ -66,7 +67,7 @@ public final class PermissionChecker {
 
 	private static PermissionCheckResult checkTableWithResult(SimpleInfo simpleInfo) {
 		PermissionPolicy policy = App.getPermissionPolicy();
-		List<ConnectorCondition> permissionConditions = new ArrayList<>();
+		List<TablePermission> applyTablePermissions = new ArrayList<>();
 		Action action = getAction(simpleInfo.operation());
 		TableInfo primaryTableInfo = simpleInfo.table();
 		List<TableInfo> joinTableInfos = simpleInfo.joins().stream().map(JoinInfo::tableInfo)
@@ -95,7 +96,7 @@ public final class PermissionChecker {
 				Action permissionAction = tablePermission.action();
 				if (action == permissionAction || permissionAction == Action.ALL) {
 					check = true;
-					permissionConditions.addAll(tablePermission.conditions());
+					applyTablePermissions.add(tablePermission);
 					break;
 				}
 			}
@@ -107,55 +108,61 @@ public final class PermissionChecker {
 				return PermissionCheckResult.create(false, simpleInfo);
 			}
 		}
-		simpleInfo = applyTableConditions(simpleInfo, permissionConditions);
+		simpleInfo = applyTableConditions(simpleInfo, applyTablePermissions);
 		return PermissionCheckResult.create(true, simpleInfo);
 	}
 
-	public static SimpleInfo applyTableConditions(SimpleInfo simpleInfo, List<ConnectorCondition> conditions) {
-		if (conditions.isEmpty()) {
+	public static SimpleInfo applyTableConditions(SimpleInfo simpleInfo, List<TablePermission> tablePermissions) {
+		if (tablePermissions.isEmpty()) {
 			return simpleInfo;
 		}
 		List<FilterInfo> filters = simpleInfo.where().filters();
 		List<FilterInfo> newConditionFilters = new ArrayList<>();
 		List<StatementValueConditionInfo> statementValueConditions = new ArrayList<>();
-		for (ConnectorCondition connectorCondition : conditions) {
-			Connector connector = connectorCondition.connector();
-			Condition condition = connectorCondition.condition();
-			if (condition instanceof TableCondition) {
-				TableCondition tableCondition = (TableCondition) condition;
-				String source = tableCondition.source();
-				if (Strings.isNullOrEmpty(source)) {
-					source = App.getDefaultDataSource();
-				}
-				String table = tableCondition.table();
-				String column = tableCondition.column();
-				Object value = tableCondition.value();
-				if (value != null && "$session".equalsIgnoreCase(value.toString())) { // session condition
-					AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
-					String userTable = authorizationInfo.getUserTable();
-					Object userId = authorizationInfo.getUserId();
-					if (userTable.equalsIgnoreCase(table)) {
-						value = userId;
-						FilterInfo filterInfo = FilterInfo.create(ConditionInfo
+		List<RelationInfo> relations = new ArrayList<>();
+		for (TablePermission tablePermission : tablePermissions) {
+			List<ConnectorCondition> conditions = tablePermission.conditions();
+			for (ConnectorCondition connectorCondition : conditions) {
+				Connector connector = connectorCondition.connector();
+				Condition condition = connectorCondition.condition();
+				if (condition instanceof TableCondition) {
+					TableCondition tableCondition = (TableCondition) condition;
+					String source = tableCondition.source();
+					if (Strings.isNullOrEmpty(source)) {
+						source = App.getDefaultDataSource();
+					}
+					String table = tableCondition.table();
+					String column = tableCondition.column();
+					Object value = tableCondition.value();
+					if (value != null && "$session".equalsIgnoreCase(value.toString())) { // session condition
+						AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
+						String userTable = authorizationInfo.getUserTable();
+						Object userId = authorizationInfo.getUserId();
+						if (userTable.equalsIgnoreCase(table)) {
+							value = userId;
+							FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo
+									.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
+							newConditionFilters.add(filterInfo);
+						} else { // get statement value
+							String conditionSql = getTableConditionSql(table, column);
+							StatementValueConditionInfo statementValueConditionInfo = StatementValueConditionInfo
+									.create(connector, ColumnInfo.create(source, table, column, null), Operator.IN,
+											conditionSql);
+							statementValueConditions.add(statementValueConditionInfo);
+						}
+					} else { // Specific conditions
+						FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo
 								.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
 						newConditionFilters.add(filterInfo);
-					} else { // get statement value
-						String conditionSql = getTableConditionSql(table, column);
-						StatementValueConditionInfo statementValueConditionInfo = StatementValueConditionInfo
-								.create(ColumnInfo.create(source, table, column, null), Operator.IN, conditionSql);
-						statementValueConditions.add(statementValueConditionInfo);
 					}
-				} else { // Specific conditions
-					FilterInfo filterInfo = FilterInfo.create(ConditionInfo
-							.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
+					relations.addAll(tableCondition.relations());
+				} else if (condition instanceof ExpressionCondition) {
+					ExpressionCondition expressionCondition = (ExpressionCondition) condition;
+					String expression = expressionCondition.expression();
+					ConditionInfo conditionInfo = new SimpleParser("").parseCondition(expression);
+					FilterInfo filterInfo = FilterInfo.create(conditionInfo);
 					newConditionFilters.add(filterInfo);
 				}
-			} else if (condition instanceof ExpressionCondition) {
-				ExpressionCondition expressionCondition = (ExpressionCondition) condition;
-				String expression = expressionCondition.expression();
-				ConditionInfo conditionInfo = new SimpleParser("").parseCondition(expression);
-				FilterInfo filterInfo = FilterInfo.create(conditionInfo);
-				newConditionFilters.add(filterInfo);
 			}
 		}
 		if (!newConditionFilters.isEmpty()) {
@@ -165,6 +172,9 @@ public final class PermissionChecker {
 		}
 		if (!statementValueConditions.isEmpty()) {
 			simpleInfo = simpleInfo.withStatementValueConditions(statementValueConditions);
+		}
+		if (!relations.isEmpty()) {
+			simpleInfo = simpleInfo.withRelations(relations);
 		}
 		return simpleInfo;
 	}

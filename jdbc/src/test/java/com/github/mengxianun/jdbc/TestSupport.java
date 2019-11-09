@@ -15,6 +15,7 @@ import org.h2.tools.RunScript;
 import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataResultSet;
 import com.github.mengxianun.core.DefaultTranslator;
+import com.github.mengxianun.core.parser.info.RelationInfo;
 import com.github.mengxianun.core.permission.Action;
 import com.github.mengxianun.core.permission.ColumnCondition;
 import com.github.mengxianun.core.permission.ColumnPermission;
@@ -85,7 +86,8 @@ public class TestSupport {
 
 		List<ConnectorCondition> userTableConditionsByUserUpdateId = Lists.newArrayList(ConnectorCondition
 				.create(TableCondition.create(null, "permission_user", "id", "$session",
-						Lists.newArrayList("update_id"))));
+						Lists.newArrayList(RelationInfo.create("permission_condition_user2_table", "update_id",
+								"permission_user", "id")))));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user2_table").action(Action.SELECT)
 				.conditions(userTableConditionsByUserUpdateId).build());
 
@@ -98,7 +100,8 @@ public class TestSupport {
 
 		List<ConnectorCondition> roleTableConditionsByUserCreateId = Lists.newArrayList(ConnectorCondition
 				.create(TableCondition.create(null, "permission_role", "id", "$session",
-						Lists.newArrayList("create_id"))));
+						Lists.newArrayList(RelationInfo.create("permission_condition_role2_table", "create_id",
+								"permission_user", "id")))));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_role2_table").action(Action.SELECT)
 				.conditions(roleTableConditionsByUserCreateId).build());
 

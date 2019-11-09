@@ -30,6 +30,7 @@ import com.github.mengxianun.core.item.FilterItem;
 import com.github.mengxianun.core.item.GroupItem;
 import com.github.mengxianun.core.item.JoinColumnItem;
 import com.github.mengxianun.core.item.JoinItem;
+import com.github.mengxianun.core.item.JoinItem.SingleColumnJoinItem;
 import com.github.mengxianun.core.item.JoinTableItem;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
@@ -47,6 +48,7 @@ import com.github.mengxianun.core.parser.info.GroupInfo;
 import com.github.mengxianun.core.parser.info.JoinInfo;
 import com.github.mengxianun.core.parser.info.LimitInfo;
 import com.github.mengxianun.core.parser.info.OrderInfo;
+import com.github.mengxianun.core.parser.info.RelationInfo;
 import com.github.mengxianun.core.parser.info.SimpleInfo;
 import com.github.mengxianun.core.parser.info.TableInfo;
 import com.github.mengxianun.core.parser.info.ValuesInfo;
@@ -131,6 +133,7 @@ public class CRUDActionParser extends AbstractActionParser {
 	}
 
 	public void parseSelect() {
+		parseRelations();
 		parseJoins();
 		parseColumns();
 		parseWhere();
@@ -196,6 +199,23 @@ public class CRUDActionParser extends AbstractActionParser {
 		}
 
 		return tableItem;
+	}
+
+	public void parseRelations() {
+		List<RelationInfo> relations = simpleInfo.relations();
+		for (RelationInfo relationInfo : relations) {
+			String primaryTableName = relationInfo.primaryTable();
+			String primaryColumnName = relationInfo.primaryColumn();
+			String foreignTableName = relationInfo.foreignTable();
+			String foreignColumnName = relationInfo.foreignColumn();
+			Column primaryColumn = dataContext.getColumn(primaryTableName, primaryColumnName);
+			Column foreignColumn = dataContext.getColumn(foreignTableName, foreignColumnName);
+			if (primaryColumn == null || foreignColumn == null) {
+				throw new DataException("Column [%s.%s] or [%s.%s] does not exist", primaryTableName, primaryColumnName,
+						foreignTableName, foreignColumnName);
+			}
+			action.addRelationship(new Relationship(primaryColumn, foreignColumn));
+		}
 	}
 
 	public void parseJoins() {
@@ -358,24 +378,44 @@ public class CRUDActionParser extends AbstractActionParser {
 							.getRightTableItem();
 				}
 				Column primaryColumn = relationship.getPrimaryColumn();
+				Table primaryTable = primaryColumn.getTable();
 				Column foreignColumn = relationship.getForeignColumn();
 				Table foreignTable = foreignColumn.getTable();
 
-				JoinTableItem foreignTableItem = new JoinTableItem(foreignTable, getAlias(foreignTable), false,
-						currentFixedRelationshipItems);
+				if (!isAllowedJoinColumn(primaryColumn, foreignColumn)) {
+					break;
+				}
+
+				JoinTableItem foreignTableItem = null;
+
+				if (action.hasJoinItem(primaryTable, foreignTable)) {
+					JoinItem joinItem = action.getJoinItem(primaryTable, foreignTable);
+					SingleColumnJoinItem singleColumnJoinItem = joinItem.getJoinItems().get(0);
+					TableItem leftTableItem = singleColumnJoinItem.getLeftColumn().getTableItem();
+					TableItem rightTableItem = singleColumnJoinItem.getRightColumn().getTableItem();
+					ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, leftTableItem);
+					ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, rightTableItem);
+					if (!joinItem.hasJoinItem(primaryColumnItem, foreignColumnItem)) {
+						joinItem.addJoinColumn(primaryColumnItem, foreignColumnItem);
+					}
+					foreignTableItem = (JoinTableItem) rightTableItem;
+				} else {
+					foreignTableItem = new JoinTableItem(foreignTable, getAlias(foreignTable), false,
+							currentFixedRelationshipItems);
+					ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, preTableItem);
+					ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, foreignTableItem);
+					JoinType joinType = tempJoinTypes.containsKey(foreignColumn.getTable())
+							? tempJoinTypes.get(foreignColumn.getTable())
+							: JoinType.LEFT;
+					action.addJoinItem(new JoinItem(primaryColumnItem, foreignColumnItem, joinType));
+				}
+
 				tempRelationTableItems.put(foreignTable, foreignTableItem.getAlias(), foreignTableItem);
 				// update JoinTableItems
 				if (tempJoinTableItems.containsKey(foreignTable)) {
 					tempJoinTableItems.put(foreignTable, foreignTableItem);
 				}
 
-				ColumnItem primaryColumnItem = new ColumnItem(primaryColumn, preTableItem);
-				ColumnItem foreignColumnItem = new ColumnItem(foreignColumn, foreignTableItem);
-				JoinType joinType = tempJoinTypes.containsKey(foreignColumn.getTable())
-						? tempJoinTypes.get(foreignColumn.getTable())
-						: JoinType.LEFT;
-
-				action.addJoinItem(new JoinItem(primaryColumnItem, foreignColumnItem, joinType));
 				// 添加关联关系最后一个Item
 				RelationshipItem relationshipItem = new RelationshipItem(preTableItem, foreignTableItem, relationship);
 				currentFixedRelationshipItems.add(relationshipItem);
@@ -386,6 +426,15 @@ public class CRUDActionParser extends AbstractActionParser {
 				currentRelationshipItems.add(relationshipItem);
 			}
 		}
+	}
+
+	private boolean isAllowedJoinColumn(Column primaryColumn, Column foreignColumn) {
+		List<Relationship> relationships = action.getRelationships(primaryColumn.getTable(), foreignColumn.getTable());
+		if (relationships.isEmpty() || (!relationships.isEmpty()
+				&& relationships.contains(new Relationship(primaryColumn, foreignColumn)))) {
+			return true;
+		}
+		return false;
 	}
 
 	class JoinElement {
@@ -794,7 +843,8 @@ public class CRUDActionParser extends AbstractActionParser {
 
 	private TableItem getJoinTableItem(Table table) {
 		for (JoinItem joinItem : action.getJoinItems()) {
-			TableItem tableItem = joinItem.getRightColumn().getTableItem();
+			SingleColumnJoinItem singleColumnJoinItem = joinItem.getJoinItems().get(0);
+			TableItem tableItem = singleColumnJoinItem.getRightColumn().getTableItem();
 			Table joinTable = tableItem.getTable();
 			if (joinTable == table) {
 				return tableItem;

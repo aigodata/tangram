@@ -27,6 +27,8 @@ public abstract class SimpleInfo {
 
 	public abstract List<JoinInfo> joins();
 
+	public abstract List<RelationInfo> relations();
+
 	@Nullable
 	public abstract WhereInfo where();
 
@@ -60,6 +62,7 @@ public abstract class SimpleInfo {
 	public static Builder builder() {
 		return new AutoValue_SimpleInfo.Builder().columns(Collections.emptyList())
 				.excludeColumns(Collections.emptyList()).joins(Collections.emptyList())
+				.relations(Collections.emptyList())
 				.where(WhereInfo.create(Collections.emptyList()))
 				.groups(Collections.emptyList()).orders(Collections.emptyList())
 				.insertValues(Collections.emptyList()).statementConditions(Collections.emptyList())
@@ -89,6 +92,10 @@ public abstract class SimpleInfo {
 		return toBuilder().statementValueConditions(statementValueConditions).build();
 	}
 
+	public SimpleInfo withRelations(List<RelationInfo> relations) {
+		return toBuilder().relations(relations).build();
+	}
+
 	@AutoValue.Builder
 	public abstract static class Builder {
 
@@ -103,6 +110,8 @@ public abstract class SimpleInfo {
 		public abstract Builder excludeColumns(List<ColumnInfo> columns);
 
 		public abstract Builder joins(List<JoinInfo> joins);
+
+		public abstract Builder relations(List<RelationInfo> relations);
 
 		public abstract Builder where(WhereInfo where);
 
