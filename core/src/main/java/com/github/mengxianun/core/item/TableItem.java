@@ -1,6 +1,7 @@
 package com.github.mengxianun.core.item;
 
 import com.github.mengxianun.core.schema.Table;
+import com.google.common.base.Strings;
 
 public class TableItem extends Item {
 
@@ -32,6 +33,16 @@ public class TableItem extends Item {
 		this.expression = expression;
 		this.alias = alias;
 		this.customAlias = customAlias;
+	}
+
+	public String getKey() {
+		if (!Strings.isNullOrEmpty(alias)) {
+			return alias;
+		} else if (table != null) {
+			return table.getName();
+		} else {
+			return expression;
+		}
 	}
 
 	public Table getTable() {
