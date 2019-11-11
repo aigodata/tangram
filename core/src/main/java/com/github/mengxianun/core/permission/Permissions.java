@@ -9,6 +9,7 @@ import com.github.mengxianun.core.App;
 import com.github.mengxianun.core.DataContext;
 import com.github.mengxianun.core.SQLParser;
 import com.github.mengxianun.core.exception.DataException;
+import com.github.mengxianun.core.exception.PermissionException;
 import com.github.mengxianun.core.parser.SimpleParser;
 import com.github.mengxianun.core.parser.action.CRUDActionParser;
 import com.github.mengxianun.core.parser.info.SimpleInfo;
@@ -282,6 +283,49 @@ public class Permissions {
 	}
 
 	/**
+	 * Gets the SQL of the permission query for table
+	 * 
+	 * @param table
+	 * @return
+	 */
+	public static String getTableSelectSQL(String table) {
+		return getTableSelectSQL(null, table);
+	}
+
+	/**
+	 * Gets the SQL of the permission query for table
+	 * 
+	 * @param source
+	 * @param table
+	 * @return
+	 */
+	public static String getTableSelectSQL(String source, String table) {
+		if (Strings.isNullOrEmpty(source)) {
+			source = App.getDefaultDataSource();
+		}
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty(Operation.SELECT.name().toLowerCase(), source + "." + table);
+		DataContext dataContext = App.getDataContext(source);
+		SimpleInfo simpleInfo = SimpleParser.parse(jsonObject);
+		PermissionCheckResult checkResult = PermissionChecker.checkWithResult(simpleInfo);
+		if (checkResult.pass()) {
+			simpleInfo = checkResult.simpleInfo();
+		} else {
+			String message = String.format("Table [%s.%s] has no [%s] permission", source, table,
+					simpleInfo.operation());
+			throw new PermissionException(message);
+		}
+		com.github.mengxianun.core.Action action = (com.github.mengxianun.core.Action) new CRUDActionParser(simpleInfo,
+				dataContext).parse();
+		action.build();
+		try {
+			return SQLParser.fill(action.getSql(), action.getParams().toArray());
+		} catch (SQLException e) {
+			throw new DataException("SQL build fail", e);
+		}
+	}
+
+	/**
 	 * Get the current user's table permissions where
 	 * 
 	 * @param table
@@ -409,21 +453,6 @@ public class Permissions {
 			return builder.toString();
 		}
 
-	}
-
-	public static String getTableSelectSQL(String table) {
-		return getTableSelectSQL(null, table);
-	}
-
-	public static String getTableSelectSQL(String source, String table) {
-		JsonObject jsonObject = new JsonObject();
-		jsonObject.addProperty(Operation.SELECT.name().toLowerCase(), table);
-		DataContext dataContext = App.getDefaultDataContext();
-		SimpleInfo simpleInfo = SimpleParser.parse(jsonObject);
-		com.github.mengxianun.core.Action action = (com.github.mengxianun.core.Action) new CRUDActionParser(simpleInfo,
-				dataContext).parse();
-		// to do
-		return null;
 	}
 
 	/**
