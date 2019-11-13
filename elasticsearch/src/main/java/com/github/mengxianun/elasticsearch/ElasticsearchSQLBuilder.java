@@ -1,7 +1,10 @@
 package com.github.mengxianun.elasticsearch;
 
+import java.util.List;
+
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.SQLBuilder;
+import com.github.mengxianun.core.item.ColumnItem;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.schema.Column;
@@ -26,6 +29,30 @@ public class ElasticsearchSQLBuilder extends SQLBuilder {
 		sqlBuilder.append(toGroups());
 		sqlBuilder.append(toOrders());
 		sql = sqlBuilder.toString();
+	}
+
+	/**
+	 * 重写toColumns方法, 将列别名用双引号包裹
+	 */
+	@Override
+	public String toColumns(List<ColumnItem> columnItems) {
+		if (columnItems.isEmpty()) {
+			return "*";
+		}
+		StringBuilder columnsBuilder = new StringBuilder();
+		boolean comma = false;
+		for (ColumnItem columnItem : columnItems) {
+			if (comma) {
+				columnsBuilder.append(", ");
+			}
+			columnsBuilder.append(spliceColumn(columnItem));
+			String alias = columnItem.getAlias();
+			if (!Strings.isNullOrEmpty(alias) && dialect.columnAliasEnabled()) {
+				columnsBuilder.append(ALIAS_KEY).append('"').append(alias).append('"');
+			}
+			comma = true;
+		}
+		return columnsBuilder.toString();
 	}
 
 	@Override
