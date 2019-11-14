@@ -44,6 +44,7 @@ import com.github.mengxianun.core.schema.TableSettings;
 import com.github.mengxianun.core.schema.TableType;
 import com.github.mengxianun.core.schema.WildcardTable;
 import com.github.mengxianun.elasticsearch.data.ElasticsearchQuerySummary;
+import com.github.mengxianun.elasticsearch.data.ElasticsearchSQLLimitQuerySummary;
 import com.github.mengxianun.elasticsearch.data.ElasticsearchSQLQuerySummary;
 import com.github.mengxianun.elasticsearch.dialect.ElasticsearchDialect;
 import com.github.mengxianun.elasticsearch.schema.ElasticsearchColumnType;
@@ -96,7 +97,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	public void initMetadata() {
 		schema = loadSchema();
 	}
-	
+
 	@Override
 	public Schema loadSchema() {
 		Schema elasticSchema = new DefaultSchema(VIRTUAL_SCHEMA);
@@ -224,6 +225,18 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	}
 
 	@Override
+	protected long count(Action action) {
+		ElasticsearchSQLBuilder sqlBuilder = new ElasticsearchSQLBuilder(action);
+		sqlBuilder.toSelect();
+		String countSql = sqlBuilder.countSql();
+		Object[] countParams = sqlBuilder.countParams().toArray();
+		String totalResultString = runSQL(countSql, countParams);
+		ElasticsearchSQLQuerySummary sqlQuerySummary = new ElasticsearchSQLQuerySummary(action, totalResultString);
+		JsonArray resultRows = sqlQuerySummary.getResultRows();
+		return action.isGroup() ? resultRows.size() : resultRows.get(0).getAsJsonArray().get(0).getAsLong();
+	}
+
+	@Override
 	protected QuerySummary select(Action action) {
 		// Build query
 		ElasticsearchSQLBuilder sqlBuilder = new ElasticsearchSQLBuilder(action);
@@ -234,15 +247,31 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 			// 说明: 6.8.2 以及之前的版本, SQL分页只支持 LIMIT, 不支持 OFFSET
 			// 所有在这里, 分页查询通过将 SQL translate, 再进行查询
 
+			// limit
+			LimitItem limitItem = action.getLimitItem();
+			long from = limitItem.getStart();
+			long size = limitItem.getLimit();
+
+			// 聚合分页的情况, 由于translate接口生成的字段名称是不确定的数字, 在解析结果的时候无法解析
+			// 所以这里采用SQL的方式, 获取分页结束位置之前的所有数据(Elasticsearch SQL分页只支持 LIMIT, 不支持 OFFSET)
+			// 然后在获取数据后根据请求的分页信息进行截取
+			if (action.isGroup()) {
+				sqlBuilder = new ElasticsearchSQLBuilder(action);
+				sqlBuilder.toSelect();
+				sql = sqlBuilder.getSql();
+				params = sqlBuilder.getParams().toArray();
+
+				String resultString = runSQL(sql, params);
+				// Get total
+				long total = count(action);
+				return new ElasticsearchSQLLimitQuerySummary(action, resultString, (int) limitItem.getStart(), total);
+			}
+
 			String fullSql = fill(sql, params);
 			// translate
 			String nativeQueryString = translateSQL(fullSql);
 			JsonObject query = App.gson().fromJson(nativeQueryString, JsonObject.class);
 
-			// limit
-			LimitItem limitItem = action.getLimitItem();
-			long from = limitItem.getStart();
-			long size = limitItem.getLimit();
 			// aggregations
 			if (action.isGroup()) {
 				processAggrQuery(query);
@@ -263,6 +292,40 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 			String resultString = runSQL(sql, params);
 			return new ElasticsearchSQLQuerySummary(action, resultString);
 		}
+	}
+
+	private String getQueryStatement(Action action) {
+		// Build query
+		ElasticsearchSQLBuilder sqlBuilder = new ElasticsearchSQLBuilder(action);
+		sqlBuilder.toSelectWithoutLimit();
+		String sql = sqlBuilder.getSql();
+		Object[] params = sqlBuilder.getParams().toArray();
+		// 说明: 6.8.2 以及之前的版本, SQL分页只支持 LIMIT, 不支持 OFFSET
+		// 所有在这里, 分页查询通过将 SQL translate, 再进行查询
+
+		// limit
+		LimitItem limitItem = action.getLimitItem();
+		long from = limitItem.getStart();
+		long size = limitItem.getLimit();
+
+		String fullSql = fill(sql, params);
+		// translate
+		String nativeQueryString = translateSQL(fullSql);
+		JsonObject query = App.gson().fromJson(nativeQueryString, JsonObject.class);
+
+		// aggregations
+		if (action.isGroup()) {
+			processAggrQuery(query);
+		}
+		if (action.isLimit()) {
+			if (action.isGroup()) {
+				processAggrLimit(query, from, size);
+			} else {
+				query.addProperty(LIMIT_FROM, from);
+				query.addProperty(LIMIT_SIZE, size);
+			}
+		}
+		return query.toString();
 	}
 
 	@Override
@@ -317,6 +380,7 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 	private void processAggrLimit(JsonObject query, long from, long size) {
 		JsonObject aggrObject = query.getAsJsonObject("aggregations");
 		JsonObject groupbyObject = aggrObject.getAsJsonObject("groupby");
+
 		// 添加聚合分页 Bucket Sort
 		JsonObject bucketSortObject = new JsonObject();
 		bucketSortObject.addProperty("from", from);
@@ -325,9 +389,15 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		JsonObject bucketTruncateObject = new JsonObject();
 		bucketTruncateObject.add("bucket_sort", bucketSortObject);
 
-		JsonObject aggsObject = new JsonObject();
-		aggsObject.add("bucket_truncate", bucketTruncateObject);
-		groupbyObject.add("aggs", aggsObject);
+		// 已经存在聚合节点, 将聚合分页放到聚合节点下面
+		if (groupbyObject.has("aggregations")) {
+			JsonObject aggregationsObject = groupbyObject.getAsJsonObject("aggregations");
+			aggregationsObject.add("bucket_truncate", bucketTruncateObject);
+		} else {
+			JsonObject aggsObject = new JsonObject();
+			aggsObject.add("bucket_truncate", bucketTruncateObject);
+			groupbyObject.add("aggregations", aggsObject);
+		}
 	}
 
 	private String fill(String sql, Object... params) {

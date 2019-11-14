@@ -188,13 +188,15 @@ public class SelectTest extends TestSupport {
 		JsonObject result = (JsonObject) dataResultSet.getJsonData();
 		assertTrue(result.has(ResultAttributes.TOTAL));
 		long total = result.get(ResultAttributes.TOTAL).getAsLong();
-		assertEquals(6, total);
+		assertEquals(5, total);
 		JsonArray data = result.get(ResultAttributes.DATA).getAsJsonArray();
 		assertEquals(1, data.size());
 		JsonObject firstObject = data.get(0).getAsJsonObject();
 		assertTrue(firstObject.has("age"));
-		long age = firstObject.get("age").getAsLong();
-		assertEquals(30, age);
+		assertEquals(30, firstObject.get("age").getAsLong());
+
+		assertTrue(firstObject.has("count"));
+		assertEquals(1, firstObject.get("count").getAsLong());
 	}
 
 	@Test

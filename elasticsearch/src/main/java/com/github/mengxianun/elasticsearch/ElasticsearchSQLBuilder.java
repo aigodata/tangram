@@ -65,7 +65,7 @@ public class ElasticsearchSQLBuilder extends SQLBuilder {
 			return "";
 		}
 		limitString = LIMIT + "?";
-		params.add(limitItem.getLimit());
+		params.add(limitItem.getEnd());
 		// Elasticsearch SQL (6.8.2) 暂不支持 OFFSET
 		return limitString;
 	}

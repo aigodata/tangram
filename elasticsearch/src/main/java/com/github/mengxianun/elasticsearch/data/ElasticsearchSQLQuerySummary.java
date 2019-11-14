@@ -19,7 +19,8 @@ import com.google.gson.JsonObject;
 
 public class ElasticsearchSQLQuerySummary extends QuerySummary {
 
-	private final String resultString;
+	protected final String resultString;
+	protected final JsonObject resultObject;
 
 	public ElasticsearchSQLQuerySummary(String resultString) {
 		this(null, resultString);
@@ -28,9 +29,10 @@ public class ElasticsearchSQLQuerySummary extends QuerySummary {
 	public ElasticsearchSQLQuerySummary(Action action, String resultString) {
 		super(action, null);
 		this.resultString = resultString;
+		this.resultObject = App.gson().fromJson(resultString, JsonObject.class);
 	}
 
-	private Header createHeader(JsonObject resultObject) {
+	private Header createHeader() {
 		JsonArray columnsArray = resultObject.getAsJsonArray("columns");
 		List<ColumnItem> columnItems = new ArrayList<>();
 		columnsArray.forEach(c -> {
@@ -41,14 +43,16 @@ public class ElasticsearchSQLQuerySummary extends QuerySummary {
 		return new DefaultHeader(columnItems);
 	}
 
+	public JsonArray getResultRows() {
+		return resultObject.getAsJsonArray("rows");
+	}
+
 	@Override
 	public List<Row> toRows() {
 		List<Row> rows = new ArrayList<>();
-		JsonObject jsonObject = App.gson().fromJson(resultString, JsonObject.class);
 		List<ColumnItem> columnItems = action.getColumnItems();
-		Header rowHeader = columnItems.isEmpty() ? createHeader(jsonObject) : header;
-
-		JsonArray rowsArray = jsonObject.getAsJsonArray("rows");
+		Header rowHeader = columnItems.isEmpty() ? createHeader() : header;
+		JsonArray rowsArray = getResultRows();
 		rowsArray.forEach(e -> rows.add(new DefaultRow(rowHeader, App.gson().fromJson(e, Object[].class))));
 		return rows;
 	}
@@ -56,8 +60,7 @@ public class ElasticsearchSQLQuerySummary extends QuerySummary {
 	@Override
 	public List<Map<String, Object>> toValues() {
 		List<Map<String, Object>> values = new ArrayList<>();
-		JsonObject jsonObject = App.gson().fromJson(resultString, JsonObject.class);
-		JsonArray columnsArray = jsonObject.getAsJsonArray("columns");
+		JsonArray columnsArray = resultObject.getAsJsonArray("columns");
 		int size = columnsArray.size();
 		String[] columns = new String[size];
 		for (int i = 0; i < size; i++) {
@@ -65,7 +68,7 @@ public class ElasticsearchSQLQuerySummary extends QuerySummary {
 			String columnName = columnObject.get("name").getAsString();
 			columns[i] = columnName;
 		}
-		JsonArray rowsArray = jsonObject.getAsJsonArray("rows");
+		JsonArray rowsArray = getResultRows();
 		for (JsonElement rowElement : rowsArray) {
 			Map<String, Object> row = new HashMap<>();
 			JsonArray rowArray = rowElement.getAsJsonArray();
@@ -75,6 +78,10 @@ public class ElasticsearchSQLQuerySummary extends QuerySummary {
 			values.add(row);
 		}
 		return values;
+	}
+
+	public String getResultString() {
+		return resultString;
 	}
 
 }
