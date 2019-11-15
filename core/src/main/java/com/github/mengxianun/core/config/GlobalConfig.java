@@ -26,4 +26,6 @@ public final class GlobalConfig {
 	public static final String ASSOCIATION_CONNECTOR = "association_connector";
 	// 权限策略
 	public static final String PERMISSION_POLICY = "permission_policy";
+	// 公共列配置
+	public static final String COLUMNS = "columns";
 }

@@ -244,6 +244,21 @@ public final class App {
 		getAuthorizationInfo().refresh();
 	}
 
+	/**
+	 * Is there a global column configuration in the global configuration file.
+	 * "columns" attribute in the global json file
+	 * 
+	 * @param columnName
+	 * @return
+	 */
+	public static boolean hasColumnConfig(String columnName) {
+		return configuration.columnConfigInfos().containsKey(columnName);
+	}
+
+	public static ColumnConfigInfo getColumnConfig(String columnName) {
+		return configuration.columnConfigInfos().get(columnName);
+	}
+
 	public static Injector injector() {
 		return injector;
 	}

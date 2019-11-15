@@ -23,7 +23,7 @@ public class ValuesItem extends Item {
 
 	private static final long serialVersionUID = 1L;
 
-	private Parser parser = new Parser();
+	private static final Parser parser = new Parser();
 	protected Object value;
 
 	public ValuesItem(Object value) {

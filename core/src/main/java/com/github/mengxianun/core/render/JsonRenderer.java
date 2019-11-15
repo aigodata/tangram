@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import com.github.mengxianun.core.Action;
 import com.github.mengxianun.core.App;
+import com.github.mengxianun.core.ColumnConfigInfo;
 import com.github.mengxianun.core.config.AssociationType;
 import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.config.TableConfig;
@@ -22,6 +23,7 @@ import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.relationship.Relationship;
+import com.google.common.base.Strings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -302,6 +304,15 @@ public class JsonRenderer extends AbstractRenderer<JsonElement> {
 				record.addProperty(key, value.toString());
 			}
 		} else {
+			if (App.hasColumnConfig(column.getName())) {
+				ColumnConfigInfo columnConfigInfo = App.getColumnConfig(column.getName());
+				if (!Strings.isNullOrEmpty(columnConfigInfo.timeFormat())) {
+					String timeFormat = columnConfigInfo.timeFormat();
+					String timeValue = parseTimeValue(value, timeFormat);
+					record.addProperty(key, timeValue);
+					return;
+				}
+			}
 			ColumnType columnType = column.getType();
 			if (columnType.isNumber()) {
 				Number number = null;

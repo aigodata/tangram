@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.mengxianun.core.Configuration.Builder;
+import com.github.mengxianun.core.config.ColumnConfig;
 import com.github.mengxianun.core.config.DataSourceConfig;
 import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.data.Summary;
@@ -34,6 +35,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -117,6 +119,25 @@ public abstract class AbstractTranslator implements Translator {
 		if (configurationJsonObject.has(GlobalConfig.PERMISSION_POLICY)) {
 			String permissionPolicy = configurationJsonObject.get(GlobalConfig.PERMISSION_POLICY).getAsString();
 			builder.permissionPolicy(PermissionPolicy.from(permissionPolicy));
+		}
+		if (configurationJsonObject.has(GlobalConfig.COLUMNS)) {
+			Map<String, ColumnConfigInfo> columnConfigInfos = new HashMap<>();
+			JsonArray columns = configurationJsonObject.getAsJsonArray(GlobalConfig.COLUMNS);
+			for (JsonElement columnElement : columns) {
+				JsonObject columnObject = columnElement.getAsJsonObject();
+				if (!columnObject.has(ColumnConfig.NAME)) {
+					continue;
+				}
+				ColumnConfigInfo.Builder columnConfigInfoBuilder = ColumnConfigInfo.builder();
+				String columnName = columnObject.get(ColumnConfig.NAME).getAsString();
+				columnConfigInfoBuilder.name(columnName);
+				if (columnObject.has(ColumnConfig.TIME_FORMAT)) {
+					String timeFormat = columnObject.get(ColumnConfig.TIME_FORMAT).getAsString();
+					columnConfigInfoBuilder.timeFormat(timeFormat);
+				}
+				columnConfigInfos.put(columnName, columnConfigInfoBuilder.build());
+			}
+			builder.columnConfigInfos(columnConfigInfos);
 		}
 		return builder.build();
 	}

@@ -8,5 +8,19 @@
         }
     },
     "table_alias_expression": "$.replaceFirst(\"^ALIAS_\", \"\")",
-    "permission_policy":"weak"
+    "permission_policy":"weak",
+    "columns":[
+      {
+        "name":"MILLISECOND",
+        "time_format":"yyyy-MM-dd HH:mm:ss"
+      },
+      {
+        "name":"MILLISECOND_STRING",
+        "time_format":"yyyy-MM-dd HH:mm:ss"
+      },
+      {
+        "name":"TIMESTAMP",
+        "time_format":"yyyy-MM-dd HH:mm:ss"
+      }
+    ]
 }

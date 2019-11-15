@@ -1,5 +1,8 @@
 package com.github.mengxianun.core;
 
+import java.util.Collections;
+import java.util.Map;
+
 import javax.annotation.Nullable;
 
 import com.github.mengxianun.core.permission.PermissionPolicy;
@@ -32,11 +35,13 @@ public abstract class Configuration {
 
 	public abstract PermissionPolicy permissionPolicy();
 
+	public abstract Map<String, ColumnConfigInfo> columnConfigInfos();
+
 	public static Builder builder() {
 		return new AutoValue_Configuration.Builder().configFile(DEFAULT_CONFIG_FILE).sqlEnabled(false)
 				.nativeEnabled(false)
 				.tableConfigPath(DEFAULT_TABLE_CONFIG_PATH).associationConnector(DEFAULT_ASSOCIATION_CONNECTOR)
-				.permissionPolicy(PermissionPolicy.ALLOW_ALL);
+				.permissionPolicy(PermissionPolicy.ALLOW_ALL).columnConfigInfos(Collections.emptyMap());
 	}
 
 	@AutoValue.Builder
@@ -59,6 +64,8 @@ public abstract class Configuration {
 		public abstract Builder associationConnector(String associationConnector);
 
 		public abstract Builder permissionPolicy(PermissionPolicy permissionPolicy);
+
+		public abstract Builder columnConfigInfos(Map<String, ColumnConfigInfo> columnConfigInfos);
 
 		public abstract Configuration build();
 	}
