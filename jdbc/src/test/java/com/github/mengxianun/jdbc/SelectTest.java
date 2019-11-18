@@ -219,4 +219,13 @@ public class SelectTest extends TestSupport {
 		assertTrue(!compareJSON.failed());
 	}
 
+	@Test
+	void testView() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "view_select.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(1, result.size());
+		JsonObject firstElement = result.get(0).getAsJsonObject();
+		assertEquals(5, firstElement.get("ID").getAsInt());
+	}
+
 }
