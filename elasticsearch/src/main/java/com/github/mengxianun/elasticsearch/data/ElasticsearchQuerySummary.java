@@ -15,6 +15,7 @@ import com.github.mengxianun.core.data.summary.QuerySummary;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
 public class ElasticsearchQuerySummary extends QuerySummary {
@@ -84,12 +85,17 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 				String field = entry.getKey();
 				JsonElement valueElement = entry.getValue();
 				Object value = valueElement;
-				if (valueElement.isJsonArray()) {
-					value = valueElement.getAsJsonArray().get(0);
-				}
 				int i = header.indexOf(field);
 				if (i == -1) {
 					continue;
+				}
+				if (valueElement.isJsonArray()) {
+					JsonElement jsonElement = valueElement.getAsJsonArray().get(0);
+					value = jsonElement;
+					if (jsonElement.isJsonPrimitive()) {
+						value = getRealValue(jsonElement.getAsJsonPrimitive());
+
+					}
 				}
 				values[i] = value;
 			}
@@ -114,7 +120,12 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 				JsonElement valueElement = entry.getValue();
 				Object value = valueElement;
 				if (valueElement.isJsonArray()) {
-					value = valueElement.getAsJsonArray().get(0);
+					JsonElement jsonElement = valueElement.getAsJsonArray().get(0);
+					value = jsonElement;
+					if (jsonElement.isJsonPrimitive()) {
+						value = getRealValue(jsonElement.getAsJsonPrimitive());
+
+					}
 				}
 				values.put(field, value);
 			}
@@ -169,6 +180,18 @@ public class ElasticsearchQuerySummary extends QuerySummary {
 			buckets.forEach(e -> values.add(parseBucketToMap(e.getAsJsonObject())));
 		}
 		return values;
+	}
+
+	private Object getRealValue(JsonPrimitive jsonPrimitive) {
+		if (jsonPrimitive.isJsonNull()) {
+			return null;
+		} else if (jsonPrimitive.isNumber()) {
+			return jsonPrimitive.getAsLong();
+		} else if (jsonPrimitive.isBoolean()) {
+			return jsonPrimitive.getAsBoolean();
+		} else {
+			return jsonPrimitive.getAsString();
+		}
 	}
 
 }
