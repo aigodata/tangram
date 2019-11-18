@@ -228,6 +228,9 @@ public final class PermissionChecker {
 				final String source = tableInfo.source();
 				final String table = tableInfo.table();
 				Table sourceTable = App.getTable(source, table);
+				if (sourceTable == null) {
+					continue;
+				}
 				for (String column : sourceTable.getColumnNames()) {
 					boolean check = checkColumn(source, table, column, action);
 					if (!check) {
