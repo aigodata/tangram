@@ -167,4 +167,14 @@ public class PermissionTableTest extends TestSupport {
 				() -> run(JSON_PARENT_PATH + "permission_no_table-select_join_permission_table.json"));
 	}
 
+	@Test
+	void testSelectConditionRoleOrId() {
+		DataResultSet dataResultSet = run(
+				JSON_PARENT_PATH + "permission_condition_role_or_id-select_with_condition.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(4, result.size());
+		assertEquals(2, result.get(0).getAsJsonObject().get("ID").getAsLong());
+		assertEquals(3, result.get(1).getAsJsonObject().get("ID").getAsLong());
+	}
+
 }

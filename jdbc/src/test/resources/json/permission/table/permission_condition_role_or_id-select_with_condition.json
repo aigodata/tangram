@@ -1,0 +1,4 @@
+{
+  "select":"permission_condition_role_or_id",
+  "where":["name%=Ka%"]
+}

@@ -349,6 +349,64 @@ public class SimpleParser {
 	}
 
 	public ConditionInfo parseCondition(String filterString) {
+		Operator operator = parseOperator(filterString);
+		if (operator == null) {
+			return null;
+		}
+
+		String[] kv = filterString.split(operator.op(), 2);
+		String column = kv[0];
+		Object value = kv[1];
+		String stringValue = value.toString().trim();
+
+		switch (operator) {
+		case EQUAL:
+			if (stringValue.contains(",")) { // in
+				operator = Operator.IN;
+				value = stringValue.split(",");
+			} else if (stringValue.contains("~")) { // between
+				operator = Operator.BETWEEN;
+				value = stringValue.split("~");
+			} else if ("null".equalsIgnoreCase(stringValue)) {
+				operator = Operator.NULL;
+			}
+			break;
+		case NOT_EQUAL:
+			if (stringValue.contains(",")) { // in
+				operator = Operator.NOT_IN;
+				value = stringValue.split(",");
+			} else if (stringValue.contains("~")) { // between
+				operator = Operator.NOT_BETWEEN;
+				value = stringValue.split("~");
+			} else if ("null".equalsIgnoreCase(stringValue)) {
+				operator = Operator.NOT_NULL;
+			}
+			break;
+		case IN:
+		case NOT_IN:
+		case BETWEEN:
+		case NOT_BETWEEN:
+			// 多值条件时, 将多值字符串转换为数组
+			value = stringValue.split(operator.separator());
+			break;
+		case STRONG_EQUAL:
+			operator = Operator.EQUAL;
+			value = value.toString();
+			break;
+		case NOT_STRONG_EQUAL:
+			operator = Operator.NOT_EQUAL;
+			value = value.toString();
+			break;
+
+		default:
+			break;
+		}
+
+		ColumnInfo columnInfo = parseColumn(column);
+		return ConditionInfo.create(columnInfo, operator, value);
+	}
+
+	private Operator parseOperator(String filterString) {
 		Operator operator = null;
 		int pos = 0;
 		int length = filterString.length();
@@ -359,35 +417,46 @@ public class SimpleParser {
 					operator = Operator.STRONG_EQUAL;
 					break over;
 				}
+				operator = Operator.EQUAL;
 
-				String tail = filterString.substring(pos);
-				if (tail.contains(",")) { // in
-					operator = Operator.IN;
-				} else if (tail.contains("~")) { // between
-					operator = Operator.BETWEEN;
-				} else if ("null".equalsIgnoreCase(tail)) {
-					operator = Operator.NULL;
-				} else { // equal
-					operator = Operator.EQUAL;
-				}
 				break over;
 			case '!':
 				switch (filterString.charAt(pos++)) {
 				case '=':
-					String notTail = filterString.substring(pos);
-					if (notTail.contains(",")) { // in
-						operator = Operator.NOT_IN;
-					} else if ("null".equalsIgnoreCase(notTail)) {
-						operator = Operator.NOT_NULL;
-					} else { // equal
-						operator = Operator.NOT_EQUAL;
+					if (filterString.charAt(pos) == '=') {
+						operator = Operator.NOT_STRONG_EQUAL;
+						break over;
 					}
+					operator = Operator.NOT_EQUAL;
+
 					break over;
 
 				case '%':
 					switch (filterString.charAt(pos++)) {
 					case '=':
 						operator = Operator.NOT_LIKE;
+						break over;
+					default:
+						break;
+					}
+					break over;
+				case '~':
+					switch (filterString.charAt(pos++)) {
+					case '=':
+						operator = Operator.NOT_BETWEEN;
+						break over;
+					default:
+						break;
+					}
+					break over;
+				case ',':
+					switch (filterString.charAt(pos++)) {
+					case '=':
+						if (filterString.charAt(pos) == '=') {
+							operator = Operator.NOT_IN_SQL;
+							break over;
+						}
+						operator = Operator.NOT_IN;
 						break over;
 					default:
 						break;
@@ -425,44 +494,25 @@ public class SimpleParser {
 					break;
 				}
 				break;
+			case ',':
+				switch (filterString.charAt(pos++)) {
+				case '=':
+					if (filterString.charAt(pos) == '=') {
+						operator = Operator.IN_SQL;
+						break over;
+					}
+					operator = Operator.IN;
+					break over;
+				default:
+					break;
+				}
+				break;
 
 			default:
 				break;
 			}
 		}
-		if (operator == null) {
-			return null;
-		}
-
-		String[] kv = null;
-		/*
-		 * 对 in 和 between 做特殊处理, 待优化
-		 */
-		switch (operator) {
-		case IN:
-		case BETWEEN:
-			kv = filterString.split(Operator.EQUAL.op(), 2);
-			break;
-		case NOT_IN:
-			kv = filterString.split(Operator.NOT_EQUAL.op(), 2);
-			break;
-
-		default:
-			kv = filterString.split(operator.op(), 2);
-			break;
-		}
-
-		String column = kv[0];
-		Object value = kv[1];
-		if (operator != Operator.STRONG_EQUAL) {
-			value = value.toString().trim();
-		}
-		// 多值条件时, 将多值字符串转换为数组
-		if (operator == Operator.IN || operator == Operator.NOT_IN || operator == Operator.BETWEEN) {
-			value = value.toString().split(operator.op());
-		}
-		ColumnInfo columnInfo = parseColumn(column);
-		return ConditionInfo.create(columnInfo, operator, value);
+		return operator;
 	}
 
 	private void parseGroup() {

@@ -145,10 +145,14 @@ public final class PermissionChecker {
 							newConditionFilters.add(filterInfo);
 						} else { // get statement value
 							String conditionSql = getTableConditionSql(table, column);
-							StatementValueConditionInfo statementValueConditionInfo = StatementValueConditionInfo
-									.create(connector, ColumnInfo.create(source, table, column, null), Operator.IN,
-											conditionSql);
-							statementValueConditions.add(statementValueConditionInfo);
+							//							StatementValueConditionInfo statementValueConditionInfo = StatementValueConditionInfo
+							//									.create(connector, ColumnInfo.create(source, table, column, null), Operator.IN,
+							//											conditionSql);
+							//							statementValueConditions.add(statementValueConditionInfo);
+
+							FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo.create(
+									ColumnInfo.create(source, table, column, null), Operator.IN_SQL, conditionSql));
+							newConditionFilters.add(filterInfo);
 						}
 					} else { // Specific conditions
 						FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo
@@ -160,7 +164,7 @@ public final class PermissionChecker {
 					ExpressionCondition expressionCondition = (ExpressionCondition) condition;
 					String expression = expressionCondition.expression();
 					ConditionInfo conditionInfo = new SimpleParser("").parseCondition(expression);
-					FilterInfo filterInfo = FilterInfo.create(conditionInfo);
+					FilterInfo filterInfo = FilterInfo.create(connector, conditionInfo);
 					newConditionFilters.add(filterInfo);
 				}
 			}

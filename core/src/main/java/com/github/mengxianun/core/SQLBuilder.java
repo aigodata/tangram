@@ -386,7 +386,6 @@ public class SQLBuilder {
 		Operator operator = filterItem.getOperator();
 		switch (operator) {
 		case EQUAL:
-		case STRONG_EQUAL:
 		case NOT_EQUAL:
 		case LT:
 		case LTE:
@@ -406,6 +405,10 @@ public class SQLBuilder {
 			List<Object> inValueList = Arrays.asList(inValue);
 			params.addAll(inValueList);
 			whereParams.addAll(inValueList);
+			break;
+		case IN_SQL:
+		case NOT_IN_SQL:
+			filterBuilder.append(operator.sql()).append(" (").append(value.toString()).append(")");
 			break;
 		case BETWEEN:
 			filterBuilder.append("between ? and ?");

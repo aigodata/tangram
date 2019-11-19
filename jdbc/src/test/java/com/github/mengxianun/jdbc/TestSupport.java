@@ -24,6 +24,7 @@ import com.github.mengxianun.core.permission.ExpressionCondition;
 import com.github.mengxianun.core.permission.SimpleAuthorizationInfo;
 import com.github.mengxianun.core.permission.TableCondition;
 import com.github.mengxianun.core.permission.TablePermission;
+import com.github.mengxianun.core.request.Connector;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
@@ -34,7 +35,7 @@ public class TestSupport {
 	static final Logger LOG = Logger.getLogger(TestSupport.class.getName());
 	
 	public static final String DB_DRIVER_CLASS_NAME = "org.h2.Driver";
-	public static final String DB_URL = "jdbc:h2:~/test";
+	public static final String DB_URL = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1";
 	public static final String DB_USERNAME = "test";
 	public static final String DB_PASSWORD = "123456";
 	public static final String DATABASE_INIT_SCRIPT = "init.sql";
@@ -60,8 +61,7 @@ public class TestSupport {
 
 	static void initAuthorizationInfo() {
 		SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo(null, "permission_user", "id",
-				() -> getUserId(),
-				() -> geTablePermissions(), () -> getColumnPermissions());
+				TestSupport::getUserId, TestSupport::geTablePermissions, TestSupport::getColumnPermissions);
 		App.setAuthorizationInfo(simpleAuthorizationInfo);
 	}
 
@@ -116,6 +116,13 @@ public class TestSupport {
 				ConnectorCondition.create(ExpressionCondition.create("id<5")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user_table2")
 				.action(Action.SELECT).conditions(complexConditions).build());
+
+		// complex condition - role or id
+		List<ConnectorCondition> roleOrIdConditions = Lists.newArrayList(
+				ConnectorCondition.create(TableCondition.create("permission_role", "id", "$session")),
+				ConnectorCondition.create(Connector.OR, ExpressionCondition.create("permission_role.id>2")));
+		tablePermissions.add(TablePermission.builder().table("permission_condition_role_or_id").action(Action.SELECT)
+				.conditions(roleOrIdConditions).build());
 		return tablePermissions;
 	}
 
