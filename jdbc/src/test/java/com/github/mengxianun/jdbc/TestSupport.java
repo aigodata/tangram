@@ -110,6 +110,15 @@ public class TestSupport {
 		tablePermissions.add(TablePermission.builder().table("permission_condition_expression_table")
 				.action(Action.SELECT).conditions(expressionConditions).build());
 
+		// expression condition
+		List<ConnectorCondition> expressionRelationConditions = Lists.newArrayList(
+				ConnectorCondition.create(ExpressionCondition.create("permission_role.id>$session",
+						Lists.newArrayList(RelationInfo
+						.create("permission_condition_expression_relation_table", "create_id", "permission_user",
+								"id")))));
+		tablePermissions.add(TablePermission.builder().table("permission_condition_expression_relation_table")
+				.action(Action.SELECT).conditions(expressionRelationConditions).build());
+
 		// complex condition
 		List<ConnectorCondition> complexConditions = Lists.newArrayList(
 				ConnectorCondition.create(TableCondition.create("permission_role", "id", "$session")),
@@ -123,6 +132,12 @@ public class TestSupport {
 				ConnectorCondition.create(Connector.OR, ExpressionCondition.create("permission_role.id>2")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_role_or_id").action(Action.SELECT)
 				.conditions(roleOrIdConditions).build());
+
+		// complex condition - role session
+		List<ConnectorCondition> roleSessionConditions = Lists
+				.newArrayList(ConnectorCondition.create(ExpressionCondition.create("permission_role.id>$session")));
+		tablePermissions.add(TablePermission.builder().table("permission_condition_role_session").action(Action.SELECT)
+				.conditions(roleSessionConditions).build());
 		return tablePermissions;
 	}
 

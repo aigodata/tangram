@@ -141,6 +141,14 @@ public class PermissionTableTest extends TestSupport {
 	}
 
 	@Test
+	void testSelectConditionExpressionRelationTable() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_condition_expression_relation_table.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(1, result.size());
+		assertEquals(2, result.get(0).getAsJsonObject().get("ID").getAsLong());
+	}
+
+	@Test
 	void testSelectConditionUserTable2() {
 		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "condition_user_table2-select_with_condition.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
@@ -172,7 +180,18 @@ public class PermissionTableTest extends TestSupport {
 		DataResultSet dataResultSet = run(
 				JSON_PARENT_PATH + "permission_condition_role_or_id-select_with_condition.json");
 		JsonArray result = (JsonArray) dataResultSet.getJsonData();
-		assertEquals(4, result.size());
+		assertEquals(3, result.size());
+		assertEquals(2, result.get(0).getAsJsonObject().get("ID").getAsLong());
+		assertEquals(3, result.get(1).getAsJsonObject().get("ID").getAsLong());
+		assertEquals(5, result.get(2).getAsJsonObject().get("ID").getAsLong());
+	}
+
+	@Test
+	void testSelectConditionSessionRole() {
+		DataResultSet dataResultSet = run(
+				JSON_PARENT_PATH + "permission_condition_role_or_id-select_with_condition_session.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(2, result.size());
 		assertEquals(2, result.get(0).getAsJsonObject().get("ID").getAsLong());
 		assertEquals(3, result.get(1).getAsJsonObject().get("ID").getAsLong());
 	}

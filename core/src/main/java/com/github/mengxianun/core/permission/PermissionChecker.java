@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +17,7 @@ import com.github.mengxianun.core.SQLParser;
 import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.exception.DataException;
 import com.github.mengxianun.core.exception.PermissionException;
+import com.github.mengxianun.core.item.SQLValue;
 import com.github.mengxianun.core.parser.SimpleParser;
 import com.github.mengxianun.core.parser.action.CRUDActionParser;
 import com.github.mengxianun.core.parser.info.ColumnInfo;
@@ -116,7 +116,6 @@ public final class PermissionChecker {
 		if (tablePermissions.isEmpty()) {
 			return simpleInfo;
 		}
-		List<FilterInfo> filters = simpleInfo.where().filters();
 		List<FilterInfo> newConditionFilters = new ArrayList<>();
 		List<StatementValueConditionInfo> statementValueConditions = new ArrayList<>();
 		List<RelationInfo> relations = new ArrayList<>();
@@ -145,13 +144,9 @@ public final class PermissionChecker {
 							newConditionFilters.add(filterInfo);
 						} else { // get statement value
 							String conditionSql = getTableConditionSql(table, column);
-							//							StatementValueConditionInfo statementValueConditionInfo = StatementValueConditionInfo
-							//									.create(connector, ColumnInfo.create(source, table, column, null), Operator.IN,
-							//											conditionSql);
-							//							statementValueConditions.add(statementValueConditionInfo);
-
 							FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo.create(
 									ColumnInfo.create(source, table, column, null), Operator.IN_SQL, conditionSql));
+
 							newConditionFilters.add(filterInfo);
 						}
 					} else { // Specific conditions
@@ -164,15 +159,51 @@ public final class PermissionChecker {
 					ExpressionCondition expressionCondition = (ExpressionCondition) condition;
 					String expression = expressionCondition.expression();
 					ConditionInfo conditionInfo = new SimpleParser("").parseCondition(expression);
-					FilterInfo filterInfo = FilterInfo.create(connector, conditionInfo);
-					newConditionFilters.add(filterInfo);
+
+					/////////////////
+					ColumnInfo columnInfo = conditionInfo.columnInfo();
+					String source = columnInfo.source();
+					String table = columnInfo.table();
+					String column = columnInfo.column();
+					Operator operator = conditionInfo.operator();
+					Object value = conditionInfo.value();
+					if (value != null && "$session".equalsIgnoreCase(value.toString())) { // session condition
+						AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
+						String userTable = authorizationInfo.getUserTable();
+						Object userId = authorizationInfo.getUserId();
+						if (userTable.equalsIgnoreCase(table)) {
+							value = userId;
+							FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo
+									.create(ColumnInfo.create(source, table, column, null), operator, value));
+							newConditionFilters.add(filterInfo);
+						} else { // get statement value
+							String conditionSql = getTableConditionSql(table, column, operator);
+							value = SQLValue.create(conditionSql);
+
+							FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo.create(
+									ColumnInfo.create(source, table, column, null), operator, value));
+							newConditionFilters.add(filterInfo);
+						}
+					} else {
+						FilterInfo filterInfo = FilterInfo.create(connector, conditionInfo);
+						newConditionFilters.add(filterInfo);
+					}
+					relations.addAll(expressionCondition.relations());
+					/////////////////
+
+					//					FilterInfo filterInfo = FilterInfo.create(connector, conditionInfo);
+					//					newConditionFilters.add(filterInfo);
 				}
 			}
 		}
 		if (!newConditionFilters.isEmpty()) {
-			List<FilterInfo> newFilters = Stream.concat(filters.stream(), newConditionFilters.stream())
-					.collect(Collectors.toList());
-			simpleInfo = simpleInfo.withWhere(WhereInfo.create(newFilters));
+			List<FilterInfo> filters = simpleInfo.where().filters();
+			FilterInfo filterInfo = FilterInfo.create(Connector.AND, null, newConditionFilters);
+			filters = new ArrayList<>(filters);
+			filters.add(filterInfo);
+			//			List<FilterInfo> newFilters = Stream.concat(filters.stream(), newConditionFilters.stream())
+			//					.collect(Collectors.toList());
+			simpleInfo = simpleInfo.withWhere(WhereInfo.create(filters));
 		}
 		if (!statementValueConditions.isEmpty()) {
 			simpleInfo = simpleInfo.withStatementValueConditions(statementValueConditions);
@@ -200,6 +231,42 @@ public final class PermissionChecker {
 		action.build();
 		try {
 			return SQLParser.fill(action.getSql(), action.getParams().toArray());
+		} catch (SQLException e) {
+			throw new DataException("Condition sql build fail");
+		}
+	}
+
+	private static String getTableConditionSql(String table, String column, Operator operator) {
+		AuthorizationInfo authorizationInfo = App.getAuthorizationInfo();
+		String userTable = authorizationInfo.getUserTable();
+		String userIdColumn = authorizationInfo.getUserIdColumn();
+		Object userId = authorizationInfo.getUserId();
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty(Operation.SELECT.name().toLowerCase(), table);
+
+		switch (operator) {
+		case LT:
+		case LTE:
+			column = "$min(" + table + "." + column + ")";
+			break;
+		case GT:
+		case GTE:
+			column = "$max(" + table + "." + column + ")";
+			break;
+
+		default:
+			break;
+		}
+		jsonObject.addProperty(RequestKeyword.FIELDS.lowerName(), column);
+		jsonObject.addProperty(RequestKeyword.JOIN.lowerName(), userTable);
+		jsonObject.addProperty(RequestKeyword.WHERE.lowerName(), userTable + "." + userIdColumn + "=" + userId);
+		DataContext dataContext = App.getDefaultDataContext();
+		SimpleInfo simpleInfo = SimpleParser.parse(jsonObject);
+		com.github.mengxianun.core.Action action = (com.github.mengxianun.core.Action) new CRUDActionParser(simpleInfo,
+				dataContext).parse();
+		action.build();
+		try {
+			return "(" + SQLParser.fill(action.getSql(), action.getParams().toArray()) + ")";
 		} catch (SQLException e) {
 			throw new DataException("Condition sql build fail");
 		}
