@@ -17,6 +17,7 @@ import com.github.mengxianun.core.item.JoinItem;
 import com.github.mengxianun.core.item.JoinItem.SingleColumnJoinItem;
 import com.github.mengxianun.core.item.LimitItem;
 import com.github.mengxianun.core.item.OrderItem;
+import com.github.mengxianun.core.item.SQLValue;
 import com.github.mengxianun.core.item.TableItem;
 import com.github.mengxianun.core.item.ValueItem;
 import com.github.mengxianun.core.item.extension.StatementFilterItem;
@@ -382,6 +383,16 @@ public class SQLBuilder {
 		ColumnItem columnItem = filterItem.getColumnItem();
 		filterBuilder.append(spliceColumn(columnItem, assignTableAlias));
 		filterBuilder.append(" ");
+
+		/////////////////
+		// optimize
+		/////////////////
+		if (filterItem.getValue() instanceof SQLValue) {
+			filterBuilder.append(filterItem.getOperator().sql()).append(" ")
+					.append(((SQLValue) filterItem.getValue()).sql());
+			return filterBuilder.toString();
+		}
+
 		Object value = filterItem.getRealValue();
 		Operator operator = filterItem.getOperator();
 		switch (operator) {
@@ -749,7 +760,8 @@ public class SQLBuilder {
 				if (dialect.hasFunction(func)) {
 					processFunction = dialect.getFunction(func).convert(func, args);
 				} else {
-					processFunction = matcher.group().substring(1);
+					//					processFunction = matcher.group().substring(1);
+					processFunction = func + "(" + args + ")";
 				}
 				matcher.appendReplacement(buffer, processFunction);
 			}
