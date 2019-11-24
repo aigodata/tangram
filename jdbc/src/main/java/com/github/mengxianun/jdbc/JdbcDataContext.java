@@ -176,6 +176,10 @@ public class JdbcDataContext extends AbstractDataContext {
 			logger.info("Find [{}] table [{}]", databaseProductName, tableName);
 		}
 
+		if (DATABASE_PRODUCT_POSTGRESQL.equals(databaseProductName)) {
+			loadPostgresMaterializedView(jdbcSchema);
+		}
+
 		// column metadata
 		ResultSet columnsResultSet = databaseMetaData.getColumns(catalog, schemaPattern, tableNamePattern,
 				columnNamePattern);
@@ -189,6 +193,9 @@ public class JdbcDataContext extends AbstractDataContext {
 			String columnRemarks = columnsResultSet.getString(12);
 
 			JdbcTable table = (JdbcTable) jdbcSchema.getTableByName(columnTable);
+			if (table == null) {
+				continue;
+			}
 			ColumnType columnType = new JdbcColumnType(Integer.parseInt(columnDataType), columnTypeName);
 			table.addColumn(new JdbcColumn(columnName, columnType, table, columnNullable, columnRemarks, columnSize));
 		}
@@ -243,6 +250,24 @@ public class JdbcDataContext extends AbstractDataContext {
 			table.addPrimaryKey(columnName);
 		}
 		return table;
+	}
+
+	/**
+	 * Load PostgreSQL materialized view
+	 */
+	private void loadPostgresMaterializedView(JdbcSchema jdbcSchema) {
+		String sql = "select * from pg_matviews where schemaname like ?";
+
+		List<Object[]> result = select(sql, jdbcSchema.getName());
+		for (Object[] record : result) {
+			String tableName = record[1].toString();
+			String definition = record[6].toString();
+			TableType tableType = TableType.MATERIALIZED_VIEW;
+			jdbcSchema.addTable(new JdbcTable(tableName, tableType, jdbcSchema, definition));
+
+			logger.info("Find [{}] {} [{}]", databaseProductName, tableType, tableName);
+		}
+
 	}
 
 	@Override

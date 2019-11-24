@@ -1,7 +1,7 @@
 package com.github.mengxianun.core.schema;
 public enum TableType {
 
-	TABLE, VIEW, SYSTEM_TABLE, GLOBAL_TEMPORARY, LOCAL_TEMPORARY, ALIAS, SYNONYM, OTHER;
+	TABLE, VIEW, MATERIALIZED_VIEW, SYSTEM_TABLE, GLOBAL_TEMPORARY, LOCAL_TEMPORARY, ALIAS, SYNONYM, OTHER;
 
 	public static final TableType[] DEFAULT_TABLE_TYPES = new TableType[] {
 			TableType.TABLE, TableType.VIEW };
