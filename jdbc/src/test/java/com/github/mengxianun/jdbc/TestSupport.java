@@ -138,6 +138,16 @@ public class TestSupport {
 				.newArrayList(ConnectorCondition.create(ExpressionCondition.create("permission_role.id>$session")));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_role_session").action(Action.SELECT)
 				.conditions(roleSessionConditions).build());
+
+		// complex condition - role session
+		List<ConnectorCondition> userRoleAndGroupRoleConditions = Lists.newArrayList(
+				ConnectorCondition.create(TableCondition.create("permission_role", "id", "$session")),
+				ConnectorCondition.create(Connector.OR,
+						TableCondition.create("permission_group_role", "role_id", "$session")));
+		tablePermissions.add(TablePermission.builder().table("permission_condition_user_role_and_group_role")
+				.action(Action.SELECT)
+				.conditions(userRoleAndGroupRoleConditions).build());
+
 		return tablePermissions;
 	}
 

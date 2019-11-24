@@ -196,4 +196,15 @@ public class PermissionTableTest extends TestSupport {
 		assertEquals(3, result.get(1).getAsJsonObject().get("ID").getAsLong());
 	}
 
+	@Test
+	void testSelectConditionUserRoleAndGroupRole() {
+		DataResultSet dataResultSet = run(
+				JSON_PARENT_PATH + "permission_condition_user_role_and_group_role-select.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(3, result.size());
+		assertEquals(2, result.get(0).getAsJsonObject().get("ID").getAsLong());
+		assertEquals(3, result.get(1).getAsJsonObject().get("ID").getAsLong());
+		assertEquals(5, result.get(2).getAsJsonObject().get("ID").getAsLong());
+	}
+
 }
