@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,6 +22,7 @@ import com.github.mengxianun.core.permission.ColumnPermission;
 import com.github.mengxianun.core.permission.PermissionPolicy;
 import com.github.mengxianun.core.permission.TablePermission;
 import com.github.mengxianun.core.schema.Column;
+import com.github.mengxianun.core.schema.Schema;
 import com.github.mengxianun.core.schema.Table;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
@@ -137,6 +139,17 @@ public final class App {
 
 	public static DataContext currentDataContext() {
 		return currentDataContext.get();
+	}
+
+	public static String getSource(Schema schema) {
+		for (Entry<String, DataContext> entry : dataContexts.entrySet()) {
+			String source = entry.getKey();
+			DataContext dataContext = entry.getValue();
+			if (dataContext.getSchema() == schema) {
+				return source;
+			}
+		}
+		return null;
 	}
 
 	public static Configuration getConfiguration() {
