@@ -127,7 +127,7 @@ public class JdbcDataContext extends AbstractDataContext {
 				identifierQuoteStringTemp = identifierQuoteStringTemp.trim();
 			}
 		} catch (SQLException e) {
-			logger.debug("Unexpected exception during JdbcDataContext initialization", e);
+			logger.error("Unexpected exception during JdbcDataContext initialization", e);
 		}
 
 		catalog = catalogTemp;
@@ -257,17 +257,19 @@ public class JdbcDataContext extends AbstractDataContext {
 	 */
 	private void loadPostgresMaterializedView(JdbcSchema jdbcSchema) {
 		String sql = "select * from pg_matviews where schemaname like ?";
+		try {
+			List<Object[]> result = select(sql, jdbcSchema.getName());
+			for (Object[] record : result) {
+				String tableName = record[1].toString();
+				String definition = record[6].toString();
+				TableType tableType = TableType.MATERIALIZED_VIEW;
+				jdbcSchema.addTable(new JdbcTable(tableName, tableType, jdbcSchema, definition));
 
-		List<Object[]> result = select(sql, jdbcSchema.getName());
-		for (Object[] record : result) {
-			String tableName = record[1].toString();
-			String definition = record[6].toString();
-			TableType tableType = TableType.MATERIALIZED_VIEW;
-			jdbcSchema.addTable(new JdbcTable(tableName, tableType, jdbcSchema, definition));
-
-			logger.info("Find [{}] {} [{}]", databaseProductName, tableType, tableName);
+				logger.info("Find [{}] {} [{}]", databaseProductName, tableType, tableName);
+			}
+		} catch (Exception e) {
+			logger.error("Load materialized view error", e);
 		}
-
 	}
 
 	@Override
