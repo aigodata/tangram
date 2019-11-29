@@ -737,7 +737,14 @@ public class CRUDActionParser extends AbstractActionParser {
 	}
 
 	public void parseUpdateValues() {
-		List<ValueItem> valueItems = parseValues(simpleInfo.updateValues());
+		ValuesInfo updateValues = simpleInfo.updateValues();
+		// Don not update primary key
+		Map<String, Object> values = updateValues.values();
+		List<String> primaryKeys = action.getPrimaryTable().getPrimaryKeys().stream().map(Column::getName)
+				.collect(Collectors.toList());
+		values.keySet().removeAll(primaryKeys);
+		updateValues = ValuesInfo.create(values);
+		List<ValueItem> valueItems = parseValues(updateValues);
 		action.addAllUpdateValueItem(valueItems);
 
 	}
