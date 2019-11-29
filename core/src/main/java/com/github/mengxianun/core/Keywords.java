@@ -1,6 +1,7 @@
 package com.github.mengxianun.core;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
+import java.util.Date;
 
 public enum Keywords implements Keyword {
 
@@ -8,7 +9,9 @@ public enum Keywords implements Keyword {
 
 		@Override
 		public Object parse() {
-			return LocalDateTime.now();
+			// optimize
+			return new Timestamp(new Date().getTime());
+			//			return LocalDateTime.now();
 		}
 
 	},
