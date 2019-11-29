@@ -1,9 +1,9 @@
 package com.github.mengxianun.core.item;
 
+import java.sql.Timestamp;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.DateTimeException;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
@@ -93,7 +93,9 @@ public class ValuesItem extends Item {
 				throw new DateTimeException(String.format("Unable to parse time format [%s]", value));
 			}
 			Date date = groups.get(0).getDates().get(0);
-			return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+			//			return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+			// optimize
+			return new Timestamp(date.getTime());
 		} else if (columnType.isBoolean()) {
 			return Boolean.parseBoolean(value.toString());
 		}
