@@ -413,7 +413,7 @@ public class SimpleParser {
 		over: while (pos < length) {
 			switch (filterString.charAt(pos++)) {
 			case '=':
-				if (filterString.charAt(pos) == '=') {
+				if (filterString.length() > pos && filterString.charAt(pos) == '=') {
 					operator = Operator.STRONG_EQUAL;
 					break over;
 				}
@@ -423,7 +423,7 @@ public class SimpleParser {
 			case '!':
 				switch (filterString.charAt(pos++)) {
 				case '=':
-					if (filterString.charAt(pos) == '=') {
+					if (filterString.length() > pos && filterString.charAt(pos) == '=') {
 						operator = Operator.NOT_STRONG_EQUAL;
 						break over;
 					}
@@ -452,7 +452,7 @@ public class SimpleParser {
 				case ',':
 					switch (filterString.charAt(pos++)) {
 					case '=':
-						if (filterString.charAt(pos) == '=') {
+						if (filterString.length() > pos && filterString.charAt(pos) == '=') {
 							operator = Operator.NOT_IN_SQL;
 							break over;
 						}
@@ -497,7 +497,7 @@ public class SimpleParser {
 			case ',':
 				switch (filterString.charAt(pos++)) {
 				case '=':
-					if (filterString.charAt(pos) == '=') {
+					if (filterString.length() > pos && filterString.charAt(pos) == '=') {
 						operator = Operator.IN_SQL;
 						break over;
 					}

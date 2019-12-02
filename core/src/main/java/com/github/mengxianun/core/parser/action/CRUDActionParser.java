@@ -61,6 +61,7 @@ import com.github.mengxianun.core.request.Operation;
 import com.github.mengxianun.core.request.Operator;
 import com.github.mengxianun.core.request.Order;
 import com.github.mengxianun.core.schema.Column;
+import com.github.mengxianun.core.schema.ColumnType;
 import com.github.mengxianun.core.schema.Table;
 import com.github.mengxianun.core.schema.TableSettings;
 import com.github.mengxianun.core.schema.relationship.Relationship;
@@ -669,6 +670,18 @@ public class CRUDActionParser extends AbstractActionParser {
 		// The column was not found in the requested tables (primary tables and join talbes)
 		if (columnItem == null) {
 			columnItem = createScatteredColumnItem(columnInfo);
+		}
+		// valid empty string value
+		// if value is empty string and column type is number, ignore this filter
+		if ("".equals(value)) {
+			Column column = columnItem.getColumn();
+			if (column != null) {
+				ColumnType columnType = column.getType();
+				if (columnType.isNumber()) {
+					return null;
+				}
+
+			}
 		}
 		return new FilterItem(connector, columnItem, operator, value);
 	}
