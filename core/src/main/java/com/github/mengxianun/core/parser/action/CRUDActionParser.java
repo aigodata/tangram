@@ -669,7 +669,7 @@ public class CRUDActionParser extends AbstractActionParser {
 		ColumnItem columnItem = findColumnItem(columnInfo);
 		// The column was not found in the requested tables (primary tables and join talbes)
 		if (columnItem == null) {
-			columnItem = createScatteredColumnItem(columnInfo);
+			columnItem = createScatteredColumnItem(columnInfo, conditionInfo.relationTablesPath());
 		}
 		// valid empty string value
 		// if value is empty string and column type is number, ignore this filter
@@ -801,6 +801,10 @@ public class CRUDActionParser extends AbstractActionParser {
 		return null;
 	}
 
+	private JoinColumnItem createScatteredColumnItem(ColumnInfo columnInfo) {
+		return createScatteredColumnItem(columnInfo, Collections.emptyList());
+	}
+
 	/**
 	 * The column was not found in the requested tables (primary tables and join
 	 * talbes)
@@ -808,7 +812,7 @@ public class CRUDActionParser extends AbstractActionParser {
 	 * @param columnInfo
 	 * @return
 	 */
-	private JoinColumnItem createScatteredColumnItem(ColumnInfo columnInfo) {
+	private JoinColumnItem createScatteredColumnItem(ColumnInfo columnInfo, List<String> relationTablesPath) {
 		Table table = dataContext.getTable(columnInfo.table());
 		if (tempRelationTableItems.containsRow(table)) {
 			TableItem tableItem = tempRelationTableItems.values().iterator().next();
@@ -817,7 +821,26 @@ public class CRUDActionParser extends AbstractActionParser {
 			// 1. add join table
 			JoinElement joinElement = parseJoin(JoinType.LEFT,
 					TableInfo.create(columnInfo.source(), columnInfo.table(), null));
-			buildJoin(Lists.newArrayList(joinElement));
+			if (!relationTablesPath.isEmpty()) {
+				RelationshipPath relationshipPath = new RelationshipPath();
+				String preTable = simpleInfo.table().table();
+				for (String relationTable : relationTablesPath) {
+					Set<RelationshipPath> relationshipPaths = dataContext.getRelationships(preTable, relationTable);
+					if (relationshipPaths.isEmpty()) {
+						throw new DataException(String.format(
+								"Association relation not found for the table [%s] and [%s]", preTable, relationTable));
+					}
+					Optional<RelationshipPath> relationshipPathOptional = relationshipPaths.stream()
+							.min(Comparator.comparing(RelationshipPath::size));
+					if (relationshipPathOptional.isPresent()) {
+						relationshipPath.addAll(relationshipPathOptional.get());
+					}
+					preTable = relationTable;
+				}
+				createRelationship(relationshipPath);
+			} else {
+				buildJoin(Lists.newArrayList(joinElement));
+			}
 			// 2. create join column item
 			TableItem tableItem = tempRelationTableItems.row(table).values().iterator().next();
 			return new JoinColumnItem(findColumn(columnInfo), columnInfo.alias(), false, tableItem);

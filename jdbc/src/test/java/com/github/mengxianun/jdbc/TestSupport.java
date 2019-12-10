@@ -6,6 +6,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -143,7 +144,10 @@ public class TestSupport {
 		List<ConnectorCondition> userRoleAndGroupRoleConditions = Lists.newArrayList(
 				ConnectorCondition.create(TableCondition.create("permission_role", "id", "$session")),
 				ConnectorCondition.create(Connector.OR,
-						TableCondition.create("permission_group_role", "role_id", "$session")));
+						TableCondition.create(null, "permission_group_role", "role_id", "$session",
+								Collections.emptyList(),
+								Lists.newArrayList("permission_user", "permission_user_group", "permission_group",
+										"permission_group_role"))));
 		tablePermissions.add(TablePermission.builder().table("permission_condition_user_role_and_group_role")
 				.action(Action.SELECT)
 				.conditions(userRoleAndGroupRoleConditions).build());

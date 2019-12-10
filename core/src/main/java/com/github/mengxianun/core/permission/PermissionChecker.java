@@ -126,6 +126,7 @@ public final class PermissionChecker {
 				Condition condition = connectorCondition.condition();
 				if (condition instanceof TableCondition) {
 					TableCondition tableCondition = (TableCondition) condition;
+					List<String> relationTablesPath = tableCondition.relationTablesPath();
 					String source = tableCondition.source();
 					if (Strings.isNullOrEmpty(source)) {
 						source = App.getDefaultDataSource();
@@ -140,24 +141,28 @@ public final class PermissionChecker {
 						if (userTable.equalsIgnoreCase(table)) {
 							value = userId;
 							FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo
-									.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
+									.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value,
+											relationTablesPath));
 							newConditionFilters.add(filterInfo);
 						} else { // get statement value
 							String conditionSql = getTableConditionSql(table, column);
 							FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo.create(
-									ColumnInfo.create(source, table, column, null), Operator.IN_SQL, conditionSql));
+									ColumnInfo.create(source, table, column, null), Operator.IN_SQL, conditionSql,
+									relationTablesPath));
 
 							newConditionFilters.add(filterInfo);
 						}
 					} else { // Specific conditions
 						FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo
-								.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value));
+								.create(ColumnInfo.create(source, table, column, null), Operator.EQUAL, value,
+										relationTablesPath));
 						newConditionFilters.add(filterInfo);
 					}
 					relations.addAll(tableCondition.relations());
 				} else if (condition instanceof ExpressionCondition) {
 					ExpressionCondition expressionCondition = (ExpressionCondition) condition;
 					String expression = expressionCondition.expression();
+					List<String> relationTablesPath = expressionCondition.relationTablesPath();
 					ConditionInfo conditionInfo = new SimpleParser("").parseCondition(expression);
 
 					/////////////////
@@ -174,18 +179,21 @@ public final class PermissionChecker {
 						if (userTable.equalsIgnoreCase(table)) {
 							value = userId;
 							FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo
-									.create(ColumnInfo.create(source, table, column, null), operator, value));
+									.create(ColumnInfo.create(source, table, column, null), operator, value,
+											relationTablesPath));
 							newConditionFilters.add(filterInfo);
 						} else { // get statement value
 							String conditionSql = getTableConditionSql(table, column, operator);
 							value = SQLValue.create(conditionSql);
 
 							FilterInfo filterInfo = FilterInfo.create(connector, ConditionInfo.create(
-									ColumnInfo.create(source, table, column, null), operator, value));
+									ColumnInfo.create(source, table, column, null), operator, value,
+									relationTablesPath));
 							newConditionFilters.add(filterInfo);
 						}
 					} else {
-						FilterInfo filterInfo = FilterInfo.create(connector, conditionInfo);
+						FilterInfo filterInfo = FilterInfo.create(connector,
+								ConditionInfo.create(columnInfo, operator, value, relationTablesPath));
 						newConditionFilters.add(filterInfo);
 					}
 					relations.addAll(expressionCondition.relations());

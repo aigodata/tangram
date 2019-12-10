@@ -16,12 +16,19 @@ public abstract class ExpressionCondition implements Condition {
 	}
 
 	public static ExpressionCondition create(@Nullable String expression, List<RelationInfo> relations) {
-		return new AutoValue_ExpressionCondition(expression, relations);
+		return create(expression, relations, Collections.emptyList());
+	}
+
+	public static ExpressionCondition create(@Nullable String expression, List<RelationInfo> relations,
+			List<String> relationTablesPath) {
+		return new AutoValue_ExpressionCondition(expression, relations, relationTablesPath);
 	}
 
 	@Nullable
 	public abstract String expression();
 
 	public abstract List<RelationInfo> relations();
+
+	public abstract List<String> relationTablesPath();
 
 }

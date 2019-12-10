@@ -21,8 +21,13 @@ public abstract class TableCondition implements Condition {
 
 	public static TableCondition create(@Nullable String source, String table, String column, Object value,
 			List<RelationInfo> relations) {
+		return create(source, table, column, value, relations, Collections.emptyList());
+	}
+
+	public static TableCondition create(@Nullable String source, String table, String column, Object value,
+			List<RelationInfo> relations, List<String> relationTablesPath) {
 		return new AutoValue_TableCondition.Builder().source(source).table(table).column(column).value(value)
-				.relations(relations).build();
+				.relations(relations).relationTablesPath(relationTablesPath).build();
 	}
 
 	@Nullable
@@ -42,6 +47,12 @@ public abstract class TableCondition implements Condition {
 	 */
 	public abstract List<RelationInfo> relations();
 
+	/**
+	 * 
+	 * @return
+	 */
+	public abstract List<String> relationTablesPath();
+
 	public static Builder builder() {
 		return new AutoValue_TableCondition.Builder();
 	}
@@ -58,6 +69,8 @@ public abstract class TableCondition implements Condition {
 		public abstract Builder value(Object value);
 
 		public abstract Builder relations(List<RelationInfo> relations);
+
+		public abstract Builder relationTablesPath(List<String> relationTablesPath);
 
 		public abstract TableCondition build();
 	}
