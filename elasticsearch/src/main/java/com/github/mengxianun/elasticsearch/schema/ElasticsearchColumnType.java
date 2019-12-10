@@ -1,6 +1,9 @@
 package com.github.mengxianun.elasticsearch.schema;
 
+import java.sql.Timestamp;
+
 import com.github.mengxianun.core.schema.AbstractColumnType;
+import com.google.common.base.Strings;
 
 public class ElasticsearchColumnType extends AbstractColumnType {
 
@@ -14,8 +17,21 @@ public class ElasticsearchColumnType extends AbstractColumnType {
 	public static final String IP = "ip";
 	public static final String OBJECT = "object";
 
+	public static final String DATE_FORMAT_EPOCH_MILLIS = "epoch_millis";
+
+	private final String format;
+
 	public ElasticsearchColumnType(String name) {
+		this(name, null);
+	}
+
+	public ElasticsearchColumnType(String name, String format) {
 		super(name);
+		this.format = format;
+	}
+
+	public String getFormat() {
+		return format;
 	}
 
 	@Override
@@ -26,11 +42,6 @@ public class ElasticsearchColumnType extends AbstractColumnType {
 	@Override
 	public boolean isBinary() {
 		return false;
-	}
-
-	@Override
-	public boolean isNumber() {
-		return isInteger() || isLong() || isDouble();
 	}
 
 	@Override
@@ -49,11 +60,6 @@ public class ElasticsearchColumnType extends AbstractColumnType {
 	}
 
 	@Override
-	public boolean isTimeBased() {
-		return false;
-	}
-
-	@Override
 	public boolean isDate() {
 		return DATE.equals(name);
 	}
@@ -66,6 +72,18 @@ public class ElasticsearchColumnType extends AbstractColumnType {
 	@Override
 	public boolean isTimestamp() {
 		return false;
+	}
+
+	@Override
+	public Object getTimeValue(Object value) {
+		Object timeValue = super.getTimeValue(value);
+		if (!Strings.isNullOrEmpty(format)) {
+			Timestamp timestamp = (Timestamp) timeValue;
+			if (DATE_FORMAT_EPOCH_MILLIS.equals(format)) {
+				return timestamp.getTime();
+			}
+		}
+		return timeValue;
 	}
 
 	@Override

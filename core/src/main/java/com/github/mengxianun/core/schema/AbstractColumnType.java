@@ -1,5 +1,12 @@
 package com.github.mengxianun.core.schema;
 
+import java.sql.Timestamp;
+import java.time.DateTimeException;
+import java.util.Date;
+import java.util.List;
+
+import com.joestelmach.natty.DateGroup;
+import com.joestelmach.natty.Parser;
 
 public abstract class AbstractColumnType implements ColumnType {
 
@@ -9,6 +16,8 @@ public abstract class AbstractColumnType implements ColumnType {
 	public static final String TYPE_DECIMAL = "decimal";
 	public static final String TYPE_VARCHAR = "varchar";
 	public static final String TYPE_BOOL = "bool";
+
+	private static final Parser parser = new Parser();
 
 	protected final String name;
 
@@ -23,12 +32,30 @@ public abstract class AbstractColumnType implements ColumnType {
 
 	@Override
 	public boolean isNumber() {
-		return false;
+		return isInteger() || isLong() || isDouble();
+	}
+
+	@Override
+	public boolean isTimeBased() {
+		return isDate() || isTime() || isTimestamp();
 	}
 
 	@Override
 	public boolean isTime() {
 		return false;
+	}
+
+	@Override
+	public Object getTimeValue(Object value) {
+		if (value == null) {
+			return null;
+		}
+		List<DateGroup> groups = parser.parse(value.toString());
+		if (groups.isEmpty()) {
+			throw new DateTimeException(String.format("Unable to parse time format [%s]", value));
+		}
+		Date date = groups.get(0).getDates().get(0);
+		return new Timestamp(date.getTime());
 	}
 
 	@Override

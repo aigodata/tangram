@@ -1,16 +1,11 @@
 package com.github.mengxianun.core.item;
 
-import java.sql.Timestamp;
 import java.text.NumberFormat;
 import java.text.ParseException;
-import java.time.DateTimeException;
-import java.util.Date;
-import java.util.List;
 
 import com.github.mengxianun.core.Keywords;
 import com.github.mengxianun.core.schema.Column;
 import com.github.mengxianun.core.schema.ColumnType;
-import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
 
 /**
@@ -88,14 +83,15 @@ public class ValuesItem extends Item {
 				return number;
 			} catch (ParseException ignore) {}
 		} else if (columnType.isTimeBased()) {
-			List<DateGroup> groups = parser.parse(value.toString());
-			if (groups.isEmpty()) {
-				throw new DateTimeException(String.format("Unable to parse time format [%s]", value));
-			}
-			Date date = groups.get(0).getDates().get(0);
-			//			return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-			// optimize
-			return new Timestamp(date.getTime());
+			//			List<DateGroup> groups = parser.parse(value.toString());
+			//			if (groups.isEmpty()) {
+			//				throw new DateTimeException(String.format("Unable to parse time format [%s]", value));
+			//			}
+			//			Date date = groups.get(0).getDates().get(0);
+			//			//			return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+			//			// optimize
+			//			return new Timestamp(date.getTime());
+			return columnType.getTimeValue(value);
 		} else if (columnType.isBoolean()) {
 			return Boolean.parseBoolean(value.toString());
 		}

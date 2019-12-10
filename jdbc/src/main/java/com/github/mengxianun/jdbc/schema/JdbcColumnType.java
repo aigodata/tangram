@@ -54,11 +54,6 @@ public class JdbcColumnType extends AbstractColumnType {
 	}
 
 	@Override
-	public boolean isTimeBased() {
-		return isDate() || isTime() || isTimestamp();
-	}
-
-	@Override
 	public boolean isDate() {
 		return type == Types.DATE;
 	}

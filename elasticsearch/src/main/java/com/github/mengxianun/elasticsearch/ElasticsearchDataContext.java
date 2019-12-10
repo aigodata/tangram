@@ -193,12 +193,14 @@ public class ElasticsearchDataContext extends AbstractDataContext {
 		if (!columnObjects.has("properties")) {
 			String columnName = String.join(".", visited);
 			String columnType = columnObjects.get("type").getAsString();
+			String format = columnObjects.has("format") ? columnObjects.get("format").getAsString() : null;
 			/**
 			 * skip object column
 			 * example: "nodes" : { "type" : "object" }
 			 */
 			if (!"object".equals(columnType)) {
-				DefaultColumn column = new DefaultColumn(columnName, new ElasticsearchColumnType(columnType), table);
+				DefaultColumn column = new DefaultColumn(columnName, new ElasticsearchColumnType(columnType, format),
+						table);
 				table.addColumn(column);
 			}
 			return;

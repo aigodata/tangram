@@ -25,6 +25,8 @@ public interface ColumnType {
 
 	public boolean isTimestamp();
 
+	public Object getTimeValue(Object value);
+
 	public boolean isLiteral();
 
 	public boolean isLargeObject();
