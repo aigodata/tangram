@@ -299,7 +299,7 @@ public class SimpleParser {
 		} else {
 			column = fieldString;
 		}
-		return ColumnInfo.create(source, table, column, alias);
+		return ColumnInfo.create(source, table, column, alias, fieldString);
 	}
 
 	private void parseWhere() {

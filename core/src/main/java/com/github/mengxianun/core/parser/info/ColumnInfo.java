@@ -8,7 +8,12 @@ import com.google.auto.value.AutoValue;
 public abstract class ColumnInfo {
 
 	public static ColumnInfo create(@Nullable String source, @Nullable String table, String column, String alias) {
-		return new AutoValue_ColumnInfo(source, table, column, alias);
+		return create(source, table, column, alias, null);
+	}
+
+	public static ColumnInfo create(@Nullable String source, @Nullable String table, String column, String alias,
+			@Nullable String origin) {
+		return new AutoValue_ColumnInfo(source, table, column, alias, origin);
 	}
 
 	@Nullable
@@ -22,5 +27,13 @@ public abstract class ColumnInfo {
 
 	@Nullable
 	public abstract String alias();
+
+	/**
+	 * The original value. (optimize!)
+	 * 
+	 * @return
+	 */
+	@Nullable
+	public abstract String origin();
 
 }

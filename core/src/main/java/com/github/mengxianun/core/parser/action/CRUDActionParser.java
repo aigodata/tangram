@@ -853,7 +853,11 @@ public class CRUDActionParser extends AbstractActionParser {
 		if (Strings.isNullOrEmpty(table)) { // Default primary table column
 			table = simpleInfo.table().table();
 		}
-		return dataContext.getColumn(table, column);
+		Column col = dataContext.getColumn(table, column);
+		if (col == null && !Strings.isNullOrEmpty(columnInfo.origin())) {
+			col = dataContext.getColumn(simpleInfo.table().table(), columnInfo.origin());
+		}
+		return col;
 	}
 
 	/**
