@@ -2,8 +2,10 @@ package com.github.mengxianun.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,52 +47,68 @@ public abstract class AbstractTranslator implements Translator {
 	protected final Map<String, DataContextFactory> factories = new HashMap<>();
 
 	protected void init(String configFile) {
-		init(convertToURL(configFile));
+		readConfig(configFile);
+		readTableConfig(App.Config.getString(GlobalConfig.TABLE_CONFIG_PATH));
 	}
 
-	protected void init(URL configFileURL) {
-		if (configFileURL != null) {
-			readConfig(configFileURL);
-		}
+	private void readConfig(String configFile) {
+		logger.info("Read config file [{}]", configFile);
+		String configFileContent = null;
 		try {
-			parseAllTableConfig(App.Config.getString(GlobalConfig.TABLE_CONFIG_PATH));
-		} catch (IOException e) {
-			logger.error("Table config file parse error", e);
-		}
-	}
-
-	protected URL convertToURL(String configFile) {
-		try {
-			URL configFileURL = Resources.getResource(configFile);
-			App.Config.set(GlobalConfig.CONFIG_FILE, configFile);
-			return configFileURL;
+			// Read config file from classpath
+			configFileContent = readConfigFromClasspath(configFile);
 		} catch (Exception e) {
-			logger.error(String.format("Config file [%s] parse error", configFile), e);
-		}
-		return null;
-	}
-
-	protected void readConfig(URL configFileURL) {
-		try {
-			String configurationFileContent = Resources.toString(configFileURL, StandardCharsets.UTF_8);
-			JsonObject configurationJsonObject = new Gson().fromJson(configurationFileContent, JsonObject.class);
-			// 覆盖默认配置
-			for (Entry<String, JsonElement> entry : configurationJsonObject.entrySet()) {
-				App.Config.set(entry.getKey(), entry.getValue());
+			logger.warn("Config file [{}] not found in classpath", configFile);
+			try {
+				// Read config file from filesystem
+				configFileContent = readConfigFromFileSystem(configFile);
+			} catch (IOException e1) {
+				logger.warn("Config file [{}] not found in filesystem", configFile);
 			}
-			///////////////
-			// optimize
-			///////////////
-			App.setConfiguration(parseConfiguration(configFileURL, configurationJsonObject));
-			createDataContexts();
+		}
+
+		if (Strings.isNullOrEmpty(configFileContent)) {
+			throw new DataException("Config file [%s] read failed", configFile);
+		}
+
+		App.Config.set(GlobalConfig.CONFIG_FILE, configFile);
+
+		JsonObject configurationJsonObject = new Gson().fromJson(configFileContent, JsonObject.class);
+		for (Entry<String, JsonElement> entry : configurationJsonObject.entrySet()) {
+			App.Config.set(entry.getKey(), entry.getValue());
+		}
+		///////////////
+		// optimize
+		///////////////
+		App.setConfiguration(parseConfiguration(configFile, configurationJsonObject));
+		createDataContexts();
+	}
+
+	private String readConfigFromClasspath(String configFile) throws IOException {
+		return Resources.toString(Resources.getResource(configFile), StandardCharsets.UTF_8);
+	}
+
+	private String readConfigFromFileSystem(String configFile) throws IOException {
+		Path path = Paths.get(configFile);
+		if (!path.isAbsolute()) {
+			String parentDir = System.getProperty("user.dir");
+			String realPath = parentDir + File.separator + configFile;
+			path = Paths.get(realPath);
+		}
+		return new String(Files.readAllBytes(path));
+	}
+
+	private void readTableConfig(String tableConfigPath) {
+		try {
+			parseAllTableConfig(tableConfigPath);
 		} catch (IOException e) {
-			logger.error(String.format("Config file [%s] parse error", configFileURL), e);
+			logger.error("Table config file read error", e);
 		}
 	}
 
-	protected Configuration parseConfiguration(URL configFileURL, JsonObject configurationJsonObject) {
+	protected Configuration parseConfiguration(String configFile, JsonObject configurationJsonObject) {
 		Builder builder = Configuration.builder();
-		builder.configFile(configFileURL.getPath());
+		builder.configFile(configFile);
 		// datasources
 		if (configurationJsonObject.has(GlobalConfig.DATASOURCES)) {
 			builder.datasources(configurationJsonObject.getAsJsonObject(GlobalConfig.DATASOURCES).toString());
@@ -204,7 +222,7 @@ public abstract class AbstractTranslator implements Translator {
 		for (Map.Entry<String, DataContext> entry : dataContexts.entrySet()) {
 			String dataContextName = entry.getKey();
 			DataContext dataContext = entry.getValue();
-			String sourceTableConfigDir = tableConfigPath + File.separator + dataContextName;
+			String sourceTableConfigDir = tableConfigPath + '/' + dataContextName;
 			ConfigHelper.parseSourceTableConfig(sourceTableConfigDir, dataContext);
 		}
 	}

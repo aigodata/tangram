@@ -1,6 +1,5 @@
 package com.github.mengxianun.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -79,7 +78,7 @@ public final class App {
 		logger.info("Add new {} [{}]", dataContext.getClass().getSimpleName(), name);
 		try {
 			String tableConfigPath = App.Config.getString(GlobalConfig.TABLE_CONFIG_PATH);
-			String sourceTableConfigDir = tableConfigPath + File.separator + name;
+			String sourceTableConfigDir = tableConfigPath + '/' + name;
 			dataContext.loadTableConfigFromDir(sourceTableConfigDir);
 		} catch (IOException e) {
 			throw new DataException("DataContext config load failed", e);

@@ -11,6 +11,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Stream;
 
@@ -33,30 +34,65 @@ public final class ConfigHelper {
 
 	private static final Logger logger = LoggerFactory.getLogger(ConfigHelper.class);
 
+	private static FileSystem fileSystem;
+
 	private ConfigHelper() {
-		throw new IllegalStateException("Utility class");
+		throw new AssertionError();
 	}
 
-	public static void parseSourceTableConfig(String tableConfigDir, DataContext dataContext) throws IOException {
-		URL tablesConfigURL = Thread.currentThread().getContextClassLoader().getResource(tableConfigDir);
-		if (tablesConfigURL == null) {
-			return;
+	public static void parseSourceTableConfig(String tableConfigDir, DataContext dataContext)
+			throws IOException {
+		Path tableConfigPath = getSourceTableConfigPath(tableConfigDir);
+		parseSourceTableConfig(tableConfigPath, dataContext);
+		if (fileSystem != null && fileSystem.isOpen()) {
+			fileSystem.close();
+		}
+	}
+
+	public static Path getSourceTableConfigPath(String tableConfigDir) throws IOException {
+		Path tableConfigPath = getPathFromClasspath(tableConfigDir);
+		if (tableConfigPath == null) {
+			tableConfigPath = getPathFromFileSystem(tableConfigDir);
+		}
+		return tableConfigPath;
+	}
+
+	public static Path getPathFromClasspath(String pathString) throws IOException {
+		Path path = null;
+		URL url = null;
+		try {
+			url = Thread.currentThread().getContextClassLoader().getResource(pathString);
+		} catch (Exception ignored) {
+			return null;
+		}
+		if (url == null) {
+			return null;
 		}
 		URI uri;
 		try {
-			uri = tablesConfigURL.toURI();
+			uri = url.toURI();
 		} catch (URISyntaxException e) {
 			throw new DataException(e);
 		}
 		if (uri.getScheme().equals("jar")) {
-			try (FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
-				Path sourceTableConfigDirPath = fileSystem.getPath("/WEB-INF/classes/" + tableConfigDir);
-				parseSourceTableConfig(sourceTableConfigDirPath, dataContext);
-			}
+			fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
+			String[] pathParts = url.toString().split("!");
+			String fileSystemPath = String.join("", Arrays.copyOfRange(pathParts, 1, pathParts.length));
+			path = fileSystem.getPath(fileSystemPath);
 		} else {
-			Path sourceTableConfigDirPath = Paths.get(new File(uri).getPath());
-			parseSourceTableConfig(sourceTableConfigDirPath, dataContext);
+			path = Paths.get(new File(uri).getPath());
 		}
+		return path;
+	}
+
+	public static Path getPathFromFileSystem(String pathString) {
+		Path path = Paths.get(pathString);
+		if (!path.isAbsolute()) {
+			String parentDir = System.getProperty("user.dir");
+			String realPath = parentDir + File.separator + pathString;
+			path = Paths.get(realPath);
+		}
+		return path;
 	}
 
 	public static void parseSourceTableConfig(Path sourceTableConfigDir, DataContext dataContext) throws IOException {
@@ -68,10 +104,10 @@ public final class ConfigHelper {
 	}
 
 	/**
-	 * 读取数据表配置文件, 文件名为表名
+	 * read table config file, filename is table name
 	 * 
 	 * @param path
-	 *            数据表配置文件路径
+	 *            table config file path
 	 * @param dataContext
 	 */
 	public static void parseTableConfigFile(Path path, DataContext dataContext) {

@@ -1,7 +1,5 @@
 package com.github.mengxianun.core;
 
-import java.net.URL;
-
 import com.github.mengxianun.core.config.GlobalConfig;
 import com.github.mengxianun.core.data.Summary;
 import com.github.mengxianun.core.resutset.DefaultDataResultSet;
@@ -14,10 +12,6 @@ public class DefaultTranslator extends AbstractTranslator {
 
 	public DefaultTranslator(String configFile) {
 		super.init(configFile);
-	}
-
-	public DefaultTranslator(URL configFileURL) {
-		super.init(configFileURL);
 	}
 
 	@Override
