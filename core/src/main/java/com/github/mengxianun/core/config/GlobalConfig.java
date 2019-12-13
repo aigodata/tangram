@@ -3,7 +3,7 @@ package com.github.mengxianun.core.config;
 public final class GlobalConfig {
 
 	private GlobalConfig() {
-		throw new IllegalStateException("Utility class");
+		throw new AssertionError();
 	}
 
 	// 配置文件
@@ -28,4 +28,8 @@ public final class GlobalConfig {
 	public static final String PERMISSION_POLICY = "permission_policy";
 	// 公共列配置
 	public static final String COLUMNS = "columns";
+	// 元数据刷新策略
+	public static final String METADATA_REFRESH_POLICY = "metadata_refresh_policy";
+	// 元数据刷新间隔
+	public static final String METADATA_REFRESH_INTERVAL = "metadata_refresh_interval";
 }

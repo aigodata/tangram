@@ -335,6 +335,7 @@ public abstract class AbstractDataContext implements DataContext {
 
 	@Override
 	public void refresh() {
+		logger.debug("Refresh schema [{}] metadata", schema.getName());
 		initMetadata();
 	}
 

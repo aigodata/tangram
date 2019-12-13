@@ -37,11 +37,16 @@ public abstract class Configuration {
 
 	public abstract Map<String, ColumnConfigInfo> columnConfigInfos();
 
+	public abstract RefreshPolicy metadataRefreshPolicy();
+
+	public abstract int metadataRefreshInterval();
+
 	public static Builder builder() {
 		return new AutoValue_Configuration.Builder().configFile(DEFAULT_CONFIG_FILE).sqlEnabled(false)
 				.nativeEnabled(false)
 				.tableConfigPath(DEFAULT_TABLE_CONFIG_PATH).associationConnector(DEFAULT_ASSOCIATION_CONNECTOR)
-				.permissionPolicy(PermissionPolicy.ALLOW_ALL).columnConfigInfos(Collections.emptyMap());
+				.permissionPolicy(PermissionPolicy.ALLOW_ALL).columnConfigInfos(Collections.emptyMap())
+				.metadataRefreshPolicy(RefreshPolicy.NEVER).metadataRefreshInterval(-1);
 	}
 
 	@AutoValue.Builder
@@ -66,6 +71,10 @@ public abstract class Configuration {
 		public abstract Builder permissionPolicy(PermissionPolicy permissionPolicy);
 
 		public abstract Builder columnConfigInfos(Map<String, ColumnConfigInfo> columnConfigInfos);
+
+		public abstract Builder metadataRefreshPolicy(RefreshPolicy metadataRefreshPolicy);
+
+		public abstract Builder metadataRefreshInterval(int metadataRefreshInterval);
 
 		public abstract Configuration build();
 	}

@@ -43,6 +43,9 @@ public final class ConfigHelper {
 	public static void parseSourceTableConfig(String tableConfigDir, DataContext dataContext)
 			throws IOException {
 		Path tableConfigPath = getSourceTableConfigPath(tableConfigDir);
+		if (!tableConfigPath.toFile().exists()) {
+			return;
+		}
 		parseSourceTableConfig(tableConfigPath, dataContext);
 		if (fileSystem != null && fileSystem.isOpen()) {
 			fileSystem.close();

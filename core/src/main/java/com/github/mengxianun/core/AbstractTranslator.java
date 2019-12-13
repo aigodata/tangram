@@ -11,6 +11,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PreDestroy;
 
@@ -80,8 +83,16 @@ public abstract class AbstractTranslator implements Translator {
 		///////////////
 		// optimize
 		///////////////
-		App.setConfiguration(parseConfiguration(configFile, configurationJsonObject));
+		Configuration configuration = parseConfiguration(configFile, configurationJsonObject);
+		App.setConfiguration(configuration);
 		createDataContexts();
+
+		if (configuration.metadataRefreshPolicy() == RefreshPolicy.MINUTES) {
+			int metadataRefreshInterval = configuration.metadataRefreshInterval();
+			ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+			scheduler.scheduleAtFixedRate(() -> App.getDataContexts().values().forEach(DataContext::refresh),
+					metadataRefreshInterval, metadataRefreshInterval, TimeUnit.MINUTES);
+		}
 	}
 
 	private String readConfigFromClasspath(String configFile) throws IOException {
@@ -156,6 +167,16 @@ public abstract class AbstractTranslator implements Translator {
 				columnConfigInfos.put(columnName, columnConfigInfoBuilder.build());
 			}
 			builder.columnConfigInfos(columnConfigInfos);
+		}
+		if (configurationJsonObject.has(GlobalConfig.METADATA_REFRESH_POLICY)) {
+			RefreshPolicy metadataRefreshPolicy = RefreshPolicy
+					.from(configurationJsonObject.get(GlobalConfig.METADATA_REFRESH_POLICY).getAsString());
+			builder.metadataRefreshPolicy(metadataRefreshPolicy);
+			if (configurationJsonObject.has(GlobalConfig.METADATA_REFRESH_INTERVAL)) {
+				int metadataRefreshInterval = configurationJsonObject.get(GlobalConfig.METADATA_REFRESH_INTERVAL)
+						.getAsInt();
+				builder.metadataRefreshInterval(metadataRefreshInterval);
+			}
 		}
 		return builder.build();
 	}
