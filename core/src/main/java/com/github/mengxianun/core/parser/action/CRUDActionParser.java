@@ -651,6 +651,9 @@ public class CRUDActionParser extends AbstractActionParser {
 			List<FilterItem> subFilterItems = subfilters.stream().map(this::parseFilter).collect(Collectors.toList());
 			return new FilterItem(connector, subFilterItems);
 		} else {
+			if (conditionInfo == null) {
+				return null;
+			}
 			return parseFilter(connector, conditionInfo);
 		}
 	}
