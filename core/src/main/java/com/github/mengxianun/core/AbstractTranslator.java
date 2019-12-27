@@ -178,6 +178,9 @@ public abstract class AbstractTranslator implements Translator {
 				builder.metadataRefreshInterval(metadataRefreshInterval);
 			}
 		}
+		if (configurationJsonObject.has(GlobalConfig.JOIN_ON_MULTI_COLUMN)) {
+			builder.joinOnMultiColumn(configurationJsonObject.get(GlobalConfig.JOIN_ON_MULTI_COLUMN).getAsBoolean());
+		}
 		return builder.build();
 	}
 

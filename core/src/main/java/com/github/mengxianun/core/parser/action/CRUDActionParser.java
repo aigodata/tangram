@@ -389,7 +389,8 @@ public class CRUDActionParser extends AbstractActionParser {
 
 				JoinTableItem foreignTableItem = null;
 
-				if (action.hasJoinItem(primaryTable, foreignTable)) {
+				boolean joinOnMultiColumn = App.getConfiguration().joinOnMultiColumn();
+				if (action.hasJoinItem(primaryTable, foreignTable) && joinOnMultiColumn) {
 					JoinItem joinItem = action.getJoinItem(primaryTable, foreignTable);
 					SingleColumnJoinItem singleColumnJoinItem = joinItem.getJoinItems().get(0);
 					TableItem leftTableItem = singleColumnJoinItem.getLeftColumn().getTableItem();

@@ -32,4 +32,6 @@ public final class GlobalConfig {
 	public static final String METADATA_REFRESH_POLICY = "metadata_refresh_policy";
 	// 元数据刷新间隔
 	public static final String METADATA_REFRESH_INTERVAL = "metadata_refresh_interval";
+	// 关联join查询时, 如果2个表有多个字段关联, 在join的时候使用on-and进行多字段关联
+	public static final String JOIN_ON_MULTI_COLUMN = "join_on_multi_column";
 }

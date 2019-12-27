@@ -41,12 +41,14 @@ public abstract class Configuration {
 
 	public abstract int metadataRefreshInterval();
 
+	public abstract boolean joinOnMultiColumn();
+
 	public static Builder builder() {
 		return new AutoValue_Configuration.Builder().configFile(DEFAULT_CONFIG_FILE).sqlEnabled(false)
 				.nativeEnabled(false)
 				.tableConfigPath(DEFAULT_TABLE_CONFIG_PATH).associationConnector(DEFAULT_ASSOCIATION_CONNECTOR)
 				.permissionPolicy(PermissionPolicy.ALLOW_ALL).columnConfigInfos(Collections.emptyMap())
-				.metadataRefreshPolicy(RefreshPolicy.NEVER).metadataRefreshInterval(-1);
+				.metadataRefreshPolicy(RefreshPolicy.NEVER).metadataRefreshInterval(-1).joinOnMultiColumn(false);
 	}
 
 	@AutoValue.Builder
@@ -75,6 +77,8 @@ public abstract class Configuration {
 		public abstract Builder metadataRefreshPolicy(RefreshPolicy metadataRefreshPolicy);
 
 		public abstract Builder metadataRefreshInterval(int metadataRefreshInterval);
+
+		public abstract Builder joinOnMultiColumn(boolean joinOnMultiColumn);
 
 		public abstract Configuration build();
 	}
