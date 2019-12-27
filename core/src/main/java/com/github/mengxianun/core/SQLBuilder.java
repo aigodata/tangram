@@ -163,7 +163,8 @@ public class SQLBuilder {
 			columnsBuilder.append(spliceColumn(columnItem));
 			String alias = columnItem.getAlias();
 			if (!Strings.isNullOrEmpty(alias) && dialect.columnAliasEnabled()) {
-				columnsBuilder.append(ALIAS_KEY).append(alias);
+				columnsBuilder.append(ALIAS_KEY).append(dialect.getIdentifierQuoteString()).append(alias)
+						.append(dialect.getIdentifierQuoteString());
 			}
 			comma = true;
 		}
@@ -493,7 +494,8 @@ public class SQLBuilder {
 			}
 			ColumnItem columnItem = groupItem.getColumnItem();
 			if (!Strings.isNullOrEmpty(columnItem.getAlias()) && columnItem.isCustomAlias()) {
-				groupsBuilder.append(columnItem.getAlias());
+				groupsBuilder.append(dialect.getIdentifierQuoteString()).append(columnItem.getAlias())
+						.append(dialect.getIdentifierQuoteString());
 			} else {
 				groupsBuilder.append(spliceColumn(columnItem));
 			}
@@ -522,7 +524,8 @@ public class SQLBuilder {
 			}
 			ColumnItem columnItem = orderItem.getColumnItem();
 			if (!Strings.isNullOrEmpty(columnItem.getAlias()) && columnItem.isCustomAlias()) {
-				ordersBuilder.append(columnItem.getAlias());
+				ordersBuilder.append(dialect.getIdentifierQuoteString()).append(columnItem.getAlias())
+						.append(dialect.getIdentifierQuoteString());
 			} else {
 				ordersBuilder.append(spliceColumn(columnItem, assignTableAlias));
 			}

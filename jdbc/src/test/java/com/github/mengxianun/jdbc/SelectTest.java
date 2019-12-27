@@ -228,4 +228,13 @@ public class SelectTest extends TestSupport {
 		assertEquals(5, firstElement.get("ID").getAsInt());
 	}
 
+	@Test
+	void testFieldAlias() {
+		DataResultSet dataResultSet = run(JSON_PARENT_PATH + "select_field_alias.json");
+		JsonArray result = (JsonArray) dataResultSet.getJsonData();
+		assertEquals(6, result.size());
+		JsonObject firstElement = result.get(0).getAsJsonObject();
+		assertEquals(2, firstElement.get("#").getAsInt());
+	}
+
 }

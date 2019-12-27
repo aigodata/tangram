@@ -25,6 +25,11 @@ public class JdbcDialect extends AbstractDialect {
 	}
 
 	@Override
+	public String getIdentifierQuoteString() {
+		return jdbcDataContext.getIdentifierQuoteString();
+	}
+
+	@Override
 	public String processKeyword(String keyword) {
 		String identifierQuoteString = jdbcDataContext.getIdentifierQuoteString();
 		return identifierQuoteString + keyword + identifierQuoteString;

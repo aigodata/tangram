@@ -9,6 +9,10 @@ public interface Dialect {
 
 	public String getType();
 
+	default String getIdentifierQuoteString() {
+		return "";
+	}
+
 	/**
 	 * 是否指定数据库. 例: select database.table
 	 * 
