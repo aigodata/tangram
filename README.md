@@ -2,6 +2,54 @@
 
 Tangram is a data access framework, providing a SQL-like json interface for operation of different types of datastores.
 
+#### select
+
+```
+{
+  "select": "table"
+  "fields": ["column1", "column2", ...]
+  "join": ["join_table"]
+  "where": ["column1=value1", "column2=value2", ...]
+  "group": ["column1", "column2", ...]
+  "order": ["column1", "column2", ...]
+}
+```
+
+#### insert
+
+```
+{
+  "insert": "table",
+  "values": {
+    "column1": value1,
+    "column2": value2,
+    ...
+  }
+}
+```
+
+#### update
+
+```
+{
+  "update": "table",
+  "values": {
+    "column1": value1,
+    "column2": value2,
+    ...
+  }
+}
+```
+
+#### delete
+
+```
+{
+  "delete": "table",
+  "where": ["column1=value1", "column2=value2", ...]
+}
+```
+
 ## Getting started
 
 Add the library to your project.
