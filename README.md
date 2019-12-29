@@ -6,11 +6,11 @@ Tangram is a data access framework, providing a SQL-like json interface for oper
 
 ```
 {
-  "select": "table"
-  "fields": ["column1", "column2", ...]
-  "join": ["join_table"]
-  "where": ["column1=value1", "column2=value2", ...]
-  "group": ["column1", "column2", ...]
+  "select": "table",
+  "fields": ["column1", "column2", ...],
+  "join": ["join_table"],
+  "where": ["column1=value1", "column2=value2", ...],
+  "group": ["column1", "column2", ...],
   "order": ["column1", "column2", ...]
 }
 ```
@@ -37,7 +37,8 @@ Tangram is a data access framework, providing a SQL-like json interface for oper
     "column1": value1,
     "column2": value2,
     ...
-  }
+  },
+  "where": ["column1=value1", "column2=value2", ...]
 }
 ```
 
